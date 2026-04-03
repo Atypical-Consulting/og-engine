@@ -1,0 +1,94 @@
+---
+title: OG Images in Astro
+description: Generate dynamic OG images in Astro with OG Engine — 2ms renders, zero browser dependencies.
+---
+
+Add dynamic Open Graph images to your Astro site. Works with both static and SSR modes.
+
+## Install the SDK
+
+```bash
+npm install og-engine-sdk
+```
+
+## API Route (SSR Mode)
+
+Create `src/pages/api/og.ts`:
+
+```typescript
+import type { APIRoute } from 'astro'
+import { OGEngine } from 'og-engine-sdk'
+
+const og = new OGEngine(import.meta.env.OG_ENGINE_KEY)
+
+export const GET: APIRoute = async ({ url }) => {
+  const title = url.searchParams.get('title') ?? 'My Site'
+  const description = url.searchParams.get('description') ?? ''
+
+  const image = await og.render({
+    format: 'og',
+    title,
+    description,
+    style: { accent: '#38ef7d', font: 'Outfit', layout: 'left' },
+  })
+
+  return new Response(image, {
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  })
+}
+```
+
+## Add to Page Frontmatter
+
+```astro
+---
+// src/pages/blog/[slug].astro
+const { slug } = Astro.params
+const post = await getPost(slug)
+
+const ogUrl = `/api/og?title=${encodeURIComponent(post.title)}&description=${encodeURIComponent(post.excerpt)}`
+---
+
+<html>
+<head>
+  <meta property="og:image" content={ogUrl} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+</head>
+```
+
+## Static Build (Pre-generate at Build Time)
+
+For fully static sites, generate images during `astro build`:
+
+```typescript
+// scripts/generate-og.ts
+import { OGEngine } from 'og-engine-sdk'
+import { writeFile } from 'fs/promises'
+import { getCollection } from 'astro:content'
+
+const og = new OGEngine(import.meta.env.OG_ENGINE_KEY)
+const posts = await getCollection('blog')
+
+for (const post of posts) {
+  const image = await og.render({
+    format: 'og',
+    title: post.data.title,
+    description: post.data.description,
+  })
+  await writeFile(`public/og/${post.slug}.png`, image)
+}
+```
+
+## Environment Setup
+
+Add to `.env`:
+
+```
+OG_ENGINE_KEY=oge_sk_your_key_here
+```
+
+Access with `import.meta.env.OG_ENGINE_KEY` in server-side code.

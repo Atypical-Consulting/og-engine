@@ -1,0 +1,119 @@
+---
+title: OG Images in Next.js
+description: Generate dynamic OG images in Next.js App Router with OG Engine — 2ms renders, zero browser dependencies.
+---
+
+Add dynamic Open Graph images to your Next.js app in under 5 minutes. Works with App Router and Pages Router.
+
+## Install the SDK
+
+```bash
+npm install og-engine-sdk
+```
+
+## App Router — Route Handler
+
+Create `app/api/og/route.ts`:
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const title = searchParams.get('title') ?? 'My Site'
+  const description = searchParams.get('description') ?? ''
+
+  const image = await og.render({
+    format: 'og',
+    title,
+    description,
+    style: {
+      accent: '#38ef7d',
+      font: 'Outfit',
+      layout: 'left',
+    },
+  })
+
+  return new Response(image, {
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+    },
+  })
+}
+```
+
+## Add the Meta Tag
+
+In your layout or page:
+
+```typescript
+// app/blog/[slug]/page.tsx
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const post = await getPost(params.slug)
+
+  return {
+    title: post.title,
+    description: post.excerpt,
+    openGraph: {
+      images: [
+        {
+          url: `/api/og?title=${encodeURIComponent(post.title)}&description=${encodeURIComponent(post.excerpt)}`,
+          width: 1200,
+          height: 630,
+        },
+      ],
+    },
+  }
+}
+```
+
+## Validate Before Rendering
+
+Use `/validate` to check text fits before paying for a render:
+
+```typescript
+const check = await og.validate({
+  format: 'og',
+  title: post.title,
+  description: post.excerpt,
+})
+
+if (!check.fits) {
+  // Truncate or adjust text
+}
+```
+
+## Environment Setup
+
+Add to `.env.local`:
+
+```
+OG_ENGINE_KEY=oge_sk_your_key_here
+```
+
+> **Important:** Only use the SDK in server-side code (Route Handlers, Server Components, `getServerSideProps`). Never expose your API key to the browser.
+
+## Caching Strategy
+
+The route handler above sets a 24-hour cache. For static sites, consider generating images at build time:
+
+```typescript
+// scripts/generate-og.ts
+import { OGEngine } from 'og-engine-sdk'
+import { writeFile } from 'fs/promises'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+const posts = await getAllPosts()
+
+for (const post of posts) {
+  const image = await og.render({
+    format: 'og',
+    title: post.title,
+    description: post.excerpt,
+  })
+  await writeFile(`public/og/${post.slug}.png`, image)
+}
+```
