@@ -1,0 +1,172 @@
+/* docs/site/src/components/playground.css */
+
+/* ── Focus states (accessibility) ── */
+.pg-input:focus {
+  box-shadow: 0 0 0 2px rgba(56, 239, 125, 0.2);
+  border-color: rgba(56, 239, 125, 0.3) !important;
+}
+
+.pg-input {
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+/* ── Picker button hover/press ── */
+.pg-picker-btn {
+  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.pg-picker-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.pg-picker-btn:active {
+  transform: scale(0.95);
+}
+
+/* ── Download button ── */
+.pg-download-btn {
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.pg-download-btn:hover {
+  box-shadow: 0 4px 16px rgba(56, 239, 125, 0.25);
+}
+
+.pg-download-btn:active {
+  transform: scale(0.96);
+}
+
+/* ── Render time pulse ── */
+@keyframes pg-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pg-render-pulse {
+  animation: pg-pulse 0.3s ease;
+}
+
+/* ── Canvas crossfade ── */
+.pg-canvas-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.pg-canvas-wrapper canvas {
+  display: block;
+  width: 100%;
+  transition: opacity 0.15s ease;
+}
+
+/* ── Section collapse ── */
+.pg-section-body {
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.pg-section-body.collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+}
+
+.pg-section-toggle {
+  transition: transform 0.2s ease;
+}
+
+.pg-section-toggle.collapsed {
+  transform: rotate(-90deg);
+}
+
+/* ── Fullscreen modal ── */
+@keyframes pg-modal-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pg-modal-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95); }
+}
+
+.pg-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: pg-modal-in 0.2s ease;
+}
+
+.pg-modal-backdrop.closing {
+  animation: pg-modal-out 0.15s ease forwards;
+}
+
+/* ── Drop zone ── */
+@keyframes pg-dropzone-pulse {
+  0%, 100% { border-color: rgba(56, 239, 125, 0.3); }
+  50% { border-color: rgba(56, 239, 125, 0.7); }
+}
+
+.pg-dropzone {
+  position: absolute;
+  inset: 0;
+  border: 2px dashed rgba(56, 239, 125, 0.3);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  animation: pg-dropzone-pulse 1.2s ease infinite;
+  pointer-events: none;
+}
+
+/* ── Preset cards ── */
+.pg-preset-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+}
+
+.pg-preset-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.pg-preset-card:active {
+  transform: translateY(0);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .pg-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pg-preview-col {
+    position: sticky !important;
+    top: 16px;
+    z-index: 5;
+  }
+}
+
+/* ── Sticky preview (desktop) ── */
+@media (min-width: 769px) {
+  .pg-preview-col {
+    position: sticky;
+    top: 20px;
+    align-self: start;
+  }
+}
+
+/* ── Accent color as CSS var (set via inline style on root) ── */
+.pg-input:focus {
+  box-shadow: 0 0 0 2px var(--pg-accent-alpha, rgba(56, 239, 125, 0.2));
+  border-color: var(--pg-accent-border, rgba(56, 239, 125, 0.3)) !important;
+}
