@@ -1,0 +1,65 @@
+---
+title: GET /usage
+description: Check your current quota usage, plan, and reset date.
+---
+
+Returns the current quota usage for your API key. This endpoint does not count as a render — calling it will never consume quota.
+
+```
+GET https://api.og-engine.com/usage
+```
+
+**Authentication:** Required (`Authorization: Bearer oge_sk_...`)
+
+## Example Request
+
+```bash
+curl https://api.og-engine.com/usage \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY"
+```
+
+## Response
+
+```json
+{
+  "plan": "free",
+  "limit": 500,
+  "used": 142,
+  "remaining": 358,
+  "resetAt": "2026-05-01T00:00:00Z"
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `plan` | string | Current plan: `free`, `starter`, `pro`, or `scale` |
+| `limit` | number | Total monthly render quota |
+| `used` | number | Renders consumed this billing cycle |
+| `remaining` | number | Renders remaining (`limit - used`) |
+| `resetAt` | string | ISO 8601 timestamp of next quota reset |
+
+For paid plans, `resetAt` is the next billing cycle anniversary. For the free plan, it is the 1st of the next month at 00:00 UTC.
+
+## Error Responses
+
+| Status | Code | Cause |
+|---|---|---|
+| 401 | `unauthorized` | Missing or invalid API key |
+
+## SDK Example
+
+```typescript
+const { plan, used, remaining, resetAt } = await og.usage()
+
+console.log(`Plan: ${plan}`)
+console.log(`Used: ${used} / ${used + remaining} renders`)
+console.log(`Resets: ${new Date(resetAt).toLocaleDateString()}`)
+```
+
+## Next Steps
+
+- [Pricing & Limits](/pricing/) — plan comparison and upgrade options
+- [Error Handling](/guides/error-handling/) — rate limiting headers and retry strategies
+- [API Reference Overview](/api-reference/overview/) — all endpoints
