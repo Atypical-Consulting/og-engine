@@ -34,24 +34,27 @@ function openBunSqlite(path: string): SqliteDatabase {
     exec: (sql: string) => db.exec(sql),
     prepare: (sql: string) => {
       const stmt = db.prepare(sql);
+      // bun:sqlite named params need $-prefixed keys in the object
+      const prefixKeys = (obj: Record<string, unknown>): Record<string, unknown> => {
+        const result: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(obj)) {
+          result[k.startsWith('$') ? k : `$${k}`] = v;
+        }
+        return result;
+      };
+      const isObj = (p: unknown): p is Record<string, unknown> =>
+        typeof p === 'object' && p !== null && !Array.isArray(p);
       return {
         run: (...params: unknown[]) => {
-          // bun:sqlite uses $param for named params, same as better-sqlite3
-          if (params.length === 1 && typeof params[0] === 'object' && params[0] !== null && !Array.isArray(params[0])) {
-            return stmt.run(params[0]);
-          }
+          if (params.length === 1 && isObj(params[0])) return stmt.run(prefixKeys(params[0]));
           return stmt.run(...params);
         },
         get: (...params: unknown[]) => {
-          if (params.length === 1 && typeof params[0] === 'object' && params[0] !== null && !Array.isArray(params[0])) {
-            return stmt.get(params[0]);
-          }
+          if (params.length === 1 && isObj(params[0])) return stmt.get(prefixKeys(params[0]));
           return stmt.get(...params);
         },
         all: (...params: unknown[]) => {
-          if (params.length === 1 && typeof params[0] === 'object' && params[0] !== null && !Array.isArray(params[0])) {
-            return stmt.all(params[0]);
-          }
+          if (params.length === 1 && isObj(params[0])) return stmt.all(prefixKeys(params[0]));
           return stmt.all(...params);
         },
       };
