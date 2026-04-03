@@ -1,0 +1,70 @@
+---
+/**
+ * Custom Head component override for Starlight.
+ * Renders all default head tags + injects BreadcrumbList JSON-LD structured data.
+ */
+const { head, entry, siteTitle } = Astro.locals.starlightRoute;
+
+// Build breadcrumb items from the page slug
+const slug = entry.slug;
+const segments = slug ? slug.split('/').filter(Boolean) : [];
+const siteUrl = 'https://og-engine.com';
+
+// Map URL segments to readable labels
+const segmentLabels: Record<string, string> = {
+  'api-reference': 'API Reference',
+  'guides': 'Guides',
+  'blog': 'Blog',
+  'sdk': 'SDK',
+  'self-hosting': 'Self-Hosting',
+  'compare': 'Compare',
+  'templates': 'Templates',
+  'fonts': 'Fonts',
+};
+
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { name: 'Home', url: siteUrl },
+];
+
+// Build intermediate breadcrumb items from URL path
+let currentPath = '';
+for (let i = 0; i < segments.length; i++) {
+  currentPath += '/' + segments[i];
+  const isLast = i === segments.length - 1;
+
+  if (isLast) {
+    // Last segment = current page title
+    breadcrumbs.push({
+      name: String(entry.data.title),
+      url: `${siteUrl}${currentPath}/`,
+    });
+  } else {
+    // Intermediate segment = section label
+    breadcrumbs.push({
+      name: segmentLabels[segments[i]] || segments[i].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+      url: `${siteUrl}${currentPath}/`,
+    });
+  }
+}
+
+const breadcrumbSchema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  'itemListElement': breadcrumbs.map((item, index) => ({
+    '@type': 'ListItem',
+    'position': index + 1,
+    'name': item.name,
+    'item': item.url,
+  })),
+});
+---
+
+{head.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
+{breadcrumbs.length > 1 && (
+  <script type="application/ld+json" set:html={breadcrumbSchema} />
+)}
