@@ -1,6 +1,34 @@
 ---
 title: "Multilingual OG Images: CJK, Arabic, and Emoji"
 description: Most OG image generators break on CJK, Arabic, and emoji text. OG Engine handles bidirectional text, grapheme clusters, and mixed scripts natively.
+head:
+  - tag: script
+    attrs:
+      type: application/ld+json
+    content: |
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Multilingual OG Images: CJK, Arabic, and Emoji",
+        "description": "Most OG image generators break on CJK, Arabic, and emoji text. OG Engine handles bidirectional text, grapheme clusters, and mixed scripts natively.",
+        "author": {
+          "@type": "Organization",
+          "name": "OG Engine",
+          "url": "https://og-engine.com"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "OG Engine",
+          "url": "https://og-engine.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://og-engine.com/og-image.svg"
+          }
+        },
+        "datePublished": "2026-04-01",
+        "image": "https://og-engine.com/og-image.svg",
+        "mainEntityOfPage": "https://og-engine.com/blog/multilingual-og-images/"
+      }
 ---
 
 If your product serves users who write in Japanese, Arabic, Chinese, Korean, or who use emoji in titles — your OG image generator probably has bugs you haven't noticed yet.

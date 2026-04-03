@@ -1,6 +1,34 @@
 ---
 title: How Pretext Measures Text Without a Browser
 description: Technical deep-dive into Pretext's Unicode segmentation, line breaking algorithm, and sub-0.1ms text layout. CJK, Arabic, emoji, and grapheme clusters.
+head:
+  - tag: script
+    attrs:
+      type: application/ld+json
+    content: |
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "How Pretext Measures Text Without a Browser",
+        "description": "Technical deep-dive into Pretext's Unicode segmentation, line breaking algorithm, and sub-0.1ms text layout.",
+        "author": {
+          "@type": "Organization",
+          "name": "OG Engine",
+          "url": "https://og-engine.com"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "OG Engine",
+          "url": "https://og-engine.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://og-engine.com/og-image.svg"
+          }
+        },
+        "datePublished": "2026-04-01",
+        "image": "https://og-engine.com/og-image.svg",
+        "mainEntityOfPage": "https://og-engine.com/blog/how-pretext-measures-text/"
+      }
 ---
 
 When a browser renders text, it runs a multi-stage pipeline: parse HTML, resolve CSS styles, build a layout tree, break text into lines, compute positions, rasterize glyphs. This is incredibly powerful — and incredibly wasteful when all you need is "how many lines does this string occupy at 48px in Outfit font?"
