@@ -24,6 +24,7 @@ POST https://api.og-engine.com/validate
 | `descSize` | number | No | `22` | Description font size in pixels (14–32) |
 | `maxTitleLines` | number | No | `3` | Maximum lines before title overflows |
 | `maxDescLines` | number | No | `4` | Maximum lines before description overflows |
+| `autoFit` | boolean | No | `false` | Auto-find optimal font sizes that prevent overflow |
 
 ## Example Request
 
@@ -102,9 +103,42 @@ curl -X POST https://api.og-engine.com/validate \
 ```
 
 When `fits` is `false`, consider:
+- Using `autoFit: true` to let the engine find optimal font sizes automatically
 - Shortening the text
 - Reducing `titleSize` / `descSize`
 - Passing custom `maxTitleLines` / `maxDescLines` if your template allows more room
+
+## Auto-Fit Mode
+
+Set `autoFit: true` to let OG Engine find the largest font size that fits within the line limits. Uses binary search for optimal results.
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "A Very Long Title That Would Normally Overflow But AutoFit Finds The Right Size",
+    "autoFit": true
+  }'
+```
+
+```json
+{
+  "fits": true,
+  "autoFit": {
+    "titleSize": 38,
+    "descSize": 32
+  },
+  "title": {
+    "lines": 3,
+    "maxLines": 3,
+    "overflow": false
+  },
+  "computeTimeMs": 0.45
+}
+```
+
+Pass these fitted sizes to `/render` with `style.autoFit: true` to use the same algorithm at render time.
 
 ## Custom Constraints Example
 

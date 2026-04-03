@@ -7,17 +7,27 @@
     "start": "bun run src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "biome check src/ tests/",
+    "lint:fix": "biome check --write src/ tests/",
+    "format": "biome format --write src/ tests/",
+    "format:check": "biome format src/ tests/",
+    "type-check": "tsc --noEmit",
     "bench": "bun run benchmarks/run.ts",
     "fonts:download": "bun run scripts/download-fonts.ts",
-    "bench:full": "bun run benchmarks/run-full.ts"
+    "bench:full": "bun run benchmarks/run-full.ts",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.97",
+    "better-sqlite3": "^12.8.0",
     "hono": "^4.12.10",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "^1.3.11",
+    "lefthook": "^2.1.4",
     "puppeteer": "^24.40.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.2"

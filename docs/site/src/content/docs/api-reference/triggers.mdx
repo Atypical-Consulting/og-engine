@@ -1,0 +1,127 @@
+---
+title: Webhook Triggers
+description: Register webhook callbacks that auto-regenerate images when content changes.
+---
+
+Webhook triggers let you save a render configuration and fire it later — OG Engine re-renders the image and POSTs it to your callback URL.
+
+**Authentication:** Required
+
+## Create a Trigger
+
+```
+POST https://api.og-engine.com/triggers
+```
+
+### Request Body
+
+```json
+{
+  "url": "https://your-app.com/webhooks/og-image",
+  "renderConfig": {
+    "format": "og",
+    "title": "My Blog Post Title",
+    "description": "Updated dynamically.",
+    "style": {
+      "accent": "#67e8f9",
+      "font": "Inter"
+    }
+  }
+}
+```
+
+The `renderConfig` follows the same schema as `POST /render`.
+
+### Response
+
+```json
+{
+  "id": "a1b2c3d4-...",
+  "url": "https://your-app.com/webhooks/og-image",
+  "secret": "whsec_a1b2c3d4...",
+  "message": "Webhook trigger created. Fire it with POST /triggers/:id/fire."
+}
+```
+
+Save the `secret` — it's included in the `X-Webhook-Secret` header when OG Engine calls your URL, so you can verify the request is genuine.
+
+## Fire a Trigger
+
+```
+POST https://api.og-engine.com/triggers/:id/fire
+```
+
+Re-renders the image using the saved config and POSTs the binary result to your callback URL.
+
+### Optional Content Overrides
+
+Pass a JSON body to override title, description, author, or tag without changing the saved config:
+
+```json
+{
+  "title": "Updated Title",
+  "description": "Fresh description for this render."
+}
+```
+
+### Response
+
+```json
+{
+  "triggered": true,
+  "deliveryStatus": "delivered",
+  "imageSize": 45231,
+  "contentType": "image/png"
+}
+```
+
+### Callback Request
+
+OG Engine sends this to your URL:
+
+```
+POST https://your-app.com/webhooks/og-image
+Content-Type: image/png
+X-Webhook-Id: a1b2c3d4-...
+X-Webhook-Secret: whsec_a1b2c3d4...
+```
+
+Body: raw image bytes.
+
+## List Triggers
+
+```
+GET https://api.og-engine.com/triggers
+```
+
+```json
+{
+  "triggers": [
+    {
+      "id": "a1b2c3d4-...",
+      "url": "https://your-app.com/webhooks/og-image",
+      "createdAt": "2026-04-03T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+## Delete a Trigger
+
+```
+DELETE https://api.og-engine.com/triggers/:id
+```
+
+## Use Cases
+
+- **CMS integration:** Fire the trigger when a blog post is published or updated
+- **E-commerce:** Regenerate product OG images when prices change
+- **SaaS:** Update user profile cards when profiles are modified
+
+## Error Responses
+
+| Status | Code | Cause |
+|---|---|---|
+| 400 | `invalid_request` | Invalid URL or render config |
+| 401 | `unauthorized` | Missing API key |
+| 404 | `not_found` | Trigger not found or doesn't belong to you |

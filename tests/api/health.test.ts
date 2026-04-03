@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { healthRoute } from '../../src/api/health';
 import { registerFonts } from '../../src/engine/fonts';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = new Hono();

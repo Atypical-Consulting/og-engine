@@ -1,0 +1,36 @@
+{
+  "name": "@og-engine/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the OG Engine API — generate OG images, social cards, and banners without a browser",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun build ./index.ts --outdir ./dist --target node && bun run build:types",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist index.ts"
+  },
+  "keywords": [
+    "og-image",
+    "social-card",
+    "image-generation",
+    "opengraph",
+    "og-engine"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atypical-consulting/og-engine"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  }
+}

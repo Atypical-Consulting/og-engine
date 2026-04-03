@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { measureLines, measureTextWidth } from '../../src/engine/text-measure';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { registerFonts } from '../../src/engine/fonts';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { measureLines, measureTextWidth } from '../../src/engine/text-measure';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

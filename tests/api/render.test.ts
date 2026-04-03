@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { renderRoute } from '../../src/api/render';
 import { registerFonts } from '../../src/engine/fonts';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = new Hono();
@@ -83,5 +83,33 @@ describe('POST /render', () => {
       },
     });
     expect(res.status).toBe(200);
+  });
+
+  it('renders with a specific template', async () => {
+    const res = await post({
+      format: 'og',
+      title: 'Social Card Test',
+      template: 'social-card',
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 400 for invalid template', async () => {
+    const res = await post({
+      format: 'og',
+      title: 'Hello',
+      template: 'nonexistent',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns WebP when output format is webp', async () => {
+    const res = await post({
+      format: 'og',
+      title: 'WebP Test',
+      output: { format: 'webp' },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('image/webp');
   });
 });

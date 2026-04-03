@@ -1,0 +1,172 @@
+---
+title: Custom Templates
+description: Create, list, and manage custom templates using a JSON DSL. Scale plan only.
+---
+
+Build your own templates using a declarative JSON layer system. Custom templates are stored per-user and can be referenced in `/render` requests using the `custom:<name>` prefix.
+
+**Authentication:** Required
+**Plan:** Scale only (402 on lower plans)
+
+## Create or Update a Template
+
+```
+POST https://api.og-engine.com/templates
+```
+
+### Request Body
+
+```json
+{
+  "name": "my-card",
+  "layers": [
+    { "type": "gradient", "gradient": "void" },
+    {
+      "type": "rect",
+      "color": "{{accent}}",
+      "x": 0,
+      "y": 0,
+      "width": 6,
+      "height": "full"
+    },
+    {
+      "type": "text",
+      "content": "{{title}}",
+      "fontSize": 48,
+      "fontWeight": 800,
+      "x": 80,
+      "y": 120,
+      "width": 1040,
+      "maxLines": 3,
+      "color": "#ffffff"
+    },
+    {
+      "type": "text",
+      "content": "{{description}}",
+      "fontSize": 22,
+      "x": 80,
+      "y": 340,
+      "width": 1040,
+      "maxLines": 4,
+      "color": "#94a3b8"
+    }
+  ]
+}
+```
+
+If a template with the same name already exists for your account, it's updated in place.
+
+### Response
+
+```json
+{
+  "id": "a1b2c3d4-...",
+  "name": "my-card",
+  "layerCount": 4,
+  "message": "Template created."
+}
+```
+
+## Layer Types
+
+### `fill` — Solid color background
+
+| Field | Type | Description |
+|---|---|---|
+| `color` | string | Hex color or `{{accent}}` |
+
+### `gradient` — Preset gradient background
+
+| Field | Type | Description |
+|---|---|---|
+| `gradient` | string | `void`, `deep-sea`, `ember`, `forest`, `plum`, `slate` |
+
+### `rect` — Rectangle shape
+
+| Field | Type | Description |
+|---|---|---|
+| `color` | string | Fill color |
+| `x`, `y` | number/string | Position (`"center"`, `"right"`, or pixel number) |
+| `width`, `height` | number/string | Size (number, `"full"`, or `"50%"`) |
+| `radius` | number | Border radius (optional) |
+
+### `text` — Text block with line wrapping
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `content` | string | — | Text or variable: `{{title}}`, `{{description}}`, `{{author}}`, `{{tag}}` |
+| `fontSize` | number | — | Font size in pixels |
+| `fontWeight` | number/string | `400` | Font weight |
+| `color` | string | `#ffffff` | Text color |
+| `align` | string | `left` | `left`, `center`, `right` |
+| `lineHeight` | number | `1.2` | Line height multiplier |
+| `maxLines` | number | all | Max visible lines (overflow adds ellipsis) |
+| `ellipsis` | boolean | `true` | Add `...` on overflow |
+
+### `image` — Background image layer
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `fit` | string | `cover` | `cover`, `contain`, `fill` |
+
+### `line` — Straight line
+
+| Field | Type | Description |
+|---|---|---|
+| `x`, `y` | number | Start point |
+| `x2`, `y2` | number | End point |
+| `color` | string | Stroke color |
+| `lineWidth` | number | Line width (default: 1) |
+
+### Common Properties (all layers)
+
+| Field | Type | Description |
+|---|---|---|
+| `opacity` | number | 0–1, applied during rendering |
+| `x`, `y` | number/string | Position |
+| `width`, `height` | number/string | Dimensions |
+
+## Variable Interpolation
+
+Use `{{variable}}` syntax in `text.content` and any `color` field:
+
+- `{{title}}` — render request title
+- `{{description}}` — render request description
+- `{{author}}` — render request author
+- `{{tag}}` — render request tag
+- `{{accent}}` — style accent color
+
+## Using Custom Templates in /render
+
+Reference your template with the `custom:` prefix:
+
+```json
+{
+  "format": "og",
+  "template": "custom:my-card",
+  "title": "Hello from my custom template!"
+}
+```
+
+## List Templates
+
+```
+GET https://api.og-engine.com/templates
+```
+
+Returns all custom templates for the authenticated user.
+
+## Delete a Template
+
+```
+DELETE https://api.og-engine.com/templates/:id
+```
+
+## Error Responses
+
+| Status | Code | Cause |
+|---|---|---|
+| 400 | `invalid_request` | Invalid layer definition |
+| 401 | `unauthorized` | Missing API key |
+| 402 | `plan_required` | Custom templates require Scale plan |
+| 404 | `not_found` | Template not found (when using `custom:<name>` in /render) |
