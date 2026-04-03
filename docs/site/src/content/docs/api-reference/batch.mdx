@@ -1,0 +1,142 @@
+---
+title: POST /render/batch
+description: Generate multiple images in a single API call. Returns a ZIP archive. Available on Pro and Scale plans.
+---
+
+Renders multiple images in a single API call. Each item is an independent render request. Returns a ZIP archive containing all generated images.
+
+```
+POST https://api.og-engine.com/render/batch
+```
+
+**Authentication:** Required (`Authorization: Bearer oge_sk_...`)
+**Plan:** Pro and Scale only
+
+## Request Body
+
+```json
+{
+  "items": [
+    {
+      "format": "og",
+      "title": "Introduction to Bun",
+      "description": "A fast all-in-one JavaScript runtime.",
+      "tag": "Tutorial"
+    },
+    {
+      "format": "twitter",
+      "template": "social-card",
+      "title": "OG Engine 1.0 Released",
+      "style": { "accent": "#f59e0b" }
+    }
+  ]
+}
+```
+
+| Field | Type | Required | Constraints | Description |
+|---|---|---|---|---|
+| `items` | array | Yes | 1–100 items | Array of render request objects |
+
+Each item in `items` is a full render request body. See [POST /render](/api-reference/render/) for the complete field reference. Items can have different formats, templates, and styles.
+
+**Maximum items per request:** 100
+
+## Example Request
+
+```bash
+curl -X POST https://api.og-engine.com/render/batch \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      { "format": "og", "title": "Post One", "tag": "Tutorial" },
+      { "format": "og", "title": "Post Two", "style": { "accent": "#e91e63" } },
+      { "format": "twitter", "template": "social-card", "title": "Announcement" }
+    ]
+  }' \
+  --output images.zip
+```
+
+## Response
+
+On success, the response body is a ZIP archive. HTTP status: `200`.
+
+### ZIP Contents
+
+```
+images.zip
+├── 0.png          ← first item (index 0)
+├── 1.png          ← second item (index 1)
+├── 2.png          ← third item (index 2)
+└── errors.json    ← present only if any items failed
+```
+
+Images are named `{index}.png` (or `{index}.webp` if the item specified WebP output). The index matches the item's position in the `items` array, starting at 0.
+
+### Response Headers
+
+| Header | Example | Description |
+|---|---|---|
+| `Content-Type` | `application/zip` | Always ZIP for batch responses |
+| `X-Total-Render-Time-Ms` | `18.34` | Total server-side render time for all items |
+| `X-Batch-Count` | `3` | Number of successfully rendered images |
+| `X-Batch-Errors` | `0` | Number of items that failed to render |
+
+## Partial Failures
+
+If some items fail (for example, an invalid font on item 2), the other items still render successfully. The ZIP is returned with the successful images, and `errors.json` documents the failures:
+
+```json
+[
+  {
+    "index": 2,
+    "error": "invalid_font",
+    "message": "Font 'Roboto' is not available.",
+    "details": { "field": "style.font", "provided": "Roboto" }
+  }
+]
+```
+
+`errors.json` is only present when at least one item failed. Always check for its presence before assuming all images were generated.
+
+If **all** items fail, the API returns a `400` JSON error response instead of a ZIP.
+
+## Rate Limiting
+
+Each successfully rendered item in the batch consumes one render from your monthly quota. A batch of 50 items uses 50 renders. Failed items do not consume quota.
+
+The `X-RateLimit-Remaining` header in the response reflects the quota after the batch completes.
+
+## Error Responses
+
+| Status | Code | Cause |
+|---|---|---|
+| 400 | `invalid_request` | `items` is missing, empty, or not an array |
+| 400 | `invalid_request` | `items` contains more than 100 entries |
+| 401 | `unauthorized` | Missing or invalid API key |
+| 402 | `plan_required` | Batch endpoint not available on Free or Starter plan |
+| 429 | `rate_limited` | Not enough quota remaining to complete the batch |
+| 500 | `server_error` | Internal error |
+
+## SDK Example
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+
+const zipBuffer = await og.batch([
+  { format: 'og', title: 'First Post', tag: 'Blog' },
+  { format: 'og', title: 'Second Post', tag: 'Blog' },
+  { format: 'og', title: 'Third Post', tag: 'Blog' },
+])
+
+// Save or process the ZIP
+await Bun.write('images.zip', zipBuffer)
+```
+
+## Next Steps
+
+- [Batch Rendering Guide](/guides/batch-rendering/) — build scripts, ZIP extraction, and CI/CD patterns
+- [POST /render](/api-reference/render/) — single image rendering
+- [Pricing & Limits](/pricing/) — plan comparison and batch availability

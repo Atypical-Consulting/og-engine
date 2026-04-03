@@ -1,0 +1,139 @@
+---
+title: POST /validate
+description: Check whether text fits a layout without generating an image. Free, unlimited, no auth required.
+---
+
+Validates whether title and description text will fit within the specified format's layout constraints. Returns line count, max lines, and overflow status for each text block. Does not generate an image.
+
+```
+POST https://api.og-engine.com/validate
+```
+
+**Authentication:** Not required
+**Cost:** Free, unlimited, not metered against your plan quota
+
+## Request Body
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `format` | string | Yes | — | `og`, `twitter`, `square`, `linkedin`, `story` |
+| `title` | string | Yes | — | The title text to measure |
+| `description` | string | No | — | The description text to measure |
+| `font` | string | No | `"Outfit"` | Font family to use for measurement |
+| `titleSize` | number | No | `48` | Title font size in pixels (28–72) |
+| `descSize` | number | No | `22` | Description font size in pixels (14–32) |
+| `maxTitleLines` | number | No | `3` | Maximum lines before title overflows |
+| `maxDescLines` | number | No | `4` | Maximum lines before description overflows |
+
+## Example Request
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "The Complete Guide to Building High-Performance APIs with Bun",
+    "description": "A walkthrough covering routing, middleware, database access, caching, authentication, and deployment.",
+    "font": "Outfit",
+    "titleSize": 48,
+    "descSize": 22
+  }'
+```
+
+## Response
+
+```json
+{
+  "fits": true,
+  "title": {
+    "lines": 3,
+    "maxLines": 3,
+    "overflow": false
+  },
+  "description": {
+    "lines": 3,
+    "maxLines": 4,
+    "overflow": false
+  },
+  "computeTimeMs": 0.18
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `fits` | boolean | `true` if both title and description are within limits |
+| `title.lines` | number | Number of lines the title wraps to |
+| `title.maxLines` | number | Maximum lines allowed (from request or default) |
+| `title.overflow` | boolean | `true` if `lines > maxLines` |
+| `description.lines` | number | Number of lines the description wraps to |
+| `description.maxLines` | number | Maximum lines allowed |
+| `description.overflow` | boolean | `true` if `lines > maxLines` |
+| `computeTimeMs` | number | Time taken to measure the text in milliseconds |
+
+### Overflow Example
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "An Extremely Long Title That Will Definitely Overflow The Available Space In The Layout Engine",
+    "description": "A very long description that contains way too much information to fit in a standard OG image format."
+  }'
+```
+
+```json
+{
+  "fits": false,
+  "title": {
+    "lines": 4,
+    "maxLines": 3,
+    "overflow": true
+  },
+  "description": {
+    "lines": 5,
+    "maxLines": 4,
+    "overflow": true
+  },
+  "computeTimeMs": 0.22
+}
+```
+
+When `fits` is `false`, consider:
+- Shortening the text
+- Reducing `titleSize` / `descSize`
+- Passing custom `maxTitleLines` / `maxDescLines` if your template allows more room
+
+## Custom Constraints Example
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "My Article Title",
+    "description": "My article description.",
+    "font": "Playfair Display",
+    "titleSize": 52,
+    "maxTitleLines": 2,
+    "maxDescLines": 3
+  }'
+```
+
+Always match the `font` and size values you plan to use in `/render` — different fonts have different metrics and will produce different line counts.
+
+## Error Responses
+
+| Status | Code | Cause |
+|---|---|---|
+| 400 | `missing_field` | `format` or `title` not provided |
+| 400 | `invalid_format` | `format` is not a recognized value |
+| 400 | `invalid_font` | `font` is not a supported font family |
+
+## Next Steps
+
+- [Generating Images](/guides/generating-images/) — use `/render` once validation passes
+- [Text Validation Guide](/guides/text-validation/) — form integration patterns and auto font-sizing
+- [POST /render](/api-reference/render/) — full render endpoint reference
