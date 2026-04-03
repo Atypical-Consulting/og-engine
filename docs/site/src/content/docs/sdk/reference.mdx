@@ -210,7 +210,7 @@ The SDK retries failed requests on 5xx errors with exponential backoff (200ms, 4
 All errors are thrown as `OGEngineError` instances with typed properties:
 
 ```typescript
-import { OGEngine, OGEngineError } from 'og-engine-sdk'
+import { OGEngine, OGEngineError } from '@atypical-consulting/og-engine-sdk'
 
 try {
   const image = await og.render({ format: 'og', title: 'Hello' })
@@ -278,7 +278,7 @@ export const GET: APIRoute = async ({ params }) => {
 
 ```typescript
 import express from 'express'
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 
 const app = express()
 const og = new OGEngine(process.env.OG_ENGINE_KEY!)
@@ -297,7 +297,7 @@ app.get('/og/:slug', async (req, res) => {
 ### Cloudflare Worker
 
 ```typescript
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 
 interface Env {
   OG_ENGINE_KEY: string

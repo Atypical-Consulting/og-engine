@@ -8,7 +8,7 @@ Deploy an OG image endpoint to Cloudflare Workers. Your images render in ~22ms o
 ## Install the SDK
 
 ```bash
-npm install og-engine-sdk
+npm install @atypical-consulting/og-engine-sdk
 ```
 
 ## Worker Code
@@ -16,7 +16,7 @@ npm install og-engine-sdk
 Create `src/index.ts`:
 
 ```typescript
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 
 export interface Env {
   OG_ENGINE_KEY: string

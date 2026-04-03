@@ -379,7 +379,7 @@
 > En tant que développeur, je veux un SDK TypeScript officiel, afin d'intégrer l'API sans écrire de fetch manuellement.
 
 **Critères d'acceptation:**
-- Package npm: `og-engine-sdk`
+- Package npm: `@atypical-consulting/og-engine-sdk`
 - Méthodes: `render()`, `validate()`, `batch()`, `usage()`, `health()`
 - Types TypeScript pour toutes les requêtes et réponses
 - Gestion automatique de l'authentification (clé passée au constructeur)

@@ -8,7 +8,7 @@ Add dynamic Open Graph images to your Astro site. Works with both static and SSR
 ## Install the SDK
 
 ```bash
-npm install og-engine-sdk
+npm install @atypical-consulting/og-engine-sdk
 ```
 
 ## API Route (SSR Mode)
@@ -17,7 +17,7 @@ Create `src/pages/api/og.ts`:
 
 ```typescript
 import type { APIRoute } from 'astro'
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 
 const og = new OGEngine(import.meta.env.OG_ENGINE_KEY)
 
@@ -66,7 +66,7 @@ For fully static sites, generate images during `astro build`:
 
 ```typescript
 // scripts/generate-og.ts
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 import { writeFile } from 'fs/promises'
 import { getCollection } from 'astro:content'
 
