@@ -1,0 +1,84 @@
+---
+title: How Pretext Measures Text Without a Browser
+description: A technical deep-dive into Unicode segmentation, line breaking, and sub-millisecond text layout.
+---
+
+When a browser renders text, it runs a multi-stage pipeline: parse HTML, resolve CSS styles, build a layout tree, break text into lines, compute positions, rasterize glyphs. This is incredibly powerful — and incredibly wasteful when all you need is "how many lines does this string occupy at 48px in Outfit font?"
+
+Pretext answers that question in under 0.1ms.
+
+## What Text Layout Actually Requires
+
+To place text on a canvas, you need to know:
+
+1. **Where to break lines** — which words go on which line given a maximum width
+2. **How tall each line is** — determined by font size and line height
+3. **How many lines total** — to detect overflow
+4. **The content of each line** — to draw them at the correct Y positions
+
+In a browser, this information emerges from the full CSS layout engine. Pretext computes it directly from the font metrics and Unicode rules.
+
+## Unicode Is Hard
+
+English text breaks on spaces. But Unicode text isn't that simple:
+
+- **CJK text** (Chinese, Japanese, Korean) can break between any two characters, with exceptions for punctuation
+- **Arabic text** is bidirectional — the string order and visual order differ, and connected letter forms change based on position
+- **Emoji** can be multi-codepoint sequences: a flag emoji is two regional indicator symbols; a family emoji can be 7+ codepoints joined by zero-width joiners
+- **Grapheme clusters** like "e" + combining accent mark are one visual unit but two codepoints
+
+Pretext implements the Unicode Line Break Algorithm (UAX #14) and grapheme cluster segmentation (UAX #29) to handle all of this correctly.
+
+## The Two-Phase API
+
+Pretext exposes two levels of detail:
+
+### Quick Check: `prepare()` + `layout()`
+
+```typescript
+import { prepare, layout } from '@chenglou/pretext'
+
+const prepared = prepare(text, fontString)
+const result = layout(prepared, maxWidth, lineHeight)
+// result.height, result.lineCount
+```
+
+This tells you height and line count — enough for the `/validate` endpoint. Sub-0.1ms.
+
+### Full Layout: `prepareWithSegments()` + `layoutWithLines()`
+
+```typescript
+import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext'
+
+const prepared = prepareWithSegments(text, fontString)
+const { lines, height, lineCount } = layoutWithLines(prepared, maxWidth, lineHeight)
+// lines[0].text, lines[0].width, lines[0].y
+```
+
+This returns the actual text content of each line — needed for Canvas rendering. Still under 0.5ms.
+
+## Why Canvas, Not SVG
+
+OG Engine uses `@napi-rs/canvas` (server-side Canvas API, backed by Skia) rather than SVG because:
+
+- **Pixel-perfect output** — rasterized text matches exactly what social platforms display
+- **Compositing** — background images, gradients, overlays, and text blend naturally
+- **Performance** — Canvas draw calls are GPU-accelerated through Skia
+- **Font consistency** — `@napi-rs/canvas` uses the same font rasterizer (Skia) across all platforms
+
+The Canvas API on the server is identical to the browser Canvas API. Code from the browser prototype ported to the server with zero changes.
+
+## Caching
+
+Pretext's `prepare()` step (Unicode segmentation) is deterministic: the same text + font always produces the same segments. OG Engine caches prepared results in an LRU cache keyed on `(text, font)`, so repeated renders of the same text skip segmentation entirely.
+
+## The Result
+
+For OG Engine, this architecture means:
+
+- **`POST /validate`** uses `prepare()` + `layout()` — answers "does it fit?" in < 0.1ms
+- **`POST /render`** uses `prepareWithSegments()` + `layoutWithLines()` + Canvas draw — full image in 2–5ms
+- **No browser** — no Chrome, no Xvfb, no sandbox, no crash recovery
+- **No DOM** — no HTML parsing, no CSS resolution, no layout tree
+
+Text layout without a browser. That's what Pretext enables, and that's what OG Engine is built on.
