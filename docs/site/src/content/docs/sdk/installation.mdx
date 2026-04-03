@@ -1,0 +1,113 @@
+---
+title: SDK Installation
+description: Install the OG Engine TypeScript SDK and initialize a client with your API key.
+---
+
+The official OG Engine SDK provides a typed TypeScript client for all API endpoints. It handles authentication, retry logic on 5xx errors, and returns typed responses.
+
+## Install
+
+Choose your package manager:
+
+```bash
+# npm
+npm install og-engine-sdk
+
+# bun
+bun add og-engine-sdk
+
+# pnpm
+pnpm add og-engine-sdk
+```
+
+The SDK ships with TypeScript types included — no separate `@types` package needed.
+
+## Initialize the Client
+
+Import `OGEngine` and pass your API key:
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+
+const og = new OGEngine('oge_sk_YOUR_KEY')
+```
+
+## Using Environment Variables
+
+Never hard-code your API key in source code. Store it as an environment variable:
+
+```bash
+# .env
+OG_ENGINE_KEY=oge_sk_YOUR_KEY
+```
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+```
+
+If `OG_ENGINE_KEY` is not set, the SDK throws an `OGEngineConfigError` at initialization time — so you catch missing credentials immediately, not mid-render.
+
+### Next.js
+
+```typescript
+// lib/og.ts
+import { OGEngine } from 'og-engine-sdk'
+
+// This module is server-only — do not import in client components
+export const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+```
+
+Add `OG_ENGINE_KEY` to your `.env.local` (and to Vercel's environment variables in the dashboard).
+
+### Astro
+
+```typescript
+// src/lib/og.ts
+import { OGEngine } from 'og-engine-sdk'
+
+export const og = new OGEngine(import.meta.env.OG_ENGINE_KEY)
+```
+
+Add `OG_ENGINE_KEY` to your `.env` file. Astro exposes server-only variables without the `PUBLIC_` prefix to server-side code.
+
+### Cloudflare Workers
+
+```typescript
+export default {
+  async fetch(request: Request, env: Env) {
+    const { OGEngine } = await import('og-engine-sdk')
+    const og = new OGEngine(env.OG_ENGINE_KEY)
+    // ...
+  }
+}
+```
+
+Bind `OG_ENGINE_KEY` as a secret in your `wrangler.toml` or via the Cloudflare dashboard.
+
+## Configuration Options
+
+The `OGEngine` constructor accepts an optional second argument for advanced configuration:
+
+```typescript
+const og = new OGEngine(process.env.OG_ENGINE_KEY!, {
+  baseUrl: 'https://api.og-engine.com',  // Override for self-hosted instances
+  timeout: 10000,                          // Request timeout in ms (default: 10000)
+  retries: 3,                              // Retry count for 5xx errors (default: 3)
+})
+```
+
+## Verifying the Installation
+
+```typescript
+const { status, fonts } = await og.health()
+console.log(status)  // 'ok'
+console.log(fonts)   // ['Outfit', 'Inter', ...]
+```
+
+## Next Steps
+
+- [SDK Reference](/sdk/reference/) — all methods, TypeScript signatures, and framework examples
+- [Quick Start](/quick-start/) — generate your first image in 2 minutes
+- [API Reference Overview](/api-reference/overview/) — underlying REST API documentation

@@ -1,0 +1,89 @@
+---
+title: API Reference Overview
+description: Base URL, authentication, rate limiting, and links to all API endpoints.
+---
+
+The OG Engine REST API lets you generate images, validate text layout, and check service health from any HTTP client. All endpoints are served over HTTPS.
+
+## Base URL
+
+```
+https://api.og-engine.com
+```
+
+All endpoint paths are relative to this base URL.
+
+## Authentication
+
+Most endpoints require a Bearer token in the `Authorization` header:
+
+```bash
+Authorization: Bearer oge_sk_YOUR_KEY
+```
+
+API keys begin with the prefix `oge_sk_`. Obtain your key by signing up at [og-engine.com](https://og-engine.com) — no credit card required for the Free plan.
+
+The `/validate` and `/health` endpoints do **not** require authentication.
+
+## Content Type
+
+For JSON request bodies, always set:
+
+```
+Content-Type: application/json
+```
+
+When uploading a background image with `/render`, use:
+
+```
+Content-Type: multipart/form-data
+```
+
+(curl sets this automatically when you use `-F`.)
+
+## Rate Limiting
+
+Render quota is metered monthly and resets on the first day of each calendar month. Each successful `/render` or `/render/batch` call consumes quota. `/validate` calls are free and unlimited.
+
+| Plan | Monthly Renders | Batch | WebP |
+|---|---|---|---|
+| Free | 500 | No | No |
+| Starter | 10,000 | No | Yes |
+| Pro | 50,000 | Yes | Yes |
+| Scale | 200,000 | Yes | Yes |
+
+Rate limiting headers are present on every authenticated response. See the [Errors guide](/guides/error-handling/) for details.
+
+## Endpoints
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/render` | Required | Generate a single image |
+| `POST` | `/validate` | Not required | Check if text fits a layout |
+| `POST` | `/render/batch` | Required | Generate multiple images (Pro+) |
+| `GET` | `/health` | Not required | Service status and capabilities |
+
+## Error Format
+
+All errors return a JSON body:
+
+```json
+{
+  "error": "missing_field",
+  "message": "The 'format' field is required.",
+  "details": { "field": "format" },
+  "docs": "https://og-engine.com/api-reference/errors#missing_field"
+}
+```
+
+See the [Errors Reference](/api-reference/errors/) for the complete list of error codes.
+
+## Versioning
+
+The current API is `v1`. There is no version prefix in the URL — the API version is communicated through breaking-change notices and the changelog. Subscribe to [status.og-engine.com](https://status.og-engine.com) for uptime and deprecation notices.
+
+## Next Steps
+
+- [POST /render](/api-reference/render/) — full request and response documentation
+- [POST /validate](/api-reference/validate/) — free text-fit checking
+- [GET /health](/api-reference/health/) — service status and available fonts

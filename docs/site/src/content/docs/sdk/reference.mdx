@@ -1,0 +1,327 @@
+---
+title: SDK Reference
+description: Complete method reference for the OG Engine TypeScript SDK including signatures, types, and framework integration examples.
+---
+
+Full reference for all methods on the `OGEngine` client. All methods return Promises and throw typed `OGEngineError` instances on failure.
+
+## og.render()
+
+Generates a single image. Returns a `Buffer` containing the binary image data.
+
+```typescript
+og.render(request: RenderRequest): Promise<Buffer>
+```
+
+### RenderRequest type
+
+```typescript
+interface RenderRequest {
+  format: 'og' | 'twitter' | 'square' | 'linkedin' | 'story'
+  template?: 'default' | 'social-card' | 'blog-hero' | 'email-banner'
+  title: string
+  description?: string
+  author?: string
+  tag?: string
+  style?: {
+    accent?: string
+    font?: string
+    titleSize?: number
+    descSize?: number
+    layout?: 'left' | 'center' | 'bottom'
+    gradient?: 'void' | 'deep-sea' | 'ember' | 'forest' | 'plum' | 'slate'
+    overlayOpacity?: number
+  }
+  output?: {
+    format?: 'png' | 'webp'
+    quality?: number
+  }
+  backgroundImage?: Buffer | Uint8Array
+}
+```
+
+### Example
+
+```typescript
+const imageBuffer = await og.render({
+  format: 'og',
+  title: 'Hello from the SDK',
+  description: 'Generated in 2ms, no browser needed.',
+  tag: 'Tutorial',
+  style: {
+    accent: '#38ef7d',
+    font: 'Outfit',
+    gradient: 'void',
+  },
+})
+
+await Bun.write('card.png', imageBuffer)
+```
+
+### RenderResult metadata
+
+The returned `Buffer` has extra properties attached for diagnostic access:
+
+```typescript
+const image = await og.render({ format: 'og', title: 'Hello' })
+
+console.log(image.meta.renderTimeMs)     // 2.34
+console.log(image.meta.titleLines)       // 2
+console.log(image.meta.descLines)        // 0
+console.log(image.meta.layoutOverflow)   // false
+```
+
+---
+
+## og.validate()
+
+Checks if text fits a layout without generating an image. Returns layout metrics.
+
+```typescript
+og.validate(request: ValidateRequest): Promise<ValidateResult>
+```
+
+### ValidateRequest type
+
+```typescript
+interface ValidateRequest {
+  format: 'og' | 'twitter' | 'square' | 'linkedin' | 'story'
+  title: string
+  description?: string
+  font?: string
+  titleSize?: number
+  descSize?: number
+  maxTitleLines?: number
+  maxDescLines?: number
+}
+```
+
+### ValidateResult type
+
+```typescript
+interface ValidateResult {
+  fits: boolean
+  title: { lines: number; maxLines: number; overflow: boolean }
+  description: { lines: number; maxLines: number; overflow: boolean }
+  computeTimeMs: number
+}
+```
+
+### Example
+
+```typescript
+const result = await og.validate({
+  format: 'og',
+  title: 'My Article Title That Might Be Too Long',
+  description: 'My article description.',
+})
+
+if (!result.fits) {
+  console.warn(`Title overflows: ${result.title.lines} lines, max ${result.title.maxLines}`)
+}
+```
+
+---
+
+## og.batch()
+
+Renders multiple images in a single API call. Returns a `Buffer` containing a ZIP archive.
+
+```typescript
+og.batch(items: RenderRequest[]): Promise<Buffer>
+```
+
+**Plan requirement:** Pro and Scale only.
+
+### Example
+
+```typescript
+const zipBuffer = await og.batch([
+  { format: 'og', title: 'First Post', tag: 'Blog' },
+  { format: 'og', title: 'Second Post', tag: 'Blog' },
+  { format: 'twitter', template: 'social-card', title: 'Announcement' },
+])
+
+await Bun.write('images.zip', zipBuffer)
+```
+
+The ZIP contents follow the same structure as the REST API: `0.png`, `1.png`, ... with an optional `errors.json` for partial failures.
+
+---
+
+## og.usage()
+
+Returns current quota usage for your API key.
+
+```typescript
+og.usage(): Promise<UsageResult>
+```
+
+### UsageResult type
+
+```typescript
+interface UsageResult {
+  plan: 'free' | 'starter' | 'pro' | 'scale'
+  limit: number
+  used: number
+  remaining: number
+  resetAt: string  // ISO 8601 timestamp
+}
+```
+
+### Example
+
+```typescript
+const { plan, used, remaining, resetAt } = await og.usage()
+
+console.log(`Plan: ${plan}`)
+console.log(`Used: ${used} / ${used + remaining} renders`)
+console.log(`Resets: ${new Date(resetAt).toLocaleDateString()}`)
+```
+
+---
+
+## og.health()
+
+Checks service status and returns available fonts, formats, and templates.
+
+```typescript
+og.health(): Promise<HealthResult>
+```
+
+```typescript
+const { status, version, fonts, formats, templates } = await og.health()
+```
+
+---
+
+## SDK Behavior
+
+### Authentication
+
+The SDK automatically attaches the `Authorization: Bearer` header to every request. You never need to set it manually.
+
+### Retry on 5xx
+
+The SDK retries failed requests on 5xx errors with exponential backoff (200ms, 400ms, 800ms). The retry count is configurable via the `retries` option (default: 3). Client errors (4xx) are never retried.
+
+### Typed Errors
+
+All errors are thrown as `OGEngineError` instances with typed properties:
+
+```typescript
+import { OGEngine, OGEngineError } from 'og-engine-sdk'
+
+try {
+  const image = await og.render({ format: 'og', title: 'Hello' })
+} catch (err) {
+  if (err instanceof OGEngineError) {
+    console.error(err.code)      // e.g. 'rate_limited'
+    console.error(err.message)   // human-readable message
+    console.error(err.status)    // HTTP status code
+    console.error(err.details)   // extra context object or null
+  }
+}
+```
+
+---
+
+## Framework Integration
+
+### Next.js App Router
+
+```typescript
+// app/api/og/route.ts
+import { og } from '@/lib/og'
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function GET(req: NextRequest) {
+  const title = req.nextUrl.searchParams.get('title') ?? 'Untitled'
+
+  const image = await og.render({
+    format: 'og',
+    title,
+    tag: 'Blog',
+  })
+
+  return new NextResponse(image, {
+    headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
+  })
+}
+```
+
+### Astro
+
+```typescript
+// src/pages/og/[slug].png.ts
+import type { APIRoute } from 'astro'
+import { og } from '@/lib/og'
+import { getEntry } from 'astro:content'
+
+export const GET: APIRoute = async ({ params }) => {
+  const post = await getEntry('blog', params.slug!)
+
+  const image = await og.render({
+    format: 'og',
+    title: post.data.title,
+    description: post.data.description,
+    tag: post.data.category,
+  })
+
+  return new Response(image, {
+    headers: { 'Content-Type': 'image/png' },
+  })
+}
+```
+
+### Express
+
+```typescript
+import express from 'express'
+import { OGEngine } from 'og-engine-sdk'
+
+const app = express()
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+
+app.get('/og/:slug', async (req, res) => {
+  const title = req.params.slug.replace(/-/g, ' ')
+
+  const image = await og.render({ format: 'og', title })
+
+  res.setHeader('Content-Type', 'image/png')
+  res.setHeader('Cache-Control', 'public, max-age=86400')
+  res.send(image)
+})
+```
+
+### Cloudflare Worker
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+
+interface Env {
+  OG_ENGINE_KEY: string
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url)
+    const title = url.searchParams.get('title') ?? 'Hello'
+
+    const og = new OGEngine(env.OG_ENGINE_KEY)
+    const image = await og.render({ format: 'og', title })
+
+    return new Response(image, {
+      headers: { 'Content-Type': 'image/png' },
+    })
+  },
+}
+```
+
+---
+
+## Next Steps
+
+- [SDK Installation](/sdk/installation/) — install, initialize, and configure the client
+- [Generating Images](/guides/generating-images/) — rendering pipeline and response header details
+- [Error Handling](/guides/error-handling/) — handling `OGEngineError` in production

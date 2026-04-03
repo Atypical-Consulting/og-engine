@@ -1,0 +1,227 @@
+---
+title: Error Reference
+description: Complete reference for all API error codes, response structure, and rate limiting headers.
+---
+
+All error responses from the OG Engine API share a consistent JSON structure. This page documents every error code, when it occurs, and how to handle it.
+
+## Error Response Structure
+
+```json
+{
+  "error": "invalid_font",
+  "message": "Font 'Roboto' is not available. See /health for supported fonts.",
+  "details": {
+    "field": "style.font",
+    "provided": "Roboto",
+    "available": ["Outfit", "Inter", "Playfair Display", "Sora", "Space Grotesk", "JetBrains Mono", "Noto Sans JP", "Noto Sans AR"]
+  },
+  "docs": "https://og-engine.com/api-reference/errors#invalid_font"
+}
+```
+
+| Field | Type | Always present | Description |
+|---|---|---|---|
+| `error` | string | Yes | Machine-readable error code |
+| `message` | string | Yes | Human-readable explanation |
+| `details` | object | No | Extra context: field name, provided value, allowed values, limits |
+| `docs` | string | Yes | Link to this documentation page, anchored to the specific error |
+| `requestId` | string | Only on 500 | Unique ID for support escalation |
+
+## Error Code Reference
+
+### 400 Bad Request
+
+#### `invalid_request`
+
+The request body is malformed JSON, is not an object, or has an unrecognizable top-level structure.
+
+```json
+{
+  "error": "invalid_request",
+  "message": "Request body must be a JSON object.",
+  "docs": "https://og-engine.com/api-reference/render"
+}
+```
+
+**Fix:** Ensure your request body is valid JSON and the top-level value is an object (`{}`), not an array or primitive.
+
+---
+
+#### `missing_field`
+
+A required field was not present in the request body.
+
+```json
+{
+  "error": "missing_field",
+  "message": "The 'title' field is required.",
+  "details": { "field": "title" }
+}
+```
+
+Required fields: `format` and `title` on `/render`; `format` and `title` on `/validate`.
+
+---
+
+#### `invalid_font`
+
+The value of `style.font` (or `font` on `/validate`) is not one of the supported fonts.
+
+```json
+{
+  "error": "invalid_font",
+  "message": "Font 'Comic Sans' is not available.",
+  "details": {
+    "field": "style.font",
+    "provided": "Comic Sans",
+    "available": ["Outfit", "Inter", "Playfair Display", "Sora", "Space Grotesk", "JetBrains Mono", "Noto Sans JP", "Noto Sans AR"]
+  }
+}
+```
+
+**Fix:** Use one of the font names returned by `GET /health`. Font names are case-sensitive.
+
+---
+
+#### `invalid_format`
+
+The `format` field is not one of the five recognized format presets.
+
+```json
+{
+  "error": "invalid_format",
+  "message": "Format 'facebook' is not supported.",
+  "details": {
+    "field": "format",
+    "provided": "facebook",
+    "allowed": ["og", "twitter", "square", "linkedin", "story"]
+  }
+}
+```
+
+**Fix:** Use one of `og`, `twitter`, `square`, `linkedin`, or `story`.
+
+---
+
+#### `invalid_file`
+
+The uploaded background image was rejected. Common causes: file too large, corrupt file, or unsupported format.
+
+```json
+{
+  "error": "invalid_file",
+  "message": "Image file exceeds the 5MB size limit.",
+  "details": {
+    "field": "image",
+    "maxSizeBytes": 5242880,
+    "receivedBytes": 7340032
+  }
+}
+```
+
+**Fix:** Resize or recompress the image to under 5MB. Supported formats: JPEG, PNG, WebP.
+
+---
+
+### 401 Unauthorized
+
+All three `unauthorized` variants share the same error code but have distinct messages:
+
+```json
+{ "error": "unauthorized", "message": "No API key provided. Set the Authorization: Bearer <key> header." }
+{ "error": "unauthorized", "message": "API key is invalid or does not exist." }
+{ "error": "unauthorized", "message": "This API key has been revoked." }
+```
+
+**Fix:** Ensure you are setting `Authorization: Bearer oge_sk_YOUR_KEY` in your request headers. Generate a new key at [og-engine.com/dashboard](https://og-engine.com/dashboard) if yours was revoked.
+
+---
+
+### 402 Payment Required
+
+#### `plan_required`
+
+The requested feature is not available on your current plan.
+
+```json
+{
+  "error": "plan_required",
+  "message": "WebP output requires a Starter plan or above.",
+  "details": {
+    "feature": "webp_output",
+    "requiredPlan": "starter",
+    "upgradeUrl": "https://og-engine.com/pricing"
+  }
+}
+```
+
+Features gated by plan:
+
+| Feature | Minimum Plan |
+|---|---|
+| WebP output | Starter |
+| Batch rendering | Pro |
+| CDN caching | Pro |
+| Dedicated infrastructure | Scale |
+
+---
+
+### 429 Too Many Requests
+
+#### `rate_limited`
+
+Your plan's monthly render quota has been exhausted.
+
+```json
+{
+  "error": "rate_limited",
+  "message": "Monthly render quota exceeded. Resets 2024-02-01T00:00:00Z.",
+  "details": {
+    "limit": 500,
+    "used": 500,
+    "resetAt": "2024-02-01T00:00:00Z",
+    "upgradeUrl": "https://og-engine.com/pricing"
+  }
+}
+```
+
+**Fix:** Wait for the quota to reset at the timestamp in `details.resetAt`, or [upgrade your plan](/pricing/). Remember that `/validate` is always free and does not count toward your quota.
+
+---
+
+### 500 Internal Server Error
+
+#### `server_error`
+
+An unexpected internal error occurred. This is always OG Engine's fault, not yours.
+
+```json
+{
+  "error": "server_error",
+  "message": "An unexpected error occurred. Please try again.",
+  "requestId": "req_01hx7k9p2m"
+}
+```
+
+**Fix:** Retry with exponential backoff (see [Error Handling guide](/guides/error-handling/)). If the error persists, contact support at support@og-engine.com with the `requestId`.
+
+---
+
+## Rate Limiting Headers
+
+Every response from authenticated endpoints includes these headers, even on successful responses:
+
+| Header | Type | Description |
+|---|---|---|
+| `X-RateLimit-Limit` | integer | Your plan's total monthly render quota |
+| `X-RateLimit-Remaining` | integer | Renders remaining for the current month |
+| `X-RateLimit-Reset` | integer | Unix timestamp (seconds) of the next monthly quota reset |
+
+Monitor `X-RateLimit-Remaining` in your application and surface a warning when it drops below 10% of your limit. Quota resets on the first day of each calendar month at 00:00 UTC.
+
+## Next Steps
+
+- [Error Handling Guide](/guides/error-handling/) — retry strategies and rate limit handling patterns
+- [Pricing & Limits](/pricing/) — plan comparison and quota details
+- [API Reference Overview](/api-reference/overview/) — base URL and authentication setup

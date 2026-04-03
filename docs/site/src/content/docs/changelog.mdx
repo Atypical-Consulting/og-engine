@@ -1,0 +1,89 @@
+---
+title: Changelog
+description: Release history for OG Engine, including new features, improvements, and bug fixes.
+---
+
+All notable changes to OG Engine are documented here. OG Engine follows [Semantic Versioning](https://semver.org/).
+
+---
+
+## v0.1.0 — 2026-04-03
+
+Initial public release of OG Engine.
+
+### API Endpoints
+
+- **`POST /render`** — Generate a single image from a JSON payload. Returns binary PNG (all plans) or WebP (Starter+). Typical render time: 2–5ms.
+- **`POST /validate`** — Check whether title and description text fits a layout without generating an image. Free, unlimited, no authentication required.
+- **`POST /render/batch`** — Render up to 100 images in a single API call. Returns a ZIP archive. Available on Pro and Scale plans.
+- **`GET /health`** — Returns service status, API version, and lists of available fonts, formats, and templates.
+
+### Templates
+
+- **`default`** — Accent bar, grid background pattern, tag pill badge, and author line. Supports left, center, and bottom layouts.
+- **`social-card`** — Large centered title with minimal decoration. Designed for Twitter and Instagram.
+- **`blog-hero`** — Background image compositing with dark overlay. Text anchored to the lower canvas.
+- **`email-banner`** — Horizontal CTA-style layout for email headers and newsletter banners.
+
+### Formats
+
+Five canonical format presets:
+
+| Format | Dimensions |
+|---|---|
+| `og` | 1200 × 630 px |
+| `twitter` | 1200 × 675 px |
+| `square` | 1080 × 1080 px |
+| `linkedin` | 1200 × 627 px |
+| `story` | 1080 × 1920 px |
+
+### Fonts
+
+Eight pre-loaded font families, all served from local `.ttf` files:
+
+- **Outfit** — Modern geometric sans-serif (default)
+- **Inter** — Neutral, screen-optimized
+- **Playfair Display** — Elegant serif
+- **Sora** — Rounded, friendly
+- **Space Grotesk** — Techy sans-serif
+- **JetBrains Mono** — Monospaced
+- **Noto Sans JP** — Latin + Japanese CJK
+- **Noto Sans AR** — Latin + Arabic (bidirectional)
+
+### TypeScript SDK
+
+- `og-engine-sdk` npm package with full TypeScript types
+- Methods: `og.render()`, `og.validate()`, `og.batch()`, `og.usage()`, `og.health()`
+- Auto-retry on 5xx errors with exponential backoff
+- Typed `OGEngineError` class with `code`, `status`, and `details` properties
+- Framework integration examples for Next.js, Astro, Express, and Cloudflare Workers
+
+### Infrastructure
+
+- **Docker image** — `ghcr.io/phmatray/og-engine:latest` available for self-hosting
+- Fly.io one-command deployment support
+- `GET /health` endpoint for container health checks
+- LRU cache for Pretext text preparation results
+- Sub-50ms cold starts
+
+### Documentation
+
+- Full API reference with request/response tables
+- Guides for rendering, validation, batch, background images, error handling
+- Interactive playground (no API key required)
+- Templates gallery with visual descriptions
+- Self-hosting guide for Docker and Fly.io
+- Pricing page with plan comparison and FAQ
+
+---
+
+## Upcoming
+
+The following features are planned for future releases:
+
+- **v0.2.0** — Redis cache layer, API key management dashboard, usage analytics
+- **v0.3.0** — OpenAPI/Swagger specification, additional font families, SVG output option
+- **v0.4.0** — Cloudflare Workers edge deployment, custom template DSL
+- **v1.0.0** — Stable API, SLA guarantees, SDK for Python, Go, and Ruby
+
+Subscribe to [status.og-engine.com](https://status.og-engine.com) for release notifications and uptime updates.

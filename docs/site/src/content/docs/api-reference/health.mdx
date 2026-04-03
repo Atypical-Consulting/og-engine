@@ -1,0 +1,86 @@
+---
+title: GET /health
+description: Check service status and retrieve lists of available fonts, formats, and templates.
+---
+
+Returns the current service status along with lists of all available fonts, formats, and templates. Useful for validating your integration and discovering available options programmatically.
+
+```
+GET https://api.og-engine.com/health
+```
+
+**Authentication:** Not required
+**Rate limiting:** Not applied
+
+## Example Request
+
+```bash
+curl https://api.og-engine.com/health
+```
+
+## Response
+
+```json
+{
+  "status": "ok",
+  "version": "0.1.0",
+  "fonts": [
+    "Outfit",
+    "Inter",
+    "Playfair Display",
+    "Sora",
+    "Space Grotesk",
+    "JetBrains Mono",
+    "Noto Sans JP",
+    "Noto Sans AR"
+  ],
+  "formats": [
+    "og",
+    "twitter",
+    "square",
+    "linkedin",
+    "story"
+  ],
+  "templates": [
+    "default",
+    "social-card",
+    "blog-hero",
+    "email-banner"
+  ]
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `status` | string | `"ok"` when the service is healthy |
+| `version` | string | Current API version |
+| `fonts` | string[] | All available font family names (use these exact strings in `style.font`) |
+| `formats` | string[] | All available format presets (use these in `format`) |
+| `templates` | string[] | All available template names (use these in `template`) |
+
+## Status Values
+
+| Status | Meaning |
+|---|---|
+| `"ok"` | All systems operational |
+| `"degraded"` | Service is operational but some functions may be slower than usual |
+| `"maintenance"` | Planned maintenance in progress; renders may be temporarily unavailable |
+
+In normal operation you will always see `"ok"`. Subscribe to [status.og-engine.com](https://status.og-engine.com) for real-time uptime notifications.
+
+## Using /health for Font Validation
+
+The `fonts` array in the response is the authoritative list of valid values for `style.font`. You can fetch it at startup to populate a font selector in your UI:
+
+```typescript
+const { fonts } = await fetch('https://api.og-engine.com/health').then(r => r.json())
+// ['Outfit', 'Inter', 'Playfair Display', ...]
+```
+
+## Next Steps
+
+- [Available Fonts](/fonts/available-fonts/) — font details, weights, and script coverage
+- [API Reference Overview](/api-reference/overview/) — base URL, authentication, and endpoint list
+- [Error Reference](/api-reference/errors/) — all error codes and response formats

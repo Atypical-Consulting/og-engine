@@ -1,0 +1,137 @@
+---
+title: Templates Gallery
+description: Visual guide to all four built-in templates — default, social-card, blog-hero, and email-banner.
+---
+
+import PlaygroundContextual from '../../../components/PlaygroundContextual';
+
+OG Engine ships with four built-in templates. Each template defines the visual structure, typography placement, and decorative elements. You choose the template once per request; it combines with your format, content, and style settings to produce the final image.
+
+## default
+
+The flagship template and the one used when `template` is omitted. Features a bold visual identity designed to look great on any social platform.
+
+**Layout elements:**
+- Subtle grid dot pattern background (adds depth without distraction)
+- Gradient background from `style.gradient`
+- Colored accent bar in the upper-left, driven by `style.accent`
+- Tag rendered as a pill badge below the title
+- Author line in the lower-left corner
+- Supports `left`, `center`, and `bottom` layouts
+
+**Best for:** Blog posts, documentation pages, SaaS marketing, any general-purpose OG card.
+
+**Works best with:** `og`, `linkedin`, `twitter` formats.
+
+```json
+{
+  "format": "og",
+  "template": "default",
+  "title": "Why TypeScript Makes Refactoring Painless",
+  "description": "How the type system catches errors before they ship.",
+  "tag": "Engineering",
+  "author": "Jane Smith",
+  "style": { "accent": "#38ef7d", "gradient": "void" }
+}
+```
+
+---
+
+## social-card
+
+A minimal template that puts the text front and center. No grid, no decorative elements — just a bold headline that reads instantly at thumbnail scale in a social media feed.
+
+**Layout elements:**
+- Clean gradient background
+- Title dominates the canvas at large size, horizontally centered
+- Description rendered below in a muted color
+- Thin accent-colored horizontal divider between title and description
+- No author or tag elements
+
+**Best for:** Social shares, product announcements, quote cards, tweet-to-image screenshots.
+
+**Works best with:** `twitter`, `square` formats.
+
+```json
+{
+  "format": "twitter",
+  "template": "social-card",
+  "title": "OG Engine 1.0 is live",
+  "description": "Generate images in 2ms. No browser required.",
+  "style": { "accent": "#f59e0b", "layout": "center" }
+}
+```
+
+---
+
+## blog-hero
+
+Designed for use with background images. Composites your photograph or illustration with a text overlay anchored to the lower portion of the canvas — the way editorial images work in modern publishing.
+
+**Layout elements:**
+- Background image fills the canvas (cover-crop)
+- Dark overlay (controlled by `style.overlayOpacity`) for text legibility
+- Text in the lower third of the canvas
+- Tag pill above the title
+- Author in a bottom-left position
+- Grid pattern suppressed (image provides visual texture)
+
+**Best for:** Articles with cover images, editorial content, newsletters with photography.
+
+**Works best with:** `og`, `twitter` formats.
+
+```json
+{
+  "format": "og",
+  "template": "blog-hero",
+  "title": "The Hidden Cost of Microservices",
+  "description": "When monoliths are actually the right answer.",
+  "tag": "Architecture",
+  "author": "Jane Smith",
+  "style": { "overlayOpacity": 0.65 }
+}
+```
+
+When no background image is provided, `blog-hero` falls back to the `style.gradient` background with the text still anchored to the lower portion.
+
+---
+
+## email-banner
+
+A horizontal, CTA-oriented layout designed for email headers and newsletter banners. Uses the available horizontal space efficiently to present a title and a clear call-to-action element.
+
+**Layout elements:**
+- Title positioned on the left half of the canvas
+- Accent-colored tag/CTA element on the right
+- Author rendered as a small "from" label beneath the title
+- Compact vertical profile — the design is optimized for horizontal formats
+- Gradient background with high-contrast text
+
+**Best for:** Email headers, newsletters, transactional emails, event invitations.
+
+**Works best with:** `og`, `linkedin` formats (wide canvases).
+
+```json
+{
+  "format": "og",
+  "template": "email-banner",
+  "title": "Your Weekly Engineering Digest",
+  "description": "Top posts from the past 7 days.",
+  "tag": "Read Now",
+  "author": "The Pragmatic Engineer"
+}
+```
+
+---
+
+## Compare Templates Side by Side
+
+Select a template in the playground below and see how the same content looks across different designs:
+
+<PlaygroundContextual client:visible panels={['content', 'format', 'template']} />
+
+## Next Steps
+
+- [Formats & Templates Guide](/guides/formats-and-templates/) — format dimensions and which combinations work best
+- [Customizing Styles](/guides/customizing-styles/) — accent, gradient, font, and layout options
+- [Background Images](/guides/background-images/) — compositing with the `blog-hero` template

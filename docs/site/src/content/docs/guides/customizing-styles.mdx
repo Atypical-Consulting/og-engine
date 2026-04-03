@@ -1,0 +1,166 @@
+---
+title: Customizing Styles
+description: Control accent colors, fonts, font sizes, layout alignment, and gradient presets to match your brand.
+---
+
+import PlaygroundContextual from '../../../components/PlaygroundContextual';
+
+Every visual aspect of a generated image is configurable through the `style` object. You only need to include the fields you want to change — everything else falls back to sensible defaults.
+
+## style.accent
+
+A hex color string that drives the primary brand color in the image. Used for:
+
+- The accent bar in the `default` template
+- The divider line in `social-card`
+- The CTA element in `email-banner`
+- The tag/pill badge border and background tint
+
+```json
+{ "style": { "accent": "#38ef7d" } }
+```
+
+Any valid 6-digit or 3-digit hex color is accepted (`#38ef7d`, `#fff`, `#FF5733`). The engine automatically computes a contrasting foreground color for text rendered on top of the accent element, so you do not need to worry about readability.
+
+**Default:** `#38ef7d`
+
+## style.font
+
+The font family to use for all text in the image. Must be one of the 8 pre-loaded fonts:
+
+| API Name | Character |
+|---|---|
+| `Outfit` | Modern geometric sans-serif |
+| `Inter` | Neutral, highly legible |
+| `Playfair Display` | Elegant serif for editorial |
+| `Sora` | Friendly rounded sans-serif |
+| `Space Grotesk` | Techy, slightly irregular |
+| `JetBrains Mono` | Monospaced — great for developer tools |
+| `Noto Sans JP` | Latin + Japanese CJK |
+| `Noto Sans AR` | Latin + Arabic |
+
+```json
+{ "style": { "font": "Playfair Display" } }
+```
+
+**Default:** `Outfit`
+
+See the [Available Fonts](/fonts/available-fonts/) page for full details including weights and script coverage.
+
+## style.titleSize
+
+The font size for the title in pixels. Affects how many lines the title wraps to before hitting the max-lines limit.
+
+- **Minimum:** 28
+- **Maximum:** 72
+- **Default:** 48
+
+```json
+{ "style": { "titleSize": 56 } }
+```
+
+Larger title sizes are dramatic and high-impact. Smaller sizes let longer titles fit without overflow. If you need more flexibility, pair a smaller `titleSize` with `/validate` to confirm the text fits before rendering.
+
+## style.descSize
+
+The font size for the description in pixels.
+
+- **Minimum:** 14
+- **Maximum:** 32
+- **Default:** 22
+
+```json
+{ "style": { "descSize": 18 } }
+```
+
+## style.layout
+
+Controls the horizontal and vertical alignment of the text block within the canvas:
+
+| Value | Behavior |
+|---|---|
+| `left` | Text left-aligned, positioned in the upper-left quadrant |
+| `center` | Text centered horizontally |
+| `bottom` | Text left-aligned, anchored to the bottom of the canvas |
+
+```json
+{ "style": { "layout": "center" } }
+```
+
+**Default:** `left`
+
+The `bottom` layout is particularly useful with the `story` format (1080×1920) and background images, placing text in the lower third where it reads naturally against the image.
+
+## style.gradient
+
+Six built-in gradient presets control the background color scheme. Each is designed to work well with the default accent color and white text:
+
+| Name | Colors | Character |
+|---|---|---|
+| `void` | Near-black deep purple | Dark, dramatic, universal |
+| `deep-sea` | Dark teal to navy | Cool, technical |
+| `ember` | Deep charcoal to warm rust | Bold, energetic |
+| `forest` | Dark green to black | Natural, earthy |
+| `plum` | Deep magenta to dark purple | Creative, distinctive |
+| `slate` | Dark blue-grey to charcoal | Professional, neutral |
+
+```json
+{ "style": { "gradient": "ember" } }
+```
+
+**Default:** `void`
+
+All gradients are dark-themed to ensure white text remains legible. If you're using the `blog-hero` template with a background image, the gradient is overridden by the image — in that case, control darkness via `style.overlayOpacity` instead.
+
+## Default Values Summary
+
+When omitted, each field falls back to:
+
+```json
+{
+  "style": {
+    "accent": "#38ef7d",
+    "font": "Outfit",
+    "titleSize": 48,
+    "descSize": 22,
+    "layout": "left",
+    "gradient": "void",
+    "overlayOpacity": 0.65
+  }
+}
+```
+
+## Full Style Example
+
+```bash
+curl -X POST https://api.og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "The Pragmatic Engineer",
+    "description": "Deep dives into software architecture and engineering culture.",
+    "tag": "Newsletter",
+    "style": {
+      "accent": "#f59e0b",
+      "font": "Playfair Display",
+      "titleSize": 52,
+      "descSize": 20,
+      "layout": "left",
+      "gradient": "plum"
+    }
+  }' \
+  --output card.png
+```
+
+## Try Live
+
+Experiment with style settings and see changes rendered instantly:
+
+<PlaygroundContextual client:visible panels={['content', 'style']} />
+
+## Next Steps
+
+- Learn about [Background Images](/guides/background-images/) to use the `blog-hero` template with photos
+- See all [Available Fonts](/fonts/available-fonts/) with script support details
+- Browse the [Templates Gallery](/templates/gallery/) to see how styles interact with each template

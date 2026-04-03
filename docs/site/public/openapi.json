@@ -1,0 +1,1283 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OG Engine API",
+    "description": "Server-side image generation API powered by Pretext's text measurement engine. Replaces Puppeteer/headless Chrome for generating OG images, social cards, email banners, and dynamic visual content. Sub-5ms renders, zero browser dependencies.",
+    "version": "0.1.0",
+    "contact": {
+      "name": "OG Engine Support",
+      "url": "https://og-engine.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.og-engine.com",
+      "description": "Production"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local"
+    }
+  ],
+  "security": [],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key issued from the OG Engine dashboard. Pass as `Authorization: Bearer <key>`."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error", "message"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Machine-readable error code.",
+            "example": "VALIDATION_ERROR"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable description of what went wrong.",
+            "example": "The 'title' field is required and must not exceed 200 characters."
+          },
+          "details": {
+            "type": "object",
+            "description": "Optional structured details about the error (e.g. field-level validation failures).",
+            "additionalProperties": true,
+            "example": {
+              "field": "title",
+              "constraint": "maxLength",
+              "limit": 200
+            }
+          },
+          "docs": {
+            "type": "string",
+            "format": "uri",
+            "description": "Link to the relevant documentation page.",
+            "example": "https://docs.og-engine.com/errors/validation-error"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/render": {
+      "post": {
+        "operationId": "renderImage",
+        "summary": "Render an image",
+        "description": "Generate a PNG or WebP image from text and configuration. Returns binary image data with layout metadata headers.",
+        "tags": ["Rendering"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["format", "title"],
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "enum": ["og", "twitter", "square", "linkedin", "story"],
+                    "description": "Output image format / dimensions preset.",
+                    "example": "og"
+                  },
+                  "template": {
+                    "type": "string",
+                    "enum": ["default", "social-card", "blog-hero", "email-banner"],
+                    "default": "default",
+                    "description": "Visual template to use when compositing the image.",
+                    "example": "default"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "Primary headline text rendered on the image.",
+                    "example": "Server-Side Text Layout Without a Browser"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Supporting body text rendered below the title.",
+                    "example": "Pure JS text measurement replaces Puppeteer."
+                  },
+                  "author": {
+                    "type": "string",
+                    "description": "Author attribution text (name, handle, or team).",
+                    "example": "Pretext Engine"
+                  },
+                  "tag": {
+                    "type": "string",
+                    "description": "Short label / pill text displayed as a badge on the card.",
+                    "example": "Open Source"
+                  },
+                  "style": {
+                    "type": "object",
+                    "description": "Visual style overrides applied on top of the chosen template.",
+                    "properties": {
+                      "accent": {
+                        "type": "string",
+                        "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$",
+                        "default": "#38ef7d",
+                        "description": "Accent / highlight color as a CSS hex value.",
+                        "example": "#38ef7d"
+                      },
+                      "font": {
+                        "type": "string",
+                        "default": "Outfit",
+                        "description": "Google Font family name to use for all text on the card.",
+                        "example": "Outfit"
+                      },
+                      "titleSize": {
+                        "type": "integer",
+                        "default": 48,
+                        "minimum": 28,
+                        "maximum": 72,
+                        "description": "Font size in pixels for the title text.",
+                        "example": 48
+                      },
+                      "descSize": {
+                        "type": "integer",
+                        "default": 22,
+                        "minimum": 14,
+                        "maximum": 32,
+                        "description": "Font size in pixels for the description text.",
+                        "example": 22
+                      },
+                      "layout": {
+                        "type": "string",
+                        "enum": ["left", "center", "bottom"],
+                        "default": "left",
+                        "description": "Text alignment / anchor position within the card.",
+                        "example": "left"
+                      },
+                      "gradient": {
+                        "type": "string",
+                        "enum": ["void", "deep-sea", "ember", "forest", "plum", "slate"],
+                        "default": "void",
+                        "description": "Named background gradient preset.",
+                        "example": "void"
+                      },
+                      "overlayOpacity": {
+                        "type": "number",
+                        "default": 0.65,
+                        "minimum": 0.2,
+                        "maximum": 0.9,
+                        "description": "Opacity of the dark overlay applied over a background image (0.2 = very transparent, 0.9 = nearly opaque).",
+                        "example": 0.65
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "output": {
+                    "type": "object",
+                    "description": "Output file format and compression settings.",
+                    "properties": {
+                      "format": {
+                        "type": "string",
+                        "enum": ["png", "webp"],
+                        "default": "png",
+                        "description": "Image encoding format.",
+                        "example": "png"
+                      },
+                      "quality": {
+                        "type": "integer",
+                        "default": 90,
+                        "minimum": 1,
+                        "maximum": 100,
+                        "description": "Compression quality (only applied for WebP; PNG uses lossless compression).",
+                        "example": 90
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "example": {
+                "format": "og",
+                "template": "default",
+                "title": "Server-Side Text Layout Without a Browser",
+                "description": "Pure JS text measurement replaces Puppeteer.",
+                "author": "Pretext Engine",
+                "tag": "Open Source",
+                "style": {
+                  "accent": "#38ef7d",
+                  "layout": "left",
+                  "font": "Outfit",
+                  "titleSize": 48,
+                  "descSize": 22,
+                  "gradient": "void",
+                  "overlayOpacity": 0.65
+                },
+                "output": {
+                  "format": "png",
+                  "quality": 90
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully rendered image returned as binary data.",
+            "headers": {
+              "X-Render-Time-Ms": {
+                "description": "Total server-side render time in milliseconds.",
+                "schema": {
+                  "type": "number",
+                  "example": 2.34
+                }
+              },
+              "X-Title-Lines": {
+                "description": "Number of lines the title text was laid out into.",
+                "schema": {
+                  "type": "integer",
+                  "example": 2
+                }
+              },
+              "X-Desc-Lines": {
+                "description": "Number of lines the description text was laid out into.",
+                "schema": {
+                  "type": "integer",
+                  "example": 3
+                }
+              },
+              "X-Layout-Overflow": {
+                "description": "Whether any text was truncated due to overflow (`true` or `false`).",
+                "schema": {
+                  "type": "string",
+                  "enum": ["true", "false"],
+                  "example": "false"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "description": "Maximum number of requests allowed in the current rate-limit window.",
+                "schema": {
+                  "type": "integer",
+                  "example": 1000
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Number of requests remaining in the current rate-limit window.",
+                "schema": {
+                  "type": "integer",
+                  "example": 842
+                }
+              },
+              "X-RateLimit-Reset": {
+                "description": "Unix timestamp (seconds) at which the rate-limit window resets.",
+                "schema": {
+                  "type": "integer",
+                  "example": 1714000800
+                }
+              }
+            },
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "Raw PNG image bytes."
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "Raw WebP image bytes (when output.format is 'webp')."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body — validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The 'title' field is required and must not exceed 200 characters."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "example": {
+                        "field": "title",
+                        "constraint": "maxLength",
+                        "limit": 200
+                      }
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/errors/validation-error"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "UNAUTHORIZED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "A valid Bearer token is required to access this endpoint."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/authentication"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not authorized (e.g. plan does not include this feature).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "FORBIDDEN"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Your current plan does not allow access to this feature."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/plans"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "RATE_LIMIT_EXCEEDED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "You have exceeded the rate limit. Please wait before retrying."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "example": {
+                        "retryAfterSeconds": 30
+                      }
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/rate-limiting"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "INTERNAL_SERVER_ERROR"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "An unexpected error occurred. Please try again later."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/errors/server-error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/validate": {
+      "post": {
+        "operationId": "validateLayout",
+        "summary": "Validate text layout",
+        "description": "Check whether title and description text fit within the constraints of a given layout without generating an image. Ultra-fast — typically sub-millisecond.",
+        "tags": ["Validation"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["format", "title"],
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "enum": ["og", "twitter", "square", "linkedin", "story"],
+                    "description": "Image format preset that determines the canvas dimensions used for layout calculation.",
+                    "example": "og"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "Title text to measure.",
+                    "example": "Server-Side Text Layout Without a Browser"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Description text to measure.",
+                    "example": "Pure JS text measurement replaces Puppeteer."
+                  },
+                  "font": {
+                    "type": "string",
+                    "default": "Outfit",
+                    "description": "Google Font family name used for measurement. Must be a font registered with the engine.",
+                    "example": "Outfit"
+                  },
+                  "titleSize": {
+                    "type": "integer",
+                    "default": 48,
+                    "minimum": 28,
+                    "maximum": 72,
+                    "description": "Font size in pixels used when measuring the title.",
+                    "example": 48
+                  },
+                  "descSize": {
+                    "type": "integer",
+                    "default": 22,
+                    "minimum": 14,
+                    "maximum": 32,
+                    "description": "Font size in pixels used when measuring the description.",
+                    "example": 22
+                  },
+                  "maxTitleLines": {
+                    "type": "integer",
+                    "default": 3,
+                    "minimum": 1,
+                    "description": "Maximum number of lines the title is allowed to occupy before being considered overflow.",
+                    "example": 3
+                  },
+                  "maxDescLines": {
+                    "type": "integer",
+                    "default": 4,
+                    "minimum": 1,
+                    "description": "Maximum number of lines the description is allowed to occupy before being considered overflow.",
+                    "example": 4
+                  }
+                }
+              },
+              "example": {
+                "format": "og",
+                "title": "Server-Side Text Layout Without a Browser",
+                "description": "Pure JS text measurement replaces Puppeteer.",
+                "font": "Outfit",
+                "titleSize": 48,
+                "descSize": 22,
+                "maxTitleLines": 3,
+                "maxDescLines": 4
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Layout validation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["fits", "title", "computeTimeMs"],
+                  "properties": {
+                    "fits": {
+                      "type": "boolean",
+                      "description": "`true` if all provided text fields fit within their respective line limits.",
+                      "example": true
+                    },
+                    "title": {
+                      "type": "object",
+                      "required": ["lines", "maxLines", "overflow"],
+                      "description": "Title layout result.",
+                      "properties": {
+                        "lines": {
+                          "type": "integer",
+                          "description": "Actual number of lines the title was laid out into.",
+                          "example": 2
+                        },
+                        "maxLines": {
+                          "type": "integer",
+                          "description": "The maximum lines limit that was checked against.",
+                          "example": 3
+                        },
+                        "overflow": {
+                          "type": "boolean",
+                          "description": "`true` if the title exceeded the `maxTitleLines` limit.",
+                          "example": false
+                        }
+                      }
+                    },
+                    "description": {
+                      "type": "object",
+                      "required": ["lines", "maxLines", "overflow"],
+                      "description": "Description layout result. Only present when a `description` field was supplied in the request.",
+                      "properties": {
+                        "lines": {
+                          "type": "integer",
+                          "description": "Actual number of lines the description was laid out into.",
+                          "example": 3
+                        },
+                        "maxLines": {
+                          "type": "integer",
+                          "description": "The maximum lines limit that was checked against.",
+                          "example": 4
+                        },
+                        "overflow": {
+                          "type": "boolean",
+                          "description": "`true` if the description exceeded the `maxDescLines` limit.",
+                          "example": false
+                        }
+                      }
+                    },
+                    "computeTimeMs": {
+                      "type": "number",
+                      "description": "Time taken to compute the layout in milliseconds.",
+                      "example": 0.12
+                    }
+                  }
+                },
+                "example": {
+                  "fits": true,
+                  "title": {
+                    "lines": 2,
+                    "maxLines": 3,
+                    "overflow": false
+                  },
+                  "description": {
+                    "lines": 3,
+                    "maxLines": 4,
+                    "overflow": false
+                  },
+                  "computeTimeMs": 0.12
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body — validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The 'title' field is required and must not exceed 200 characters."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/errors/validation-error"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "RATE_LIMIT_EXCEEDED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "You have exceeded the rate limit. Please wait before retrying."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "example": {
+                        "retryAfterSeconds": 30
+                      }
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/rate-limiting"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "INTERNAL_SERVER_ERROR"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "An unexpected error occurred. Please try again later."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/errors/server-error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/render/batch": {
+      "post": {
+        "operationId": "renderBatch",
+        "summary": "Batch render images",
+        "description": "Render multiple images in a single request and receive them as a ZIP archive. Available on Pro and Scale plans only. Maximum 100 items per request.",
+        "tags": ["Rendering"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "minItems": 1,
+                    "description": "Array of render requests to process. Each item is identical to the body of `POST /render`.",
+                    "items": {
+                      "type": "object",
+                      "required": ["format", "title"],
+                      "properties": {
+                        "format": {
+                          "type": "string",
+                          "enum": ["og", "twitter", "square", "linkedin", "story"],
+                          "description": "Output image format / dimensions preset.",
+                          "example": "og"
+                        },
+                        "template": {
+                          "type": "string",
+                          "enum": ["default", "social-card", "blog-hero", "email-banner"],
+                          "default": "default",
+                          "description": "Visual template to use when compositing the image.",
+                          "example": "default"
+                        },
+                        "title": {
+                          "type": "string",
+                          "maxLength": 200,
+                          "description": "Primary headline text rendered on the image.",
+                          "example": "Getting Started with OG Engine"
+                        },
+                        "description": {
+                          "type": "string",
+                          "maxLength": 500,
+                          "description": "Supporting body text rendered below the title.",
+                          "example": "Learn how to integrate OG Engine into your stack in under 5 minutes."
+                        },
+                        "author": {
+                          "type": "string",
+                          "description": "Author attribution text.",
+                          "example": "Jane Doe"
+                        },
+                        "tag": {
+                          "type": "string",
+                          "description": "Short label / pill text displayed as a badge.",
+                          "example": "Tutorial"
+                        },
+                        "style": {
+                          "type": "object",
+                          "description": "Visual style overrides.",
+                          "properties": {
+                            "accent": {
+                              "type": "string",
+                              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$",
+                              "default": "#38ef7d",
+                              "description": "Accent / highlight color as a CSS hex value.",
+                              "example": "#38ef7d"
+                            },
+                            "font": {
+                              "type": "string",
+                              "default": "Outfit",
+                              "description": "Google Font family name.",
+                              "example": "Outfit"
+                            },
+                            "titleSize": {
+                              "type": "integer",
+                              "default": 48,
+                              "minimum": 28,
+                              "maximum": 72,
+                              "description": "Font size in pixels for the title text.",
+                              "example": 48
+                            },
+                            "descSize": {
+                              "type": "integer",
+                              "default": 22,
+                              "minimum": 14,
+                              "maximum": 32,
+                              "description": "Font size in pixels for the description text.",
+                              "example": 22
+                            },
+                            "layout": {
+                              "type": "string",
+                              "enum": ["left", "center", "bottom"],
+                              "default": "left",
+                              "description": "Text alignment / anchor position within the card.",
+                              "example": "left"
+                            },
+                            "gradient": {
+                              "type": "string",
+                              "enum": ["void", "deep-sea", "ember", "forest", "plum", "slate"],
+                              "default": "void",
+                              "description": "Named background gradient preset.",
+                              "example": "void"
+                            },
+                            "overlayOpacity": {
+                              "type": "number",
+                              "default": 0.65,
+                              "minimum": 0.2,
+                              "maximum": 0.9,
+                              "description": "Opacity of the dark overlay applied over a background image.",
+                              "example": 0.65
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "output": {
+                          "type": "object",
+                          "description": "Output file format and compression settings.",
+                          "properties": {
+                            "format": {
+                              "type": "string",
+                              "enum": ["png", "webp"],
+                              "default": "png",
+                              "description": "Image encoding format.",
+                              "example": "png"
+                            },
+                            "quality": {
+                              "type": "integer",
+                              "default": 90,
+                              "minimum": 1,
+                              "maximum": 100,
+                              "description": "Compression quality (WebP only).",
+                              "example": 90
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "items": [
+                  {
+                    "format": "og",
+                    "template": "default",
+                    "title": "Getting Started with OG Engine",
+                    "description": "Learn how to integrate OG Engine into your stack in under 5 minutes.",
+                    "author": "Jane Doe",
+                    "tag": "Tutorial",
+                    "style": {
+                      "accent": "#38ef7d",
+                      "font": "Outfit",
+                      "titleSize": 48,
+                      "descSize": 22,
+                      "layout": "left",
+                      "gradient": "void",
+                      "overlayOpacity": 0.65
+                    },
+                    "output": {
+                      "format": "png",
+                      "quality": 90
+                    }
+                  },
+                  {
+                    "format": "twitter",
+                    "template": "social-card",
+                    "title": "Sub-5ms Image Generation",
+                    "description": "300-500x faster than Puppeteer with zero browser dependencies.",
+                    "author": "OG Engine",
+                    "tag": "Performance",
+                    "style": {
+                      "accent": "#7c3aed",
+                      "font": "Playfair Display",
+                      "titleSize": 44,
+                      "descSize": 20,
+                      "layout": "center",
+                      "gradient": "plum",
+                      "overlayOpacity": 0.7
+                    },
+                    "output": {
+                      "format": "webp",
+                      "quality": 85
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ZIP archive containing the rendered images, one file per item.",
+            "headers": {
+              "X-Total-Render-Time-Ms": {
+                "description": "Total server-side time to render all images in milliseconds.",
+                "schema": {
+                  "type": "number",
+                  "example": 18.72
+                }
+              },
+              "X-Batch-Count": {
+                "description": "Number of images successfully rendered in this batch.",
+                "schema": {
+                  "type": "integer",
+                  "example": 2
+                }
+              },
+              "X-Batch-Errors": {
+                "description": "Number of items in the batch that failed to render.",
+                "schema": {
+                  "type": "integer",
+                  "example": 0
+                }
+              }
+            },
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "ZIP archive of rendered image files named `0.png`, `1.webp`, etc. in request order."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body — validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "VALIDATION_ERROR"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The 'items' array must contain between 1 and 100 entries."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/errors/validation-error"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "UNAUTHORIZED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "A valid Bearer token is required to access this endpoint."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/authentication"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not authorized — batch rendering requires a Pro or Scale plan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "FORBIDDEN"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Batch rendering is available on Pro and Scale plans only. Upgrade at https://og-engine.com/pricing."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "example": {
+                        "requiredPlan": "pro",
+                        "currentPlan": "free"
+                      }
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/plans"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "RATE_LIMIT_EXCEEDED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "You have exceeded the rate limit. Please wait before retrying."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "example": {
+                        "retryAfterSeconds": 30
+                      }
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/rate-limiting"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "INTERNAL_SERVER_ERROR"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "An unexpected error occurred. Please try again later."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/errors/server-error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Health check",
+        "description": "Returns the current operational status of the API, including loaded fonts, supported formats and templates, and the running version.",
+        "tags": ["Operations"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API is healthy and ready to serve requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "version", "fonts", "formats", "templates"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok", "degraded"],
+                      "description": "`ok` — all systems operational. `degraded` — running but some non-critical subsystems are unavailable.",
+                      "example": "ok"
+                    },
+                    "version": {
+                      "type": "string",
+                      "description": "Semantic version of the running API.",
+                      "example": "0.1.0"
+                    },
+                    "fonts": {
+                      "type": "array",
+                      "description": "List of Google Font family names currently registered and available for rendering.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": [
+                        "Outfit",
+                        "Playfair Display",
+                        "Sora",
+                        "Inter",
+                        "Roboto",
+                        "Open Sans",
+                        "Lato",
+                        "Montserrat"
+                      ]
+                    },
+                    "formats": {
+                      "type": "array",
+                      "description": "List of supported image format / dimension presets.",
+                      "items": {
+                        "type": "string",
+                        "enum": ["og", "twitter", "square", "linkedin", "story"]
+                      },
+                      "example": ["og", "twitter", "square", "linkedin", "story"]
+                    },
+                    "templates": {
+                      "type": "array",
+                      "description": "List of available visual templates.",
+                      "items": {
+                        "type": "string",
+                        "enum": ["default", "social-card", "blog-hero", "email-banner"]
+                      },
+                      "example": ["default", "social-card", "blog-hero", "email-banner"]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "version": "0.1.0",
+                  "fonts": [
+                    "Outfit",
+                    "Playfair Display",
+                    "Sora",
+                    "Inter",
+                    "Roboto",
+                    "Open Sans",
+                    "Lato",
+                    "Montserrat"
+                  ],
+                  "formats": ["og", "twitter", "square", "linkedin", "story"],
+                  "templates": ["default", "social-card", "blog-hero", "email-banner"]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "RATE_LIMIT_EXCEEDED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "You have exceeded the rate limit. Please wait before retrying."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "example": {
+                        "retryAfterSeconds": 30
+                      }
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/rate-limiting"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error", "message"],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "INTERNAL_SERVER_ERROR"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "An unexpected error occurred. Please try again later."
+                    },
+                    "details": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "docs": {
+                      "type": "string",
+                      "format": "uri",
+                      "example": "https://docs.og-engine.com/errors/server-error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Rendering",
+      "description": "Endpoints for generating images."
+    },
+    {
+      "name": "Validation",
+      "description": "Endpoints for checking text layout without generating images."
+    },
+    {
+      "name": "Operations",
+      "description": "Operational and monitoring endpoints."
+    }
+  ]
+}

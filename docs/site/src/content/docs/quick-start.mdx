@@ -1,0 +1,93 @@
+---
+title: Quick Start
+description: From zero to your first generated image in under 2 minutes.
+---
+
+import PlaygroundContextual from '../../components/PlaygroundContextual';
+
+## Step 1 — Get Your API Key
+
+Sign up with your email. No credit card required.
+
+```bash
+curl -X POST https://api.og-engine.com/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com"}'
+```
+
+```json
+{ "apiKey": "oge_sk_a1b2c3...", "plan": "free", "limit": 500 }
+```
+
+Check your email — your API key is also in the response above.
+
+## Step 2 — Generate Your First Image
+
+```bash
+curl -X POST https://api.og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_a1b2c3..." \
+  -H "Content-Type: application/json" \
+  -d '{"format": "og", "title": "Hello, OG Engine"}' \
+  --output hello.png
+```
+
+## Step 3 — Customize It
+
+```json
+{
+  "format": "og",
+  "title": "My First OG Image",
+  "description": "Generated in 2ms, no browser needed.",
+  "tag": "Tutorial",
+  "style": {
+    "accent": "#38ef7d",
+    "font": "Outfit",
+    "layout": "left"
+  }
+}
+```
+
+Try editing the title below — the image updates instantly:
+
+<PlaygroundContextual client:visible panels={['content']} initialTitle="My First OG Image" initialDescription="Generated in 2ms, no browser needed." />
+
+## Step 4 — Check If Text Fits (Free, Unlimited)
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{"format": "og", "title": "Some very long headline that might not fit..."}'
+```
+
+```json
+{
+  "fits": true,
+  "title": { "lines": 2, "maxLines": 3, "overflow": false },
+  "computeTimeMs": 0.12
+}
+```
+
+## Step 5 — Use the SDK (Optional)
+
+```bash
+npm install og-engine-sdk
+```
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+
+const og = new OGEngine('oge_sk_a1b2c3...')
+
+const image = await og.render({
+  format: 'og',
+  title: 'Hello from the SDK',
+})
+
+await Bun.write('hello.png', image)
+```
+
+## Next Steps
+
+- Explore the [Templates Gallery](/templates/gallery/) to see all available designs
+- Learn about [Formats & Templates](/guides/formats-and-templates/) for different platforms
+- Dive into the [API Reference](/api-reference/overview/) for full endpoint details

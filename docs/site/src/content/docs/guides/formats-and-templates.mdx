@@ -1,0 +1,122 @@
+---
+title: Formats & Templates
+description: Understand the 5 format presets, their exact dimensions, and how to choose the right template for each use case.
+---
+
+import PlaygroundContextual from '../../../components/PlaygroundContextual';
+
+OG Engine separates **format** (the canvas dimensions) from **template** (how content is laid out within those dimensions). This lets you mix and match: use the `blog-hero` template with the `twitter` format for a card that looks great in a Twitter feed.
+
+## Format Presets
+
+Each format maps to a canonical set of dimensions used by social platforms:
+
+| Format | Dimensions | Aspect Ratio | Primary Use |
+|---|---|---|---|
+| `og` | 1200 × 630 px | 1.91:1 | Open Graph (Facebook, Slack, Discord) |
+| `twitter` | 1200 × 675 px | 16:9 | Twitter / X summary_large_image card |
+| `square` | 1080 × 1080 px | 1:1 | Instagram, general purpose |
+| `linkedin` | 1200 × 627 px | 1.91:1 | LinkedIn posts |
+| `story` | 1080 × 1920 px | 9:16 | Instagram Stories, TikTok, Snapchat |
+
+### How Format Affects Text Layout
+
+Narrower or taller canvases affect how many lines your text wraps to, and therefore how many lines are shown before overflow kicks in:
+
+| Format | Max Title Lines | Max Desc Lines | Notes |
+|---|---|---|---|
+| `og` | 3 | 4 | Standard — most templates optimized for this |
+| `twitter` | 3 | 4 | Nearly identical to `og` |
+| `square` | 4 | 5 | More vertical space for text |
+| `linkedin` | 3 | 4 | Slightly narrower than `og` |
+| `story` | 5 | 6 | Tall format — text has more room |
+
+These limits apply at the default font sizes (48px title, 22px description). Increasing `titleSize` reduces the number of lines before overflow, and vice versa. Use the `/validate` endpoint to check without incurring a render.
+
+## Templates
+
+Templates control the visual structure: background, typography placement, decorative elements, and how `author` and `tag` fields appear.
+
+### `default`
+
+The flagship template. Features:
+
+- Subtle grid background pattern
+- Gradient overlay from the `style.gradient` setting
+- Colored accent bar in the top-left corner driven by `style.accent`
+- Tag rendered as a pill badge below the title
+- Author line at the bottom
+- Supports `left`, `center`, and `bottom` layouts
+
+Best for: blog posts, documentation, SaaS marketing pages — any general-purpose OG card.
+
+### `social-card`
+
+A minimal template designed for Twitter and Instagram where content should be immediately legible in a feed:
+
+- Large centered title dominates the canvas
+- Description rendered smaller below
+- No grid or decorative elements — clean, bold, modern
+- Accent color used as a prominent horizontal divider
+
+Best for: social shares, announcements, quote cards.
+
+### `blog-hero`
+
+Designed to work with a background image. Features:
+
+- Background image fills the canvas with cover-crop behavior
+- Dark overlay (controlled by `style.overlayOpacity`) ensures text legibility
+- Text anchored to the bottom third of the canvas
+- Accent bar and tag pill placed above the title
+
+Best for: articles with cover images, editorial content, newsletters with photography.
+
+### `email-banner`
+
+A horizontal, CTA-oriented layout:
+
+- Title on the left, accent button/tag on the right
+- Compact vertical space — optimized for email clients
+- Gradient background with high-contrast text
+- Author field renders as a small "from" label
+
+Best for: email headers, newsletters, transactional email banners.
+
+## Format + Template Compatibility
+
+While all combinations are technically valid, some pairings produce noticeably better results:
+
+| Template | Best Formats | Notes |
+|---|---|---|
+| `default` | `og`, `linkedin` | Optimized for landscape 1.91:1 ratio |
+| `social-card` | `twitter`, `square` | Looks great at 16:9 and 1:1 |
+| `blog-hero` | `og`, `twitter` | Background images shine in landscape |
+| `email-banner` | `og`, `linkedin` | Horizontal layout requires wide canvas |
+
+The `story` format works best with `social-card` or `default` using a `bottom` layout, so the text sits comfortably in the lower half of the tall canvas.
+
+## Specifying Format and Template
+
+Both fields are top-level in the request body:
+
+```json
+{
+  "format": "twitter",
+  "template": "social-card",
+  "title": "Announcing OG Engine 1.0",
+  "description": "Generate images in 2ms. No browser required."
+}
+```
+
+If `template` is omitted, it defaults to `"default"`.
+
+## Try Different Combinations
+
+<PlaygroundContextual client:visible panels={['content', 'format', 'template']} />
+
+## Next Steps
+
+- Learn to [Customize Styles](/guides/customizing-styles/) — accent, font, gradient, and layout options
+- Browse the [Templates Gallery](/templates/gallery/) with visual previews of each template
+- Use [Text Validation](/guides/text-validation/) to check whether text fits before rendering

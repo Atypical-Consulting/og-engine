@@ -1,0 +1,177 @@
+---
+title: Text Validation
+description: Use the free /validate endpoint to check if text fits a layout before spending a render on it.
+---
+
+import PlaygroundContextual from '../../../components/PlaygroundContextual';
+
+The `/validate` endpoint runs Pretext's text measurement and line-breaking logic without drawing anything to a canvas. It tells you exactly how many lines your text will occupy, and whether it overflows the available space. Validation is **free**, **unlimited**, and **not metered** against your plan's render quota.
+
+## Why Validate First
+
+Consider a CMS where editors write article titles of unpredictable length. Without validation, a long title silently gets truncated with `…` in the generated OG card. By validating on blur (or before saving), you can surface a warning to the editor in real time.
+
+Similarly, if you're programmatically generating cards from database content, validation lets you fall back to a smaller font size or truncate the description yourself before committing to a render.
+
+## Basic Validation Request
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "Some Long Headline That Might Not Fit"
+  }'
+```
+
+No `Authorization` header required. The response is always JSON:
+
+```json
+{
+  "fits": true,
+  "title": { "lines": 2, "maxLines": 3, "overflow": false },
+  "description": { "lines": 0, "maxLines": 4, "overflow": false },
+  "computeTimeMs": 0.14
+}
+```
+
+`fits` is `true` only when **both** title and description are within their limits.
+
+## Checking Both Title and Description
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "The Complete Guide to Building High-Performance APIs with Bun",
+    "description": "A comprehensive walkthrough covering routing, middleware, database access, caching, authentication, rate limiting, and deployment to production on Fly.io."
+  }'
+```
+
+```json
+{
+  "fits": false,
+  "title": { "lines": 3, "maxLines": 3, "overflow": false },
+  "description": { "lines": 5, "maxLines": 4, "overflow": true },
+  "computeTimeMs": 0.21
+}
+```
+
+Here the title fits (3 lines, max 3), but the description overflows (5 lines, max 4). The `fits` top-level field is `false` because at least one block overflowed.
+
+## Custom Constraints
+
+You can override the default max-lines limits to match your specific template configuration:
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "My Headline",
+    "description": "My description text.",
+    "maxTitleLines": 2,
+    "maxDescLines": 3
+  }'
+```
+
+This is useful when a template visually only has room for 2 title lines even though the format technically allows 3.
+
+## Custom Font and Size
+
+Validating with a different font or size gives you accurate results for non-default configurations. Text measurement is font-metric-dependent — the same string in `Playfair Display` at 52px will wrap differently than `Inter` at 48px.
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "The Pragmatic Engineer Guide to Distributed Systems",
+    "font": "Playfair Display",
+    "titleSize": 52,
+    "maxTitleLines": 3
+  }'
+```
+
+Always pass the same `font` and `titleSize`/`descSize` values you intend to use in `/render`. Mismatched sizes will give inaccurate overflow results.
+
+## Using Validation in a Form
+
+Here's a React example that validates on input blur before allowing the user to save:
+
+```tsx
+import { useState } from 'react'
+
+function OGTitleField() {
+  const [title, setTitle] = useState('')
+  const [warning, setWarning] = useState<string | null>(null)
+
+  async function handleBlur() {
+    if (!title) return
+
+    const res = await fetch('https://api.og-engine.com/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format: 'og', title }),
+    })
+
+    const { fits, title: t } = await res.json()
+
+    if (!fits) {
+      setWarning(`Title is too long — wraps to ${t.lines} lines (max ${t.maxLines}). Try shortening it.`)
+    } else {
+      setWarning(null)
+    }
+  }
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onBlur={handleBlur}
+        placeholder="Article title"
+      />
+      {warning && <p style={{ color: 'orange' }}>{warning}</p>}
+    </div>
+  )
+}
+```
+
+## Using Validation for Auto Font-Sizing
+
+If you want text to always fit, you can use `/validate` in a binary search over font sizes:
+
+```typescript
+async function findMaxFontSize(title: string, format: string): Promise<number> {
+  let lo = 28, hi = 72
+
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2)
+    const res = await fetch('https://api.og-engine.com/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format, title, titleSize: mid, maxTitleLines: 3 }),
+    })
+    const { fits } = await res.json()
+    if (fits) lo = mid
+    else hi = mid - 1
+  }
+
+  return lo
+}
+```
+
+Because `/validate` is free and ultra-fast (~0.1–0.3ms), you can run 5–6 iterations without worrying about cost or latency.
+
+## Try It Live
+
+<PlaygroundContextual client:visible panels={['content', 'format']} />
+
+## Next Steps
+
+- Read the [POST /validate API Reference](/api-reference/validate/) for the full field list and response schema
+- Learn how to [Generate Images](/guides/generating-images/) after validation confirms your text fits
+- Understand [Error Handling](/guides/error-handling/) for validation error codes

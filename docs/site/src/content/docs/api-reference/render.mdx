@@ -1,0 +1,127 @@
+---
+title: POST /render
+description: Generate a single image from a JSON payload. Returns binary PNG or WebP.
+---
+
+import PlaygroundContextual from '../../../components/PlaygroundContextual';
+
+Renders a single image from a structured JSON payload. Returns the binary image bytes directly — not a URL to an image.
+
+```
+POST https://api.og-engine.com/render
+```
+
+**Authentication:** Required (`Authorization: Bearer oge_sk_...`)
+
+## Request Body
+
+| Field | Type | Required | Default | Constraints |
+|---|---|---|---|---|
+| `format` | string | Yes | — | `og`, `twitter`, `square`, `linkedin`, `story` |
+| `template` | string | No | `"default"` | `default`, `social-card`, `blog-hero`, `email-banner` |
+| `title` | string | Yes | — | Max 200 characters |
+| `description` | string | No | — | Max 500 characters |
+| `author` | string | No | — | Max 100 characters |
+| `tag` | string | No | — | Max 50 characters |
+| `style.accent` | string | No | `"#38ef7d"` | Valid hex color (`#rrggbb` or `#rgb`) |
+| `style.font` | string | No | `"Outfit"` | One of the 8 supported fonts |
+| `style.titleSize` | number | No | `48` | 28–72 |
+| `style.descSize` | number | No | `22` | 14–32 |
+| `style.layout` | string | No | `"left"` | `left`, `center`, `bottom` |
+| `style.gradient` | string | No | `"void"` | `void`, `deep-sea`, `ember`, `forest`, `plum`, `slate` |
+| `style.overlayOpacity` | number | No | `0.65` | 0.2–0.9 (used with background image) |
+| `output.format` | string | No | `"png"` | `png`, `webp` (Starter+ plans only) |
+| `output.quality` | number | No | `90` | 1–100 (WebP only) |
+
+## Example Request
+
+```bash
+curl -X POST https://api.og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "default",
+    "title": "Server-Side Text Layout Without a Browser",
+    "description": "Pure JS text measurement replaces Puppeteer. Sub-5ms renders, zero browser dependencies.",
+    "author": "Pretext Engine",
+    "tag": "Open Source",
+    "style": {
+      "accent": "#38ef7d",
+      "font": "Outfit",
+      "titleSize": 48,
+      "descSize": 22,
+      "layout": "left",
+      "gradient": "void"
+    },
+    "output": {
+      "format": "png"
+    }
+  }' \
+  --output card.png
+```
+
+## With Background Image
+
+To supply a background image, use `multipart/form-data`. The JSON payload goes in a field named `config`, the image in `image`:
+
+```bash
+curl -X POST https://api.og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -F 'config={
+    "format": "og",
+    "template": "blog-hero",
+    "title": "Building in the Open",
+    "style": { "overlayOpacity": 0.65 }
+  }' \
+  -F 'image=@cover.jpg' \
+  --output card.png
+```
+
+Accepted image formats: JPEG, PNG, WebP. Maximum size: 5MB.
+
+## Response
+
+On success, the response body is the raw binary image. The HTTP status is `200`.
+
+### Response Headers
+
+| Header | Example | Description |
+|---|---|---|
+| `Content-Type` | `image/png` | MIME type of the output image |
+| `X-Render-Time-Ms` | `2.34` | Server-side render time in milliseconds |
+| `X-Title-Lines` | `2` | Number of lines the title was wrapped to |
+| `X-Desc-Lines` | `3` | Number of lines the description was wrapped to |
+| `X-Layout-Overflow` | `false` | `true` if any text was truncated with ellipsis |
+| `X-RateLimit-Limit` | `500` | Monthly render quota |
+| `X-RateLimit-Remaining` | `483` | Renders remaining this month |
+| `X-RateLimit-Reset` | `1735689600` | Unix timestamp (seconds) of next quota reset |
+
+### Overflow Handling
+
+If your title or description is too long to fit within the max lines for the chosen format, OG Engine truncates the last visible line and appends `…`. The response header `X-Layout-Overflow: true` signals this occurred.
+
+To prevent truncation, use `/validate` before rendering to check fit, and adjust font size or shorten the text accordingly.
+
+## Error Responses
+
+| Status | Code | Cause |
+|---|---|---|
+| 400 | `missing_field` | `format` or `title` not provided |
+| 400 | `invalid_format` | `format` is not one of the allowed values |
+| 400 | `invalid_font` | `style.font` is not a supported font |
+| 400 | `invalid_file` | Background image is too large or corrupt |
+| 401 | `unauthorized` | Missing or invalid API key |
+| 402 | `plan_required` | WebP output requested on Free plan |
+| 429 | `rate_limited` | Monthly quota exceeded |
+| 500 | `server_error` | Internal error |
+
+## Try It Live
+
+<PlaygroundContextual client:visible panels={['content', 'format', 'style']} />
+
+## Next Steps
+
+- [POST /validate](/api-reference/validate/) — check if text fits before rendering
+- [POST /render/batch](/api-reference/batch/) — render multiple images in one request
+- [Error Reference](/api-reference/errors/) — complete error code documentation
