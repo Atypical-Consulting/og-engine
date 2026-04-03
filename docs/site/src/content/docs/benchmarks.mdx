@@ -1,0 +1,81 @@
+---
+title: Benchmarks
+description: Reproducible performance benchmarks for OG Engine vs Puppeteer. Run them yourself.
+---
+
+Every performance number on this site comes from a reproducible benchmark you can run on your own hardware.
+
+## Latest Results
+
+> Measured on Apple M2, 24 GB RAM, macOS. Your numbers will vary by hardware. Run `bun run bench:full` to measure on your own machine.
+
+### OG Engine — Phase Breakdown
+
+| Scenario | Text Measure (P50) | Canvas Draw (P50) | PNG Encode (P50) | Full Pipeline (P50) | Full Pipeline (P95) |
+|---|---|---|---|---|---|
+| Baseline (og, 1 line, Outfit) | 114µs | 50µs | 21.39ms | **21.57ms** | 22.79ms |
+| Long text (og, overflow, Outfit) | 390µs | 78µs | 24.34ms | **24.83ms** | 26.41ms |
+| Story format (1080x1920, Outfit) | 426µs | 98µs | 59.37ms | **59.96ms** | 65.02ms |
+| CJK (og, Noto Sans JP) | 126µs | 79µs | 24.12ms | **24.34ms** | 26.92ms |
+
+PNG encoding dominates render time. The actual text layout and compositing — the part that replaces Puppeteer's browser engine — takes **under 0.5ms** for all scenarios.
+
+### Puppeteer Baseline
+
+| Scenario | Warm P50 | Warm P95 | Cold P50 | Cold P95 |
+|---|---|---|---|---|
+| Baseline (og, 1 line, Outfit) | **128.75ms** | 165.98ms | 657.55ms | 837.24ms |
+| Long text (og, overflow, Outfit) | **132.14ms** | 153.42ms | 634.03ms | 788.19ms |
+
+**Warm** = browser reused between renders (best case for Puppeteer, typical for long-running servers).
+**Cold** = fresh browser launch per render (realistic for serverless / Lambda / edge functions).
+
+### Speedup Comparison
+
+| Scenario | OG Engine (P50) | Puppeteer Warm (P50) | Speedup |
+|---|---|---|---|
+| Baseline | **21.57ms** | 128.75ms | **6x** |
+| Long text | **24.83ms** | 132.14ms | **5x** |
+
+Against cold-start Puppeteer (serverless deployments), the speedup is **30x**.
+
+## Where the Time Goes
+
+| Phase | What it does | Typical time |
+|-------|-------------|-------------|
+| **Text measurement** | Word-wrap computation for title + description | ~0.1ms |
+| **Canvas draw** | Gradient, grid, glow, text, decorations composited onto Canvas | ~0.05ms |
+| **PNG encode** | Canvas buffer encoded to PNG binary | ~21ms |
+| **Full pipeline** | All three (= API response time) | ~22ms |
+
+The speed advantage over Puppeteer comes from architecture, not just raw encoding speed:
+- **No browser launch** — zero cold start overhead
+- **No DOM/CSS** — text layout computed mathematically, not via Blink
+- **No Xvfb** — no headless display server required
+- **10MB vs 200-500MB** — per-render memory footprint
+- **500+ concurrent renders** — single Node.js process vs 5-10 Chrome instances
+
+## Methodology
+
+- **OG Engine:** 1000 iterations per scenario, 50 warmup discarded
+- **Puppeteer warm:** 50 iterations, browser reused, 5 warmup
+- **Puppeteer cold:** 10 iterations, fresh browser per render
+- All times measured with `performance.now()`
+- P50 (median) used for all headline numbers
+- Machine info captured in every report
+
+## Run It Yourself
+
+```bash
+git clone https://github.com/phmatray/og-engine
+cd og-engine
+bun install
+bun run fonts:download
+bun run bench:full
+```
+
+Results are saved to `benchmarks/results/`. The markdown report is human-readable; the JSON contains every individual timing for your own analysis.
+
+## Source
+
+The benchmark code is in the [`benchmarks/`](https://github.com/phmatray/og-engine/tree/main/benchmarks) directory.

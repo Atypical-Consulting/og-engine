@@ -168,6 +168,7 @@ export default defineConfig({
         { label: 'Templates Gallery', link: '/templates/gallery/' },
         { label: 'Available Fonts', link: '/fonts/available-fonts/' },
         { label: 'Playground', link: '/playground/' },
+        { label: 'Benchmarks', link: '/benchmarks/' },
         {
           label: 'Compare',
           items: [
