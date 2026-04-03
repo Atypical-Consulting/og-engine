@@ -1,6 +1,6 @@
 ---
-title: OG Engine
-description: Generate images in 2ms. No browser required.
+title: OG Engine — Server-Side Image Generation API
+description: Generate OG images, social cards, and email banners in 2ms. 500x faster than Puppeteer — no Chrome, no Xvfb, no cold starts. Free tier available.
 template: splash
 hero:
   tagline: "Send JSON. Get a PNG. 500x faster than Puppeteer — no Chrome, no Xvfb, no cold starts. Just pixels."
@@ -11,6 +11,65 @@ hero:
     - text: Playground
       link: /playground/
       variant: minimal
+head:
+  - tag: script
+    attrs:
+      type: application/ld+json
+    content: |
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How is OG Engine so fast?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "OG Engine uses Pretext for text measurement — the same Unicode segmentation engine, running server-side with Canvas. No browser startup, no DOM layout, no paint cycle. Just math and pixels. Typical render time is 2ms."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does OG Engine handle non-Latin scripts like CJK and Arabic?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Pretext handles CJK (Chinese, Japanese, Korean), Arabic (with bidirectional text), emoji, grapheme clusters, and mixed-script content. Pre-loaded fonts include Noto Sans JP and Noto Sans AR."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I validate text without generating an image?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. POST /validate checks if your text fits a layout — free, unlimited, no authentication required. Use it to catch overflow before rendering."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is there a free plan for OG Engine?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. 500 renders/month, forever. No credit card, no expiration. Same engine, same speed, same quality as paid plans."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I self-host OG Engine?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. OG Engine ships as an open-source Docker image. Run it on your own infrastructure with zero per-render cost."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What about custom templates?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Scale plan (€99/mo) supports custom JSON templates. All plans get 4 built-in templates. A visual template builder is on the roadmap."
+            }
+          }
+        ]
+      }
 ---
 
 import PlaygroundMini from '../../components/PlaygroundMini';

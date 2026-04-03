@@ -1,6 +1,57 @@
 ---
-title: Pricing
-description: Four plans from free to scale. All include the core rendering engine, every font, every format, and every template.
+title: Pricing & Plans
+description: OG Engine pricing from free (500 renders/month) to Scale (200k renders/month). All plans include the same engine, fonts, formats, and templates.
+head:
+  - tag: script
+    attrs:
+      type: application/ld+json
+    content: |
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Can I upgrade my OG Engine plan mid-cycle?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. You immediately get the higher quota and new features. Billing is prorated — you only pay for the remaining days."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does unused OG Engine quota roll over?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Quotas reset to zero each billing cycle (paid plans) or on the 1st of each month (Free plan)."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens when I exceed my OG Engine quota?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Render requests return 429 rate_limited. The /validate endpoint stays available. Upgrade anytime to restore capacity immediately."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use the OG Engine Free plan forever?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. 500 renders/month, no expiration, no feature degradation. Perfect for personal projects and evaluation."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do batch items count individually toward the render quota?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. A 50-item batch consumes 50 renders. If only 30 remain, 30 succeed and 20 return rate_limited in errors.json."
+            }
+          }
+        ]
+      }
 ---
 
 All plans share the same engine — same speed, same quality, same fonts, same formats. Pick the quota that fits.
