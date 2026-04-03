@@ -1,37 +1,106 @@
 ---
-title: Pricing & Limits
-description: Plans, monthly render quotas, feature availability, and frequently asked questions about billing.
+title: Pricing
+description: Four plans from free to scale. All include the core rendering engine, every font, every format, and every template.
 ---
 
-OG Engine offers four plans designed to scale from side projects to enterprise-grade generation pipelines. All plans include the core rendering engine, all 8 fonts, all 5 formats, and all 4 templates.
+All plans share the same engine — same speed, same quality, same fonts, same formats. Pick the quota that fits.
 
-## Plans
+<div class="pricing-grid">
 
-| | Free | Starter | Pro | Scale |
-|---|---|---|---|---|
-| **Price** | $0 / mo | $10 / mo | $39 / mo | $99 / mo |
-| **Monthly renders** | 500 | 10,000 | 50,000 | 200,000 |
-| **PNG output** | Yes | Yes | Yes | Yes |
-| **WebP output** | No | Yes | Yes | Yes |
-| **Batch rendering** | No | No | Yes | Yes |
-| **CDN caching** | No | No | Yes | Yes |
-| **Dedicated infrastructure** | No | No | No | Yes |
-| **Support** | Community | Email | Priority email | Dedicated Slack |
+<div class="pricing-card">
+  <div class="pricing-tier">Free</div>
+  <div class="pricing-price"><span class="currency">€</span>0<span class="period"> / mo</span></div>
+  <div class="pricing-renders">500 renders / month</div>
+  <div class="pricing-meter"><div class="pricing-meter-fill" style="width: 2.5%"></div></div>
+  <ul class="pricing-features">
+    <li>PNG output</li>
+    <li>All 8 fonts</li>
+    <li>All 5 formats</li>
+    <li>All 4 templates</li>
+    <li>/validate — unlimited</li>
+    <li class="excluded">WebP output</li>
+    <li class="excluded">Batch rendering</li>
+    <li class="excluded">CDN caching</li>
+  </ul>
+  <a href="/quick-start/" class="pricing-cta cta-outline">Start Free</a>
+</div>
+
+<div class="pricing-card">
+  <div class="pricing-tier">Starter</div>
+  <div class="pricing-price"><span class="currency">€</span>10<span class="period"> / mo</span></div>
+  <div class="pricing-renders">10,000 renders / month</div>
+  <div class="pricing-meter"><div class="pricing-meter-fill" style="width: 15%"></div></div>
+  <ul class="pricing-features">
+    <li>PNG + WebP output</li>
+    <li>All 8 fonts</li>
+    <li>All 5 formats</li>
+    <li>All 4 templates</li>
+    <li>/validate — unlimited</li>
+    <li>Email support</li>
+    <li class="excluded">Batch rendering</li>
+    <li class="excluded">CDN caching</li>
+  </ul>
+  <a href="https://buy.stripe.com/starter" class="pricing-cta cta-outline">Get Started</a>
+</div>
+
+<div class="pricing-card featured">
+  <div class="pricing-badge">Most Popular</div>
+  <div class="pricing-tier">Pro</div>
+  <div class="pricing-price"><span class="currency">€</span>39<span class="period"> / mo</span></div>
+  <div class="pricing-renders">50,000 renders / month</div>
+  <div class="pricing-meter"><div class="pricing-meter-fill" style="width: 50%"></div></div>
+  <ul class="pricing-features">
+    <li>PNG + WebP output</li>
+    <li>All 8 fonts</li>
+    <li>All 5 formats</li>
+    <li>All 4 templates</li>
+    <li>/validate — unlimited</li>
+    <li>Batch rendering</li>
+    <li>CDN caching</li>
+    <li>Priority email support</li>
+  </ul>
+  <a href="https://buy.stripe.com/pro" class="pricing-cta cta-primary">Start Pro</a>
+</div>
+
+<div class="pricing-card">
+  <div class="pricing-tier">Scale</div>
+  <div class="pricing-price"><span class="currency">€</span>99<span class="period"> / mo</span></div>
+  <div class="pricing-renders">200,000 renders / month</div>
+  <div class="pricing-meter"><div class="pricing-meter-fill" style="width: 100%"></div></div>
+  <ul class="pricing-features">
+    <li>PNG + WebP output</li>
+    <li>All 8 fonts</li>
+    <li>All 5 formats</li>
+    <li>All 4 templates</li>
+    <li>/validate — unlimited</li>
+    <li>Batch rendering</li>
+    <li>CDN caching</li>
+    <li>Custom JSON templates</li>
+    <li>Dedicated infrastructure</li>
+    <li>Dedicated Slack support</li>
+  </ul>
+  <a href="mailto:sales@og-engine.com" class="pricing-cta cta-outline">Contact Sales</a>
+</div>
+
+</div>
+
+> Need more than 200k renders? [Contact sales@og-engine.com](mailto:sales@og-engine.com) for volume pricing with SLA guarantees, dedicated IPs, and custom domains.
+
+---
 
 ## What Counts as a Render
 
-A render is counted each time a successful image is generated:
-- Each successful call to `POST /render` = 1 render
-- Each successfully rendered item in a `POST /render/batch` call = 1 render
-- Failed renders (4xx errors) = 0 renders consumed
-- `/validate` calls = 0 renders (always free and unlimited)
-- `/health` calls = 0 renders
+- `POST /render` = **1 render**
+- Each item in `POST /render/batch` = **1 render**
+- Failed requests (4xx) = **0 renders**
+- `/validate` = **always free**, unlimited, on every plan
+- `/health` = **0 renders**
 
 ## Rate Limiting
 
-Monthly quotas reset on the first day of each calendar month at 00:00 UTC. There are no per-second or per-minute rate limits — you can burst your entire monthly quota in minutes if needed.
+Paid plan quotas reset each billing cycle (the anniversary of your signup date). Free plan quotas reset on the 1st of each month at 00:00 UTC. No per-second or per-minute caps — burst your entire quota in minutes if you need to.
 
-Rate limiting headers are included on every authenticated response:
+Every authenticated response includes:
 
 ```
 X-RateLimit-Limit: 500
@@ -39,48 +108,42 @@ X-RateLimit-Remaining: 347
 X-RateLimit-Reset: 1735689600
 ```
 
-When `X-RateLimit-Remaining` reaches `0`, subsequent render requests return a `429 rate_limited` error until the quota resets.
+When `Remaining` hits `0`, render requests return `429 rate_limited` until the quota resets. `/validate` is never rate-limited.
 
-## Scale Beyond 200,000 Renders
+---
 
-If your application exceeds 200,000 renders per month, contact sales@og-engine.com for custom pricing. Enterprise plans include SLA guarantees, dedicated IP addresses, custom domain support, and volume discounts.
+<div class="pricing-faq">
 
-## Frequently Asked Questions
+## FAQ
 
 ### Can I upgrade mid-cycle?
 
-Yes. When you upgrade your plan, you immediately gain access to the higher quota and new features. Your billing is prorated for the remainder of the month — you only pay for the days on the new plan.
+Yes. You immediately get the higher quota and new features. Billing is prorated — you only pay for the remaining days.
 
 ### Does unused quota roll over?
 
-No. Monthly quotas reset to zero on the first of each month regardless of usage. Unused renders do not carry forward to the next month.
+No. Quotas reset to zero each billing cycle (paid plans) or on the 1st of each month (Free plan).
 
-### What happens if I exceed my quota?
+### What happens when I exceed my quota?
 
-Render requests return a `429 rate_limited` error for the rest of the month. `/validate` remains available — it is never rate limited. You can upgrade your plan at any time to immediately restore render capacity.
+Render requests return `429 rate_limited`. `/validate` stays available. Upgrade anytime to restore capacity immediately.
 
 ### Can I downgrade?
 
-Yes. Downgrades take effect at the start of the next billing cycle. You keep your current plan's features until the cycle ends. If your usage on the new plan's quota would be exceeded, renders above the new limit will fail once the downgrade takes effect.
+Yes. Downgrades apply at the start of the next billing cycle. You keep current features until then.
 
 ### Do batch items count individually?
 
-Yes. In a 50-item batch request, 50 renders are consumed from your quota. If you only have 30 renders remaining, the batch will partially succeed (30 items render, 20 fail with a `rate_limited` error in `errors.json`).
+Yes. A 50-item batch consumes 50 renders. If only 30 remain, 30 succeed and 20 return `rate_limited` in `errors.json`.
 
-### Is there a free trial for paid features?
+### Can I use the Free plan forever?
 
-Yes. New accounts on any paid plan get a 14-day trial that includes all features of the plan without charge. No credit card is required to start the trial.
+Yes. 500 renders/month, no expiration, no feature degradation. Perfect for personal projects and evaluation.
 
-### Can I use OG Engine for free forever?
+</div>
 
-Yes. The Free plan has no expiration. 500 renders per month is sufficient for low-traffic sites, personal projects, and evaluation. There is no time limit or feature degradation on the Free plan.
+---
 
 ## Self-Hosting
 
-If you prefer not to use the managed service, OG Engine is available as an open-source Docker image. Self-hosting has no per-render cost — you pay only for your own compute. See [Self-Hosting with Docker](/self-hosting/docker/) for instructions.
-
-## Next Steps
-
-- [Quick Start](/quick-start/) — get your free API key
-- [Self-Hosting](/self-hosting/docker/) — run OG Engine on your own infrastructure
-- [Batch Rendering](/guides/batch-rendering/) — bulk generation for Pro and Scale plans
+Prefer to run your own infrastructure? OG Engine is available as an open-source Docker image with **no per-render cost**. See [Self-Hosting with Docker](/self-hosting/docker/).
