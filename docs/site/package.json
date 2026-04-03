@@ -21,6 +21,6 @@
   },
   "overrides": {
     "zod": "^4.0.0",
-    "@astrojs/sitemap": "3.7.2" origin/renovate/astro-monorepo
+    "@astrojs/sitemap": "3.7.2"
   }
 }
