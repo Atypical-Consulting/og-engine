@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import './playground.css';
 import { renderCard } from './engine/canvas-renderer';
 import { GRADIENTS } from './engine/gradients';
 import { FONTS, loadGoogleFont } from './engine/fonts';
