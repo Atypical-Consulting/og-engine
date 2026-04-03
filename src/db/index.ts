@@ -124,7 +124,7 @@ export function createApiKey(email: string, plan: Plan = 'free'): ApiKeyRecord {
 
   d.prepare(`
     INSERT INTO api_keys (id, key, email, stripe_customer_id, stripe_subscription_id, plan, calls_limit, calls_used, period_start, created_at, active)
-    VALUES (@id, @key, @email, @stripe_customer_id, @stripe_subscription_id, @plan, @calls_limit, @calls_used, @period_start, @created_at, @active)
+    VALUES ($id, $key, $email, $stripe_customer_id, $stripe_subscription_id, $plan, $calls_limit, $calls_used, $period_start, $created_at, $active)
   `).run(record);
 
   return record;
@@ -236,7 +236,7 @@ export function createCustomTemplate(apiKeyId: string, name: string, definition:
 
   d.prepare(`
     INSERT INTO custom_templates (id, api_key_id, name, definition, created_at, updated_at)
-    VALUES (@id, @api_key_id, @name, @definition, @created_at, @updated_at)
+    VALUES ($id, $api_key_id, $name, $definition, $created_at, $updated_at)
   `).run(record);
 
   return record;
@@ -298,7 +298,7 @@ export function createWebhook(apiKeyId: string, url: string, renderConfig: objec
 
   d.prepare(`
     INSERT INTO webhooks (id, api_key_id, url, render_config, secret, active, created_at)
-    VALUES (@id, @api_key_id, @url, @render_config, @secret, @active, @created_at)
+    VALUES ($id, $api_key_id, $url, $render_config, $secret, $active, $created_at)
   `).run(record);
 
   return record;
