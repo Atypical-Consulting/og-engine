@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import './playground.css';
 import { renderCard, type RenderResult } from './engine/canvas-renderer';
 import { GRADIENTS, type Gradient } from './engine/gradients';
 import { FONTS, loadGoogleFont, type FontEntry } from './engine/fonts';
@@ -7,6 +8,8 @@ import { FORMATS } from './engine/formats';
 import { FormatSelector } from './ui/FormatSelector';
 import { AccentPicker, FontPicker, LayoutPicker, GradientPicker, Slider } from './ui/StyleControls';
 import { TemplateSelector } from './ui/TemplateSelector';
+import { Section } from './ui/Section';
+import { RenderHUD } from './ui/RenderHUD';
 
 interface Props {
   panels?: Array<'content' | 'format' | 'style' | 'template'>;
@@ -59,31 +62,36 @@ export default function PlaygroundContextual({
   };
   return (
     <div style={{ marginTop: 16, marginBottom: 16 }}>
-      <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 12 }}>
+      <div className="pg-canvas-wrapper" style={{ marginBottom: 12, border: `1px solid ${accent}15` }}>
         <canvas ref={canvasRef} style={{ width: '100%', display: 'block', aspectRatio: `${fmt.w}/${fmt.h}` }} />
+        <RenderHUD renderTime={renderTime} info={info} accent={accent} />
       </div>
-      <div style={{ fontSize: 10, color: '#475569', marginBottom: 12 }}>
-        Rendered in <span style={{ color: accent }}>{renderTime.toFixed(1)}ms</span>
-        {info && <> &middot; Title: {info.titleVisibleLines}/{info.titleTotalLines} lines {info.overflow && <span style={{ color: '#fb7185' }}>(overflow)</span>}</>}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {panels.includes('format') && <FormatSelector value={format} onChange={setFormat} accent={accent} />}
-        {panels.includes('template') && <TemplateSelector value={template} onChange={setTemplate} accent={accent} />}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {panels.includes('format') && (
+          <Section title="Format" defaultOpen={true}>
+            <FormatSelector value={format} onChange={setFormat} accent={accent} />
+          </Section>
+        )}
+        {panels.includes('template') && (
+          <Section title="Template" defaultOpen={true}>
+            <TemplateSelector value={template} onChange={setTemplate} accent={accent} />
+          </Section>
+        )}
         {panels.includes('content') && (
-          <>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" style={inputStyle} />
-            <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" style={inputStyle} />
-          </>
+          <Section title="Content" defaultOpen={true}>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="pg-input" style={inputStyle} />
+            <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" className="pg-input" style={inputStyle} />
+          </Section>
         )}
         {panels.includes('style') && (
-          <>
+          <Section title="Style" defaultOpen={true}>
             <AccentPicker value={accent} onChange={setAccent} />
             <FontPicker value={fontEntry} onChange={setFontEntry} accent={accent} />
             <LayoutPicker value={layout} onChange={setLayout} accent={accent} />
             <GradientPicker value={gradient} onChange={setGradient} accent={accent} />
             <Slider label="Title size" value={titleSize} onChange={setTitleSize} min={28} max={72} accent={accent} />
             <Slider label="Description size" value={descSize} onChange={setDescSize} min={14} max={32} accent={accent} />
-          </>
+          </Section>
         )}
       </div>
     </div>
