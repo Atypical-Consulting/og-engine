@@ -1,0 +1,59 @@
+/* docs/site/src/styles/custom.css */
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* Force dark mode only */
+:root {
+  color-scheme: dark;
+}
+
+/* Accent color: #38ef7d green */
+:root,
+[data-theme='dark'] {
+  --sl-color-accent-low: #0d3320;
+  --sl-color-accent: #38ef7d;
+  --sl-color-accent-high: #a8f5c8;
+
+  --sl-color-bg-nav: #06080c;
+  --sl-color-bg: #080a10;
+  --sl-color-bg-sidebar: #06080c;
+
+  --sl-color-white: #f1f5f9;
+  --sl-color-gray-1: #e2e8f0;
+  --sl-color-gray-2: #94a3b8;
+  --sl-color-gray-3: #475569;
+  --sl-color-gray-4: #1e293b;
+  --sl-color-gray-5: #0f172a;
+  --sl-color-gray-6: #06080c;
+  --sl-color-black: #020205;
+
+  --sl-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sl-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --sl-content-width: 55rem;
+}
+
+/* Hide light mode toggle */
+starlight-theme-select {
+  display: none;
+}
+
+/* Code blocks - void gradient background */
+pre:has(code) {
+  background: #0c0f1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Sidebar active item glow */
+nav[aria-label='Main'] a[aria-current='page'] {
+  box-shadow: inset 2px 0 0 #38ef7d;
+}
+
+/* Links */
+a:not([class]) {
+  color: #38ef7d;
+}
+a:not([class]):hover {
+  color: #a8f5c8;
+}
