@@ -28,6 +28,9 @@ export default defineConfig({
             { label: 'Text Validation', link: '/guides/text-validation/' },
             { label: 'Batch Rendering', link: '/guides/batch-rendering/' },
             { label: 'Error Handling', link: '/guides/error-handling/' },
+            { label: 'Next.js Integration', link: '/guides/nextjs/' },
+            { label: 'Astro Integration', link: '/guides/astro/' },
+            { label: 'Cloudflare Workers', link: '/guides/cloudflare-workers/' },
           ],
         },
         {
@@ -50,9 +53,9 @@ export default defineConfig({
             { label: 'Reference', link: '/sdk/reference/' },
           ],
         },
+        { label: 'Self-Hosting (Docker)', link: '/self-hosting/docker/' },
         { label: 'Templates Gallery', link: '/templates/gallery/' },
         { label: 'Available Fonts', link: '/fonts/available-fonts/' },
-        { label: 'Self-Hosting (Docker)', link: '/self-hosting/docker/' },
         { label: 'Playground', link: '/playground/' },
         {
           label: 'Compare',
@@ -62,6 +65,15 @@ export default defineConfig({
         },
         { label: 'Pricing & Limits', link: '/pricing/' },
         { label: 'Changelog', link: '/changelog/' },
+        {
+          label: 'Blog',
+          items: [
+            { label: 'All Posts', link: '/blog/' },
+            { label: 'Why We Built OG Engine', link: '/blog/why-we-built-og-engine/' },
+            { label: 'How Pretext Measures Text', link: '/blog/how-pretext-measures-text/' },
+            { label: 'Multilingual OG Images', link: '/blog/multilingual-og-images/' },
+          ],
+        },
       ],
     }),
     react(),
