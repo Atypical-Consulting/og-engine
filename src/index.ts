@@ -65,6 +65,22 @@ if (authEnabled) {
   app.use('/triggers/*', authMiddleware());
 }
 
+// ─── Root ───────────────────────────────────────────────────
+app.get('/', (c) =>
+  c.json({
+    name: 'OG Engine',
+    tagline: 'Server-side image generation API — no headless browser required.',
+    version: '0.1.0',
+    docs: 'https://og-engine.com/api-reference/overview',
+    endpoints: {
+      'POST /render': 'Generate an image from text + configuration',
+      'POST /render/batch': 'Generate multiple images in one request',
+      'POST /validate': 'Check if text fits a layout without rendering',
+      'GET /health': 'Service health and available fonts/templates',
+    },
+  }),
+);
+
 // ─── Public routes ───────────────────────────────────────────
 app.route('/', healthRoute);
 app.route('/', registerRoute);
