@@ -7,7 +7,7 @@
     "start": "bun run src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bench": "bun run tests/benchmark.ts",
+    "bench": "bun run benchmarks/run.ts",
     "fonts:download": "bun run scripts/download-fonts.ts",
     "bench:full": "bun run benchmarks/run-full.ts"
   },
