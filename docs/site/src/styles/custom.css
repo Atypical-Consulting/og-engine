@@ -655,3 +655,219 @@ header.header {
     display: none;
   }
 }
+
+/* ─── How It Works Section ─── */
+.how-it-works {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+
+@media (max-width: 768px) {
+  .how-it-works {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .how-it-works {
+    grid-template-columns: 1fr;
+  }
+}
+
+.how-it-works .step {
+  border: 1px solid var(--og-border);
+  background: var(--og-surface);
+  border-radius: 6px;
+  padding: 1.25rem;
+  transition: border-color 0.2s ease;
+}
+
+.how-it-works .step:hover {
+  border-color: var(--og-glow-medium);
+}
+
+.how-it-works .step-number {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--og-glow);
+  opacity: 0.5;
+  margin-bottom: 0.5rem;
+}
+
+.how-it-works .step h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+  color: var(--sl-color-white);
+}
+
+.how-it-works .step p {
+  font-size: 0.82rem;
+  color: var(--sl-color-gray-2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ─── Home FAQ Section ─── */
+.home-faq h3 {
+  font-size: 1rem;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: var(--sl-color-white);
+}
+
+.home-faq p {
+  color: var(--sl-color-gray-1);
+  font-size: 0.9rem;
+}
+
+/* ─── Use Cases Section ─── */
+.use-cases {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+
+@media (max-width: 520px) {
+  .use-cases {
+    grid-template-columns: 1fr;
+  }
+}
+
+.use-case {
+  border: 1px solid var(--og-border);
+  background: var(--og-surface);
+  border-radius: 6px;
+  padding: 1.5rem;
+  transition: border-color 0.2s ease;
+}
+
+.use-case:hover {
+  border-color: var(--og-glow-medium);
+}
+
+.use-case-icon {
+  font-family: var(--sl-font-mono);
+  font-size: 1.25rem;
+  color: var(--og-glow);
+  opacity: 0.6;
+  margin-bottom: 0.75rem;
+}
+
+.use-case h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+  color: var(--sl-color-white);
+}
+
+.use-case p {
+  font-size: 0.85rem;
+  color: var(--sl-color-gray-2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ─── Validate Callout ─── */
+.validate-callout {
+  border: 1px solid var(--og-glow);
+  background: linear-gradient(135deg, rgba(56, 239, 125, 0.06) 0%, rgba(5, 8, 16, 0.95) 100%);
+  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.validate-callout p {
+  margin: 0;
+  color: var(--sl-color-gray-1);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.validate-callout a {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* ─── Trust Bar ─── */
+.trust-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: -0.5rem 0 2.5rem;
+  flex-wrap: wrap;
+}
+
+.trust-item {
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+  color: var(--og-muted-text);
+}
+
+.trust-item a {
+  color: var(--sl-color-gray-2) !important;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.trust-item a:hover {
+  color: var(--og-glow) !important;
+}
+
+.trust-separator {
+  color: var(--sl-color-gray-3);
+  font-family: var(--sl-font-mono);
+  font-size: 0.7rem;
+}
+
+/* ─── Open Source Callout ─── */
+.oss-callout {
+  border: 1px solid var(--og-border);
+  background: var(--og-surface);
+  border-radius: 6px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.oss-callout h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.25rem;
+  margin-top: 0;
+}
+
+.oss-callout p {
+  color: var(--sl-color-gray-1);
+  max-width: 36rem;
+  margin: 0.5rem auto 1.5rem;
+  font-size: 0.9rem;
+}
+
+.oss-actions {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.oss-link {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  color: var(--og-glow) !important;
+  text-decoration: none;
+  transition: text-shadow 0.2s ease;
+}
+
+.oss-link:hover {
+  text-shadow: 0 0 8px rgba(56, 239, 125, 0.5);
+}

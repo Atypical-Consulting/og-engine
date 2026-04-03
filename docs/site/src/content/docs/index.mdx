@@ -15,6 +15,16 @@ hero:
 
 import PlaygroundMini from '../../components/PlaygroundMini';
 
+<div class="trust-bar">
+  <div class="trust-item">
+    <a href="https://github.com/phmatray/og-engine">Open Source on GitHub</a>
+  </div>
+  <div class="trust-separator">/</div>
+  <div class="trust-item">Built in Belgium by <a href="https://atypical.consulting">Atypical Consulting</a></div>
+  <div class="trust-separator">/</div>
+  <div class="trust-item">Powered by <a href="https://github.com/chenglou/pretext">Pretext</a></div>
+</div>
+
 ## Benchmarks
 
 | | Puppeteer | OG Engine | Delta |
@@ -25,6 +35,64 @@ import PlaygroundMini from '../../components/PlaygroundMini';
 | **Cold start** | ~2-5s | **~50ms** | 100x |
 | **Infrastructure** | Chrome + Xvfb + sandbox | **Node.js** | — |
 | **i18n** | Full browser | **CJK, Arabic, emoji** | Parity |
+
+## How It Works
+
+<div class="how-it-works">
+<div class="step">
+<div class="step-number">1</div>
+<div class="step-content">
+<h3>Send JSON</h3>
+<p>POST your title, description, format, and style to <code>/render</code>.</p>
+</div>
+</div>
+<div class="step">
+<div class="step-number">2</div>
+<div class="step-content">
+<h3>Text Layout</h3>
+<p>Pretext measures every glyph — CJK, Arabic, emoji — and computes line breaks in microseconds.</p>
+</div>
+</div>
+<div class="step">
+<div class="step-number">3</div>
+<div class="step-content">
+<h3>Canvas Render</h3>
+<p>Background, gradients, text, and decorations are composited directly onto a Canvas. No DOM, no browser.</p>
+</div>
+</div>
+<div class="step">
+<div class="step-number">4</div>
+<div class="step-content">
+<h3>Get Your Image</h3>
+<p>PNG or WebP binary in the response. Typical render: 2ms. Headers tell you line count and overflow status.</p>
+</div>
+</div>
+</div>
+
+## Who Uses OG Engine
+
+<div class="use-cases">
+<div class="use-case">
+<div class="use-case-icon">{ }</div>
+<h3>Blog Platforms</h3>
+<p>Auto-generate unique OG images for every post. No design tool, no template editor — just your title and brand colors.</p>
+</div>
+<div class="use-case">
+<div class="use-case-icon">~></div>
+<h3>SaaS Products</h3>
+<p>Dynamic social cards when users share dashboards, reports, or public pages. Render on demand, cache at the edge.</p>
+</div>
+<div class="use-case">
+<div class="use-case-icon">$</div>
+<h3>E-Commerce</h3>
+<p>Product images with price overlays, sale badges, and localized text — generated at scale for every SKU.</p>
+</div>
+<div class="use-case">
+<div class="use-case-icon">@</div>
+<h3>Email Marketing</h3>
+<p>Personalized banners with recipient name, offer details, or dynamic content. No design bottleneck.</p>
+</div>
+</div>
 
 ## Live Render
 
@@ -42,6 +110,28 @@ curl -X POST https://api.og-engine.com/render \
   --output hello.png
 ```
 
+## Free Text Validation
+
+Check if your text fits — **free, unlimited, no signup required.**
+
+```bash
+curl -X POST https://api.og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{"format": "og", "title": "Will this headline fit in two lines?"}'
+```
+
+```json
+{ "fits": true, "title": { "lines": 1, "maxLines": 3, "overflow": false }, "computeTimeMs": 0.08 }
+```
+
+<div class="validate-callout">
+
+`POST /validate` is always free. No API key. No rate limits. Use it in your CI pipeline, your CMS, your form validation — anywhere you need to know if text fits before rendering.
+
+[Try it in the Playground →](/playground/)
+
+</div>
+
 ## Formats
 
 | Format | Size | Use |
@@ -51,3 +141,50 @@ curl -X POST https://api.og-engine.com/render \
 | `square` | 1080x1080 | Instagram |
 | `linkedin` | 1200x627 | LinkedIn |
 | `story` | 1080x1920 | Stories |
+
+---
+
+## FAQ
+
+<div class="home-faq">
+
+### How is this so fast?
+
+OG Engine uses [Pretext](https://github.com/chenglou/pretext) for text measurement — the same Unicode segmentation engine, running server-side with Canvas. No browser startup, no DOM layout, no paint cycle. Just math and pixels.
+
+### Does it handle non-Latin scripts?
+
+Yes. Pretext handles CJK (Chinese, Japanese, Korean), Arabic (with bidirectional text), emoji, grapheme clusters, and mixed-script content. Pre-loaded fonts include Noto Sans JP and Noto Sans AR.
+
+### Can I validate text without generating an image?
+
+Yes. `POST /validate` checks if your text fits a layout — free, unlimited, no authentication required. Use it to catch overflow before rendering.
+
+### Is there a free plan?
+
+Yes. 500 renders/month, forever. No credit card, no expiration. Same engine, same speed, same quality as paid plans.
+
+### Can I self-host?
+
+Yes. OG Engine ships as an open-source Docker image. Run it on your own infrastructure with zero per-render cost. See [Self-Hosting](/self-hosting/docker/).
+
+### What about custom templates?
+
+Scale plan (€99/mo) supports custom JSON templates. All plans get 4 built-in templates. A visual template builder is on the roadmap.
+
+</div>
+
+---
+
+<div class="oss-callout">
+
+## Open Source
+
+OG Engine is open source. Run it on your own infrastructure with **zero per-render cost**, or use the hosted API and let us handle scaling, caching, and uptime.
+
+<div class="oss-actions">
+  <a href="https://github.com/phmatray/og-engine" class="oss-link">View on GitHub →</a>
+  <a href="/self-hosting/docker/" class="oss-link">Self-Hosting Guide →</a>
+</div>
+
+</div>
