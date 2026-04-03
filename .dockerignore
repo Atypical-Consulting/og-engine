@@ -3,7 +3,6 @@ node_modules
 tests
 benchmarks
 docs
-scripts
 *.md
 .dockerignore
 Dockerfile
