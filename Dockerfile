@@ -8,6 +8,14 @@ COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile --production --ignore-scripts && \
     bunx node-gyp rebuild --release --directory=node_modules/better-sqlite3
 
+# Build docs site (Astro + Starlight)
+FROM base AS docs
+WORKDIR /app/docs/site
+COPY docs/site/package.json docs/site/bun.lock* ./
+RUN bun install --frozen-lockfile
+COPY docs/site/ ./
+RUN bun run build
+
 # Runner stage — no build tools needed
 FROM base AS runner
 WORKDIR /app
@@ -18,6 +26,9 @@ COPY tsconfig.json ./
 COPY src/ ./src/
 COPY scripts/ ./scripts/
 RUN bun run scripts/download-fonts.ts
+
+# Copy Astro build output
+COPY --from=docs /app/docs/site/dist ./docs-dist
 
 # Create data directory for SQLite
 RUN mkdir -p /data

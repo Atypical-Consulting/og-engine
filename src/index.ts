@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { Hono } from 'hono';
+import { serveStatic } from 'hono/bun';
 import { cors } from 'hono/cors';
 import { batchRoute } from './api/batch';
 import { healthRoute } from './api/health';
@@ -65,22 +66,6 @@ if (authEnabled) {
   app.use('/triggers/*', authMiddleware());
 }
 
-// ─── Root ───────────────────────────────────────────────────
-app.get('/', (c) =>
-  c.json({
-    name: 'OG Engine',
-    tagline: 'Server-side image generation API — no headless browser required.',
-    version: '0.1.0',
-    docs: 'https://og-engine.com/api-reference/overview',
-    endpoints: {
-      'POST /render': 'Generate an image from text + configuration',
-      'POST /render/batch': 'Generate multiple images in one request',
-      'POST /validate': 'Check if text fits a layout without rendering',
-      'GET /health': 'Service health and available fonts/templates',
-    },
-  }),
-);
-
 // ─── Public routes ───────────────────────────────────────────
 app.route('/', healthRoute);
 app.route('/', registerRoute);
@@ -94,8 +79,32 @@ app.route('/', usageRoute);
 app.route('/', templatesRoute);
 app.route('/', triggersRoute);
 
-// 404 fallback
-app.notFound((c) => {
+// ─── Static docs site (Astro build output) ─────────────────
+const DOCS_DIR = join(import.meta.dir, '..', 'docs-dist');
+
+app.use(
+  '*',
+  serveStatic({
+    root: './docs-dist',
+    onFound: (_path, c) => {
+      if (_path.includes('/_astro/')) {
+        c.header('Cache-Control', 'public, immutable, max-age=31536000');
+      } else {
+        c.header('Cache-Control', 'public, max-age=3600');
+      }
+    },
+  }),
+);
+
+// 404 fallback — serve docs 404 page for browsers, JSON for API clients
+app.notFound(async (c) => {
+  const accepts = c.req.header('Accept') ?? '';
+  if (accepts.includes('text/html')) {
+    const notFoundPage = Bun.file(join(DOCS_DIR, '404.html'));
+    if (await notFoundPage.exists()) {
+      return c.html(await notFoundPage.text(), 404);
+    }
+  }
   return c.json(
     {
       error: 'not_found',
