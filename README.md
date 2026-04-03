@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/render_time-~23ms-00d084?style=for-the-badge" alt="Render Time ~23ms" />
+  <img src="https://img.shields.io/badge/render_time-~22ms-00d084?style=for-the-badge" alt="Render Time ~22ms" />
   <img src="https://img.shields.io/badge/memory-10MB_per_render-blue?style=for-the-badge" alt="Memory 10MB" />
   <img src="https://img.shields.io/badge/zero-browser_deps-purple?style=for-the-badge" alt="Zero Browser Dependencies" />
 </p>
@@ -28,13 +28,13 @@
 
 ## Why OG Engine?
 
-Every time you generate an OG image with Puppeteer, you're spinning up a **full Chromium instance** to render some text on a rectangle. That's 500MB of RAM and ~130ms (warm) to ~660ms (cold) of latency — for a PNG.
+Every time you generate an OG image with Puppeteer, you're spinning up a **full Chromium instance** to render some text on a rectangle. That's 500MB of RAM and ~129ms (warm) to ~658ms (cold) of latency — for a PNG.
 
 OG Engine measures text and renders images using server-side Canvas. No DOM, no browser, no headless anything.
 
 | | Puppeteer | **OG Engine** |
 |---|---|---|
-| Render time | ~130ms (warm) / ~660ms (cold) | **~22ms** |
+| Render time | ~129ms (warm) / ~658ms (cold) | **~22ms** |
 | Memory per render | ~200-500MB | **~10MB** |
 | Infrastructure | Chrome binary, Xvfb, sandboxing | **Node.js process** |
 | Concurrency | ~5-10 per instance | **~500+ per instance** |
@@ -265,27 +265,29 @@ curl -X POST http://localhost:3000/validate \
 
 ## Benchmarks
 
-Run the benchmark suite locally:
+Measured on Apple M2, 8 cores, 24 GB RAM, Bun 1.3.11. 1,000 iterations per scenario with 50 warmup (discarded). Full report: [`benchmarks/results/2026-04-03-report.md`](benchmarks/results/2026-04-03-report.md).
+
+### OG Engine Results
+
+| Scenario | Text Measure (P50) | Canvas Draw (P50) | PNG Encode (P50) | Full Pipeline (P50) | Full Pipeline (P95) |
+|---|---|---|---|---|---|
+| Baseline (og, 1 line, Outfit) | 114µs | 50µs | 21.39ms | **21.57ms** | 22.79ms |
+| Long text (og, overflow, Outfit) | 390µs | 78µs | 24.34ms | **24.83ms** | 26.41ms |
+| Story format (1080×1920, Outfit) | 426µs | 98µs | 59.37ms | **59.96ms** | 65.02ms |
+| CJK (og, Noto Sans JP) | 126µs | 79µs | 24.12ms | **24.34ms** | 26.92ms |
+
+### vs Puppeteer
+
+| Scenario | OG Engine (P50) | Puppeteer Warm (P50) | Puppeteer Cold (P50) | Speedup (warm) |
+|---|---|---|---|---|
+| Baseline | **21.57ms** | 128.75ms | 657.55ms | **6x** |
+| Long text | **24.83ms** | 132.14ms | 634.03ms | **5x** |
+
+### Run it yourself
 
 ```bash
-bun run bench
-```
-
-The suite runs 1,000 iterations across 4 scenarios (baseline, long text, story format, CJK) with 50 warmup iterations. It captures phase timings (text measurement, canvas draw, PNG encode) and computes statistical percentiles (p50, p95, p99).
-
-**What we measure:**
-
-| Phase | Typical time |
-|-------|-------------|
-| Text measurement | < 1ms |
-| Canvas draw | ~0.05ms |
-| PNG encode | ~21ms |
-| **Full pipeline** | **~22ms** |
-
-For Puppeteer comparison baselines, run:
-
-```bash
-bun run bench:full
+bun run bench          # OG Engine only
+bun run bench:full     # Includes Puppeteer comparison
 ```
 
 ## Self-Hosting
@@ -377,7 +379,7 @@ og-engine/
 
 | Feature | OG Engine | @vercel/og | Puppeteer | Cloudinary |
 |---------|-----------|-----------|-----------|------------|
-| Render speed | ~22ms | ~50-200ms | ~130ms (warm) / ~660ms (cold) | ~500ms |
+| Render speed | ~22ms | ~50-200ms | ~129ms (warm) / ~658ms (cold) | ~500ms |
 | Self-hostable | Yes | Vercel only | Yes | No |
 | No browser needed | Yes | Yes (Satori) | No | N/A |
 | CJK/Arabic/Emoji | Yes | Partial | Yes | Yes |
