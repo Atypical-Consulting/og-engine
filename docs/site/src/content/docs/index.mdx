@@ -3,36 +3,36 @@ title: OG Engine
 description: Generate images in 2ms. No browser required.
 template: splash
 hero:
-  tagline: Server-side image generation API. Send JSON, get back a PNG. Replaces Puppeteer at 500x the speed.
+  tagline: "Send JSON. Get a PNG. 500x faster than Puppeteer — no Chrome, no Xvfb, no cold starts. Just pixels."
   actions:
-    - text: Get Started Free
+    - text: Get Started
       link: /quick-start/
       icon: right-arrow
-    - text: Try the Playground
+    - text: Playground
       link: /playground/
       variant: minimal
 ---
 
 import PlaygroundMini from '../../components/PlaygroundMini';
 
-## Lightning Fast
+## Benchmarks
 
-| | Puppeteer | OG Engine |
-|---|---|---|
-| **Render time** | ~850ms | **~2ms** |
-| **Memory per render** | ~200-500MB | **~10MB** |
-| **Infrastructure** | Chrome binary, Xvfb, sandboxing | **Node.js process** |
-| **Concurrency** | ~5-10 per instance | **500+ per instance** |
-| **Cold start** | ~2-5s | **~50ms** |
-| **Languages** | All (full browser) | **All (CJK, Arabic, emoji)** |
+| | Puppeteer | OG Engine | Delta |
+|---|---|---|---|
+| **Render** | ~850ms | **~2ms** | 425x |
+| **Memory** | ~200-500MB | **~10MB** | 50x |
+| **Concurrency** | ~5-10/instance | **500+/instance** | 100x |
+| **Cold start** | ~2-5s | **~50ms** | 100x |
+| **Infrastructure** | Chrome + Xvfb + sandbox | **Node.js** | — |
+| **i18n** | Full browser | **CJK, Arabic, emoji** | Parity |
 
-## Try It Live
+## Live Render
 
-Type a title and see the image update in real-time — no API key needed.
+Edit the title. Watch the image rebuild in real-time — no API key, no backend.
 
 <PlaygroundMini client:visible />
 
-## Quick Start
+## One Request
 
 ```bash
 curl -X POST https://api.og-engine.com/render \
@@ -42,12 +42,12 @@ curl -X POST https://api.og-engine.com/render \
   --output hello.png
 ```
 
-## Supported Formats
+## Formats
 
-| Format | Dimensions | Use Case |
+| Format | Size | Use |
 |---|---|---|
 | `og` | 1200x630 | Open Graph / Facebook |
-| `twitter` | 1200x675 | Twitter / X cards |
-| `square` | 1080x1080 | Instagram / general |
-| `linkedin` | 1200x627 | LinkedIn posts |
-| `story` | 1080x1920 | Instagram/TikTok stories |
+| `twitter` | 1200x675 | Twitter / X |
+| `square` | 1080x1080 | Instagram |
+| `linkedin` | 1200x627 | LinkedIn |
+| `story` | 1080x1920 | Stories |
