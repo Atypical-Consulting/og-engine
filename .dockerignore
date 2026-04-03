@@ -2,7 +2,13 @@ node_modules
 .git
 tests
 benchmarks
-docs
+docs/analysis
+docs/superpowers
+docs/site/node_modules
+docs/site/dist
+docs/site/.astro
 *.md
+!docs/site/**/*.md
+!docs/site/**/*.mdx
 .dockerignore
 Dockerfile
