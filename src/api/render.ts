@@ -49,7 +49,7 @@ renderRoute.post('/render', async (c) => {
 
   const renderTimeMs = (performance.now() - t0).toFixed(2);
 
-  return new Response(result.buffer, {
+  return new Response(new Uint8Array(result.buffer), {
     status: 200,
     headers: {
       'Content-Type': 'image/png',

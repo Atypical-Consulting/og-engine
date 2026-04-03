@@ -27,11 +27,22 @@ export const renderSchema = z.object({
       message: `Gradient must be one of: ${gradientSlugs.join(', ')}`,
     }).default('void'),
     overlayOpacity: z.number().min(0.2).max(0.9).default(0.65),
-  }).default({}),
+  }).default({
+    accent: '#38ef7d',
+    layout: 'left',
+    font: 'Outfit',
+    titleSize: 48,
+    descSize: 22,
+    gradient: 'void',
+    overlayOpacity: 0.65,
+  }),
   output: z.object({
     format: z.enum(['png']).default('png'),
     quality: z.number().int().min(1).max(100).default(90),
-  }).default({}),
+  }).default({
+    format: 'png',
+    quality: 90,
+  }),
 });
 
 export const validateSchema = z.object({
