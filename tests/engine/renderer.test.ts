@@ -13,7 +13,7 @@ beforeAll(async () => {
 function defaultOptions(overrides: Partial<RenderOptions> = {}): RenderOptions {
   return {
     title: 'Hello, OG Engine',
-    description: 'Generated in 2ms, no browser needed.',
+    description: 'Generated in ~22ms, no browser needed.',
     author: 'Test Author',
     tag: 'Test',
     format: 'og',

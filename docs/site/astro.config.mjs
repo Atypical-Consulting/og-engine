@@ -7,7 +7,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'OG Engine',
-      description: 'Generate images in 2ms. No browser required.',
+      description: 'Generate images in ~22ms — up to 30x faster than Puppeteer. No browser required.',
       logo: {
         src: './src/assets/logo.svg',
         alt: 'OG Engine logo',
@@ -34,7 +34,7 @@ export default defineConfig({
         },
         {
           tag: 'meta',
-          attrs: { property: 'og:image:alt', content: 'OG Engine — Generate images in 2ms, no browser required' },
+          attrs: { property: 'og:image:alt', content: 'OG Engine — Generate images in ~22ms, up to 30x faster than Puppeteer' },
         },
         // Twitter meta
         {
@@ -64,7 +64,7 @@ export default defineConfig({
               '@type': 'WebSite',
               name: 'OG Engine',
               url: 'https://og-engine.com',
-              description: 'Server-side image generation API. Generate OG images, social cards, and email banners in 2ms — 500x faster than Puppeteer, no browser required.',
+              description: 'Server-side image generation API. Generate OG images, social cards, and email banners in ~22ms — up to 30x faster than Puppeteer, no browser required.',
               potentialAction: {
                 '@type': 'SearchAction',
                 target: 'https://og-engine.com/?q={search_term_string}',
@@ -78,7 +78,7 @@ export default defineConfig({
               applicationCategory: 'DeveloperApplication',
               operatingSystem: 'Any',
               url: 'https://og-engine.com',
-              description: 'Server-side image generation API powered by Pretext text measurement. Generate OG images, social cards, and email banners in 2ms with zero browser dependencies.',
+              description: 'Server-side image generation API powered by Pretext text measurement. Generate OG images, social cards, and email banners in ~22ms — up to 30x faster than Puppeteer, zero browser dependencies.',
               offers: [
                 {
                   '@type': 'Offer',
@@ -110,7 +110,7 @@ export default defineConfig({
                 },
               ],
               featureList: [
-                '2ms render time',
+                '~22ms render time (6-30x faster than Puppeteer)',
                 'Zero browser dependencies',
                 '500+ concurrent renders per instance',
                 'CJK, Arabic, emoji, and bidirectional text support',

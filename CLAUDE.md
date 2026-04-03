@@ -2,7 +2,7 @@
 
 ## Handoff Brief for Claude Code
 
-> **TL;DR:** Build a server-side image generation API powered by Pretext's text measurement engine. It replaces Puppeteer/headless Chrome for generating OG images, social cards, email banners, and dynamic visual content. Sub-5ms renders, zero browser dependencies.
+> **TL;DR:** Build a server-side image generation API powered by Pretext's text measurement engine. It replaces Puppeteer/headless Chrome for generating OG images, social cards, email banners, and dynamic visual content. ~22ms renders (text layout <1ms, [benchmarked](/benchmarks/)), zero browser dependencies.
 
 ---
 
@@ -11,7 +11,7 @@
 We built a working browser-based prototype that demonstrates:
 
 - **Canvas-based text measurement** (Pretext's core principle) computes exact line breaks, heights, and overflow for any text — including CJK, Arabic, emoji — without DOM
-- **Instant rendering** (~1-3ms) vs Puppeteer (~850ms) = **300-500x speedup**
+- **~22ms renders** vs Puppeteer (~130ms warm, ~660ms cold) = **6-30x speedup** ([benchmarked](/benchmarks/))
 - **Multi-format output** (OG 1200×630, Twitter, Square, LinkedIn, Story)
 - **Google Fonts integration** with dynamic loading
 - **Background image compositing** with overlay controls
@@ -37,7 +37,7 @@ An API service that generates images with perfectly laid-out text. Send JSON, ge
 ### Why it wins
 | | Puppeteer | OG Engine |
 |---|---|---|
-| Render time | ~850ms | ~2-5ms |
+| Render time | ~130ms (warm) / ~660ms (cold) | ~22ms ([benchmarked](/benchmarks/)) |
 | Memory per render | ~200-500MB | ~10MB |
 | Infrastructure | Chrome binary, Xvfb, sandboxing | Node.js process |
 | Concurrency | ~5-10 per instance | ~500+ per instance |

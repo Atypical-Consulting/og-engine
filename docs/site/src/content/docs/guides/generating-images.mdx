@@ -16,7 +16,7 @@ When your request hits the API, OG Engine follows a four-step pipeline:
 3. **Canvas draw** — The selected template composites the background gradient (or image), decorative elements, and each line of text onto an `@napi-rs/canvas` surface.
 4. **PNG encode** — The canvas is serialized to a binary buffer and streamed back as the HTTP response body.
 
-Total time from request to response: typically **2–5ms** for a standard OG image.
+Total time from request to response: typically **~22ms** for a standard OG image ([benchmarked](/benchmarks/)). PNG encoding dominates; text layout + canvas draw take <1ms.
 
 ## Minimal Request
 
@@ -41,7 +41,7 @@ A fully specified request gives you control over every visual parameter:
   "format": "og",
   "template": "default",
   "title": "Server-Side Text Layout Without a Browser",
-  "description": "Pure JS text measurement replaces Puppeteer. Sub-5ms renders, zero browser dependencies.",
+  "description": "Pure JS text measurement replaces Puppeteer. ~22ms renders, zero browser dependencies.",
   "author": "Pretext Engine",
   "tag": "Open Source",
   "style": {

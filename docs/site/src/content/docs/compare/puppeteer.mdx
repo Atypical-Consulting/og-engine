@@ -1,6 +1,6 @@
 ---
 title: OG Engine vs Puppeteer — Performance Comparison
-description: OG Engine renders images 425x faster than Puppeteer with 50x less memory. Compare architecture, cost, and performance with migration guide included.
+description: OG Engine renders images 6-30x faster than Puppeteer with 50x less memory. Compare architecture, cost, and performance with migration guide included.
 ---
 
 If you're using Puppeteer, Playwright, or any headless browser to generate OG images, social cards, or email banners — this page is for you.
@@ -20,7 +20,7 @@ If you're using Puppeteer, Playwright, or any headless browser to generate OG im
 
 | Metric | Puppeteer | OG Engine | Improvement |
 |---|---|---|---|
-| **Render time** | ~850ms | **~2ms** | 425x faster |
+| **Render time** | ~130ms (warm) / ~660ms (cold) | **~22ms** | 6x faster (warm) / 30x faster (cold) |
 | **Memory per render** | 200–500 MB | **~10 MB** | 20–50x less |
 | **Concurrency per instance** | 5–10 | **500+** | 50–100x more |
 | **Cold start** | 2–5 seconds | **~50ms** | 40–100x faster |
@@ -46,7 +46,7 @@ OG Engine is **not** a general-purpose browser renderer. It generates images fro
 - Screenshot existing web pages
 - Use browser-specific APIs (DOM, CSSOM)
 
-If you need full HTML rendering, keep Puppeteer. If you need **text-on-image generation** (OG cards, social images, email banners), OG Engine is 425x faster and dramatically simpler.
+If you need full HTML rendering, keep Puppeteer. If you need **text-on-image generation** (OG cards, social images, email banners), OG Engine is 6-30x faster and dramatically simpler.
 
 ## Migration Guide
 
