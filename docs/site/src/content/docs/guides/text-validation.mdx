@@ -24,7 +24,7 @@ curl -X POST https://api.og-engine.com/validate \
   }'
 ```
 
-No `Authorization` header required. The response is always JSON:
+The `Authorization` header is optional — if provided, your API key is validated but the call is never metered. The response is always JSON:
 
 ```json
 {
