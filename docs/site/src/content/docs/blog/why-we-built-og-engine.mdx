@@ -1,6 +1,34 @@
 ---
 title: Why We Built OG Engine
 description: Headless Chrome costs 850ms and 200MB per OG image. We built OG Engine with Pretext to render the same images in 2ms with 10MB. Here's why and how.
+head:
+  - tag: script
+    attrs:
+      type: application/ld+json
+    content: |
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Why We Built OG Engine",
+        "description": "Headless Chrome costs 850ms and 200MB per OG image. We built OG Engine with Pretext to render the same images in 2ms with 10MB.",
+        "author": {
+          "@type": "Organization",
+          "name": "OG Engine",
+          "url": "https://og-engine.com"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "OG Engine",
+          "url": "https://og-engine.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://og-engine.com/og-image.svg"
+          }
+        },
+        "datePublished": "2026-04-01",
+        "image": "https://og-engine.com/og-image.svg",
+        "mainEntityOfPage": "https://og-engine.com/blog/why-we-built-og-engine/"
+      }
 ---
 
 Every SaaS product needs OG images. The standard approach — Puppeteer, headless Chrome, screenshot a rendered HTML page — works. But it's absurdly expensive for what it does.
