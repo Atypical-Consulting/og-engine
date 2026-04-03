@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('resend', () => {
   const mockSend = vi.fn().mockResolvedValue({ id: 'mock-email-id' });
   return {
+    // biome-ignore lint/complexity/useArrowFunction: function keyword required for new Resend() constructor mock
     Resend: vi.fn().mockImplementation(function () {
       return { emails: { send: mockSend } };
     }),
