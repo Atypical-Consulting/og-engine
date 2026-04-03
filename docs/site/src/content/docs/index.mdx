@@ -74,16 +74,17 @@ head:
 
 import PlaygroundMini from '../../components/PlaygroundMini';
 import HeroTerminal from '../../components/HeroTerminal';
+import HeroRender from '../../components/HeroRender';
 import BenchmarkCounters from '../../components/BenchmarkCounters';
 import OutputGallery from '../../components/OutputGallery';
 import FaqAccordion from '../../components/FaqAccordion';
 import ScrollReveal from '../../components/ScrollReveal';
 
 <div class="hero-showcase">
-  <HeroTerminal client:visible />
+  <HeroRender client:visible />
 </div>
 
-<div class="trust-bar">
+<div class="trust-bar not-content">
   <div class="trust-item">
     <a href="https://github.com/Atypical-Consulting/og-engine"><img src="https://img.shields.io/github/stars/Atypical-Consulting/og-engine?style=flat&color=38ef7d&labelColor=0c1018" alt="GitHub stars" width="80" height="20" /></a>
   </div>
@@ -140,7 +141,7 @@ import ScrollReveal from '../../components/ScrollReveal';
 
 ## How It Works
 
-<div class="how-it-works">
+<div class="how-it-works not-content">
 <div class="step">
 <div class="step-number">1</div>
 <div class="step-content">
@@ -170,7 +171,7 @@ import ScrollReveal from '../../components/ScrollReveal';
 
 ## Use Cases
 
-<div class="use-cases">
+<div class="use-cases not-content">
 <div class="use-case">
 <div class="use-case-icon"><span>{"{ }"}</span></div>
 <h3>Blog Platforms</h3>
@@ -249,7 +250,7 @@ Check if your text fits — **free, unlimited, no signup required.**
 
 All plans use the same engine — same speed, same quality, same fonts. Pick the quota that fits.
 
-<div class="pricing-strip">
+<div class="pricing-strip not-content">
 <a href="/quick-start/" class="pricing-strip-card">
 <div class="pricing-strip-tier">Free</div>
 <div class="pricing-strip-price"><span class="currency">€</span>0<span class="period">/mo</span></div>
