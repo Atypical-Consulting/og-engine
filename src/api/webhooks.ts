@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import Stripe from 'stripe';
 import {
   createApiKey,
   findApiKeyByEmail,
@@ -8,15 +9,15 @@ import {
   updatePlan,
   updateStripeInfo,
 } from '../db';
+import { sendDowngradeEmail, sendUpgradeEmail, sendWelcomeEmail } from '../email/send';
 
 export const webhooksRoute = new Hono();
 
-// Map Stripe price IDs to plans — configure via env vars
 function getPlanFromPriceId(priceId: string): Plan | null {
   const mapping: Record<string, Plan> = {
-    [process.env.STRIPE_PRICE_STARTER ?? 'price_starter_monthly']: 'starter',
-    [process.env.STRIPE_PRICE_PRO ?? 'price_pro_monthly']: 'pro',
-    [process.env.STRIPE_PRICE_SCALE ?? 'price_scale_monthly']: 'scale',
+    [process.env.STRIPE_PRICE_STARTER ?? '']: 'starter',
+    [process.env.STRIPE_PRICE_PRO ?? '']: 'pro',
+    [process.env.STRIPE_PRICE_SCALE ?? '']: 'scale',
   };
   return mapping[priceId] ?? null;
 }
@@ -26,13 +27,7 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!stripeSecretKey || !webhookSecret) {
-    return c.json(
-      {
-        error: 'server_error',
-        message: 'Stripe is not configured.',
-      },
-      500,
-    );
+    return c.json({ error: 'server_error', message: 'Stripe is not configured.' }, 500);
   }
 
   const signature = c.req.header('stripe-signature');
@@ -41,51 +36,46 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
   }
 
   const body = await c.req.text();
+  const stripe = new Stripe(stripeSecretKey);
 
-  // Verify webhook signature using Stripe's scheme
-  // For production: use stripe.webhooks.constructEvent(body, signature, webhookSecret)
-  // For now: parse and handle — Stripe SDK verification should be added when stripe dep is installed
-  let event: { type: string; data: { object: Record<string, unknown> } };
+  let event: Stripe.Event;
   try {
-    event = JSON.parse(body);
-  } catch {
-    return c.json({ error: 'invalid_request', message: 'Invalid JSON body.' }, 400);
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (_err) {
+    return c.json({ error: 'invalid_request', message: 'Invalid webhook signature.' }, 400);
   }
 
   switch (event.type) {
     case 'checkout.session.completed': {
-      const session = event.data.object;
-      const email = session.customer_email as string;
+      const session = event.data.object as Stripe.Checkout.Session;
+      const email = session.customer_email;
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
 
       if (!email || !subscriptionId) break;
 
-      // Determine plan — in production, retrieve subscription from Stripe to get price ID
-      // For now, accept plan from metadata or default to starter
-      const plan = ((session.metadata as Record<string, string>)?.plan as Plan) ?? 'starter';
+      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      const priceId = sub.items.data[0]?.price?.id;
+      const plan = priceId ? getPlanFromPriceId(priceId) : null;
+      if (!plan) break;
 
-      // Check if user already has a key
       let record = findApiKeyByEmail(email);
       if (record) {
-        // Upgrade existing key
         updatePlan(record.id, plan);
         updateStripeInfo(record.id, customerId, subscriptionId);
       } else {
-        // Create new key with paid plan
         record = createApiKey(email, plan);
         updateStripeInfo(record.id, customerId, subscriptionId);
       }
 
-      // TODO: Send API key email via Resend
+      await sendWelcomeEmail(email, record.key, plan);
       break;
     }
 
     case 'customer.subscription.updated': {
-      const sub = event.data.object;
-      const subId = sub.id as string;
-      const items = sub.items as { data: { price: { id: string } }[] };
-      const priceId = items?.data?.[0]?.price?.id;
+      const sub = event.data.object as Stripe.Subscription;
+      const subId = sub.id;
+      const priceId = sub.items?.data?.[0]?.price?.id;
 
       if (!subId || !priceId) break;
 
@@ -95,26 +85,27 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const record = findApiKeyByStripeSubscription(subId);
       if (record) {
         updatePlan(record.id, plan);
+        await sendUpgradeEmail(record.email, plan);
       }
       break;
     }
 
     case 'customer.subscription.deleted': {
-      const sub = event.data.object;
-      const subId = sub.id as string;
+      const sub = event.data.object as Stripe.Subscription;
+      const subId = sub.id;
       if (!subId) break;
 
       const record = findApiKeyByStripeSubscription(subId);
       if (record) {
         updatePlan(record.id, 'free');
+        await sendDowngradeEmail(record.email);
       }
       break;
     }
 
     case 'invoice.paid': {
-      // Monthly billing cycle reset
-      const invoice = event.data.object;
-      const subId = invoice.subscription as string;
+      const invoice = event.data.object as Stripe.Invoice;
+      const subId = (invoice.parent?.subscription_details?.subscription as string) ?? null;
       if (!subId) break;
 
       const record = findApiKeyByStripeSubscription(subId);
