@@ -64,6 +64,7 @@ og-engine/
 │       │   │       │   └── available-fonts.mdx
 │       │   │       ├── self-hosting/
 │       │   │       │   └── docker.mdx
+│       │   │       ├── playground.mdx         # Full standalone playground page
 │       │   │       ├── pricing.mdx
 │       │   │       └── changelog.mdx
 │       │   └── components/
@@ -177,6 +178,7 @@ Fonts
 Self-Hosting
   Docker
 
+Playground
 Pricing & Limits
 Changelog
 ```
@@ -903,6 +905,7 @@ export default defineConfig({
         { label: 'Templates Gallery', link: '/templates/gallery/' },
         { label: 'Available Fonts', link: '/fonts/available-fonts/' },
         { label: 'Self-Hosting (Docker)', link: '/self-hosting/docker/' },
+        { label: 'Playground', link: '/playground/' },
         { label: 'Pricing & Limits', link: '/pricing/' },
         { label: 'Changelog', link: '/changelog/' },
       ],
