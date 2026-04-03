@@ -164,6 +164,14 @@ export function resetUsage(id: string): void {
   d.prepare('UPDATE api_keys SET calls_used = 0, period_start = ? WHERE id = ?').run(new Date().toISOString(), id);
 }
 
+export function resetFreeQuotas(): number {
+  const d = getDb();
+  const result = d
+    .prepare('UPDATE api_keys SET calls_used = 0, period_start = ? WHERE plan = ? AND active = 1')
+    .run(new Date().toISOString(), 'free');
+  return result.changes;
+}
+
 export function updateStripeInfo(id: string, customerId: string, subscriptionId: string): void {
   const d = getDb();
   d.prepare('UPDATE api_keys SET stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?').run(

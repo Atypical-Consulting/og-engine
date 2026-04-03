@@ -10,7 +10,7 @@ export interface SqliteDatabase {
 }
 
 export interface SqliteStatement {
-  run(...params: unknown[]): void;
+  run(...params: unknown[]): { changes: number };
   get(...params: unknown[]): unknown;
   all(...params: unknown[]): unknown[];
 }
@@ -45,9 +45,9 @@ function openBunSqlite(path: string): SqliteDatabase {
       const isObj = (p: unknown): p is Record<string, unknown> =>
         typeof p === 'object' && p !== null && !Array.isArray(p);
       return {
-        run: (...params: unknown[]) => {
-          if (params.length === 1 && isObj(params[0])) return stmt.run(prefixKeys(params[0]));
-          return stmt.run(...params);
+        run: (...params: unknown[]): { changes: number } => {
+          const r = params.length === 1 && isObj(params[0]) ? stmt.run(prefixKeys(params[0])) : stmt.run(...params);
+          return { changes: (r as { changes?: number }).changes ?? 0 };
         },
         get: (...params: unknown[]) => {
           if (params.length === 1 && isObj(params[0])) return stmt.get(prefixKeys(params[0]));
@@ -75,7 +75,10 @@ function openBetterSqlite(path: string): SqliteDatabase {
     prepare: (sql: string) => {
       const stmt = db.prepare(sql);
       return {
-        run: (...params: unknown[]) => stmt.run(...params),
+        run: (...params: unknown[]): { changes: number } => {
+          const r = stmt.run(...params) as { changes?: number };
+          return { changes: r.changes ?? 0 };
+        },
         get: (...params: unknown[]) => stmt.get(...params),
         all: (...params: unknown[]) => stmt.all(...params),
       };
