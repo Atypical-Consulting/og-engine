@@ -15,24 +15,10 @@ export default defineConfig({
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/phmatray/og-engine' },
       ],
+      components: {
+        Head: './src/components/Head.astro',
+      },
       head: [
-        // Preconnect to Google Fonts for faster font loading
-        {
-          tag: 'link',
-          attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        },
-        {
-          tag: 'link',
-          attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: true },
-        },
-        // Load fonts via link tag (non-blocking) instead of CSS @import
-        {
-          tag: 'link',
-          attrs: {
-            rel: 'stylesheet',
-            href: 'https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Figtree:wght@400;500;600;700&family=Fira+Code:wght@400;500;700&display=swap',
-          },
-        },
         // Default OG image for all pages
         {
           tag: 'meta',
@@ -139,7 +125,7 @@ export default defineConfig({
           ]),
         },
       ],
-      customCss: ['./src/styles/custom.css', './src/components/playground.css'],
+      customCss: ['./src/styles/fonts.css', './src/styles/custom.css', './src/components/playground.css'],
       sidebar: [
         { label: 'Home', link: '/' },
         { label: 'Quick Start', link: '/quick-start/' },
