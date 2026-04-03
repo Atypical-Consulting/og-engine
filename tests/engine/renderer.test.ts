@@ -85,3 +85,24 @@ describe('renderCard', () => {
     expect(result.buffer.length).toBeGreaterThan(0);
   });
 });
+
+describe('renderCard with timing', () => {
+  it('returns phases when timing is true', () => {
+    const result = renderCard({
+      ...defaultOptions(),
+      timing: true,
+    });
+    expect(result.phases).toBeDefined();
+    expect(result.phases!.textMeasureMs).toBeGreaterThanOrEqual(0);
+    expect(result.phases!.canvasDrawMs).toBeGreaterThanOrEqual(0);
+    expect(result.phases!.pngEncodeMs).toBeGreaterThanOrEqual(0);
+    expect(result.phases!.totalMs).toBeGreaterThanOrEqual(0);
+    const sum = result.phases!.textMeasureMs + result.phases!.canvasDrawMs + result.phases!.pngEncodeMs;
+    expect(Math.abs(result.phases!.totalMs - sum)).toBeLessThan(1);
+  });
+
+  it('does not return phases when timing is false or omitted', () => {
+    const result = renderCard(defaultOptions());
+    expect(result.phases).toBeUndefined();
+  });
+});
