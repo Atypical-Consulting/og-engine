@@ -42,9 +42,11 @@ export default function PlaygroundMini() {
         <canvas ref={canvasRef} style={{ width: '100%', display: 'block', aspectRatio: `${fmt.w}/${fmt.h}` }} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter a title..."
+        <label htmlFor="pg-mini-title" className="sr-only">Title</label>
+        <input id="pg-mini-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter a title..."
           className="pg-input" style={inputStyle} />
-        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter a description..."
+        <label htmlFor="pg-mini-desc" className="sr-only">Description</label>
+        <input id="pg-mini-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter a description..."
           className="pg-input" style={inputStyle} />
       </div>
       <div style={{ fontSize: 10, color: '#475569', textAlign: 'center' }}>

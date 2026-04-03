@@ -73,27 +73,44 @@ head:
 ---
 
 import PlaygroundMini from '../../components/PlaygroundMini';
+import HeroTerminal from '../../components/HeroTerminal';
+
+<div class="hero-showcase">
+  <HeroTerminal client:visible />
+</div>
 
 <div class="trust-bar">
   <div class="trust-item">
-    <a href="https://github.com/phmatray/og-engine">Open Source on GitHub</a>
+    <a href="https://github.com/Atypical-Consulting/og-engine"><img src="https://img.shields.io/github/stars/Atypical-Consulting/og-engine?style=flat&color=38ef7d&labelColor=0c1018" alt="GitHub stars" width="80" height="20" /></a>
   </div>
   <div class="trust-separator">/</div>
-  <div class="trust-item">Built in Belgium by <a href="https://atypical.consulting">Atypical Consulting</a></div>
+  <div class="trust-item">~2ms average render</div>
   <div class="trust-separator">/</div>
-  <div class="trust-item">Powered by <a href="https://github.com/chenglou/pretext">Pretext</a></div>
+  <div class="trust-item">Open source + self-hostable</div>
+  <div class="trust-separator">/</div>
+  <div class="trust-item">Free tier — no credit card</div>
 </div>
 
 ## Benchmarks
 
-| | Puppeteer | OG Engine | Delta |
-|---|---|---|---|
-| **Render** | ~850ms | **~2ms** | 425x |
-| **Memory** | ~200-500MB | **~10MB** | 50x |
-| **Concurrency** | ~5-10/instance | **500+/instance** | 100x |
-| **Cold start** | ~2-5s | **~50ms** | 100x |
-| **Infrastructure** | Chrome + Xvfb + sandbox | **Node.js** | — |
-| **i18n** | Full browser | **CJK, Arabic, emoji** | Parity |
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Puppeteer</th>
+      <th>OG Engine</th>
+      <th>Delta</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><th scope="row">Render</th><td>~850ms</td><td><strong>~2ms</strong></td><td>425x</td></tr>
+    <tr><th scope="row">Memory</th><td>~200-500MB</td><td><strong>~10MB</strong></td><td>50x</td></tr>
+    <tr><th scope="row">Concurrency</th><td>~5-10/instance</td><td><strong>500+/instance</strong></td><td>100x</td></tr>
+    <tr><th scope="row">Cold start</th><td>~2-5s</td><td><strong>~50ms</strong></td><td>100x</td></tr>
+    <tr><th scope="row">Infrastructure</th><td>Chrome + Xvfb + sandbox</td><td><strong>Node.js</strong></td><td>—</td></tr>
+    <tr><th scope="row">i18n</th><td>Full browser</td><td><strong>CJK, Arabic, emoji</strong></td><td>Parity</td></tr>
+  </tbody>
+</table>
 
 ## How It Works
 
@@ -108,27 +125,20 @@ import PlaygroundMini from '../../components/PlaygroundMini';
 <div class="step">
 <div class="step-number">2</div>
 <div class="step-content">
-<h3>Text Layout</h3>
-<p>Pretext measures every glyph — CJK, Arabic, emoji — and computes line breaks in microseconds.</p>
+<h3>Engine Renders</h3>
+<p>Text is measured, lines are broken, and the image is composited — all server-side, no browser.</p>
 </div>
 </div>
 <div class="step">
 <div class="step-number">3</div>
 <div class="step-content">
-<h3>Canvas Render</h3>
-<p>Background, gradients, text, and decorations are composited directly onto a Canvas. No DOM, no browser.</p>
-</div>
-</div>
-<div class="step">
-<div class="step-number">4</div>
-<div class="step-content">
 <h3>Get Your Image</h3>
-<p>PNG or WebP binary in the response. Typical render: 2ms. Headers tell you line count and overflow status.</p>
+<p>PNG or WebP in the response. Typical render: 2ms. Supports CJK, Arabic, emoji, and mixed scripts.</p>
 </div>
 </div>
 </div>
 
-## Who Uses OG Engine
+## Use Cases
 
 <div class="use-cases">
 <div class="use-case">
@@ -153,21 +163,11 @@ import PlaygroundMini from '../../components/PlaygroundMini';
 </div>
 </div>
 
-## Live Render
+## Try It Live
 
 Edit the title. Watch the image rebuild in real-time — no API key, no backend.
 
 <PlaygroundMini client:visible />
-
-## One Request
-
-```bash
-curl -X POST https://api.og-engine.com/render \
-  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"format": "og", "title": "Hello, OG Engine"}' \
-  --output hello.png
-```
 
 ## Free Text Validation
 
@@ -191,15 +191,34 @@ curl -X POST https://api.og-engine.com/validate \
 
 </div>
 
-## Formats
+## Pricing
 
-| Format | Size | Use |
-|---|---|---|
-| `og` | 1200x630 | Open Graph / Facebook |
-| `twitter` | 1200x675 | Twitter / X |
-| `square` | 1080x1080 | Instagram |
-| `linkedin` | 1200x627 | LinkedIn |
-| `story` | 1080x1920 | Stories |
+All plans use the same engine — same speed, same quality, same fonts. Pick the quota that fits.
+
+<div class="pricing-strip">
+<a href="/quick-start/" class="pricing-strip-card">
+<div class="pricing-strip-tier">Free</div>
+<div class="pricing-strip-price"><span class="currency">€</span>0<span class="period">/mo</span></div>
+<div class="pricing-strip-quota">500 renders</div>
+</a>
+<a href="https://buy.stripe.com/starter" class="pricing-strip-card">
+<div class="pricing-strip-tier">Starter</div>
+<div class="pricing-strip-price"><span class="currency">€</span>10<span class="period">/mo</span></div>
+<div class="pricing-strip-quota">10k renders</div>
+</a>
+<a href="https://buy.stripe.com/pro" class="pricing-strip-card pricing-strip-featured">
+<div class="pricing-strip-tier">Pro</div>
+<div class="pricing-strip-price"><span class="currency">€</span>39<span class="period">/mo</span></div>
+<div class="pricing-strip-quota">50k renders</div>
+</a>
+<a href="mailto:sales@og-engine.com" class="pricing-strip-card">
+<div class="pricing-strip-tier">Scale</div>
+<div class="pricing-strip-price"><span class="currency">€</span>99<span class="period">/mo</span></div>
+<div class="pricing-strip-quota">200k renders</div>
+</a>
+</div>
+
+<p class="pricing-strip-note">5 formats (OG, Twitter, Square, LinkedIn, Story) · 4 templates · 8 fonts · <a href="/pricing/">Full comparison →</a></p>
 
 ---
 
@@ -242,7 +261,7 @@ Scale plan (€99/mo) supports custom JSON templates. All plans get 4 built-in t
 OG Engine is open source. Run it on your own infrastructure with **zero per-render cost**, or use the hosted API and let us handle scaling, caching, and uptime.
 
 <div class="oss-actions">
-  <a href="https://github.com/phmatray/og-engine" class="oss-link">View on GitHub →</a>
+  <a href="https://github.com/Atypical-Consulting/og-engine" class="oss-link">View on GitHub →</a>
   <a href="/self-hosting/docker/" class="oss-link">Self-Hosting Guide →</a>
 </div>
 

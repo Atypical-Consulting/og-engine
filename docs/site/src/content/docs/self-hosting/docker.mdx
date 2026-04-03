@@ -10,7 +10,7 @@ OG Engine is distributed as a Docker image. Self-hosting gives you full control 
 Pull and run the image with a single command:
 
 ```bash
-docker run -p 3000:3000 ghcr.io/phmatray/og-engine:latest
+docker run -p 3000:3000 ghcr.io/atypical-consulting/og-engine:latest
 ```
 
 The server starts on port 3000. Test it:
@@ -32,7 +32,7 @@ version: '3.8'
 
 services:
   og-engine:
-    image: ghcr.io/phmatray/og-engine:latest
+    image: ghcr.io/atypical-consulting/og-engine:latest
     ports:
       - '3000:3000'
     environment:
@@ -104,7 +104,7 @@ Deploy to Fly.io in three commands:
 fly auth login
 
 # 2. Launch a new app (follow the prompts; accepts auto-detected Docker config)
-fly launch --image ghcr.io/phmatray/og-engine:latest
+fly launch --image ghcr.io/atypical-consulting/og-engine:latest
 
 # 3. Scale to two machines for zero-downtime deploys
 fly scale count 2
@@ -119,7 +119,7 @@ app = "og-engine-yourapp"
 primary_region = "iad"
 
 [build]
-  image = "ghcr.io/phmatray/og-engine:latest"
+  image = "ghcr.io/atypical-consulting/og-engine:latest"
 
 [env]
   PORT = "8080"
@@ -145,7 +145,7 @@ primary_region = "iad"
 ## Railway Deployment
 
 1. Create a new Railway project
-2. Add a service from Docker image: `ghcr.io/phmatray/og-engine:latest`
+2. Add a service from Docker image: `ghcr.io/atypical-consulting/og-engine:latest`
 3. Set environment variable `PORT` to `$PORT` (Railway injects the port)
 4. Add a health check on `/health`
 

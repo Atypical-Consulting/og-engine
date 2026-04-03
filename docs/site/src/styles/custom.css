@@ -829,18 +829,12 @@ header.header {
 /* ─── How It Works Section ─── */
 .how-it-works {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.25rem;
   margin: 2rem 0;
 }
 
-@media (max-width: 768px) {
-  .how-it-works {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .how-it-works {
     grid-template-columns: 1fr;
   }
@@ -858,7 +852,6 @@ header.header {
 .how-it-works .step:nth-child(1) { animation-delay: 0s; }
 .how-it-works .step:nth-child(2) { animation-delay: 0.08s; }
 .how-it-works .step:nth-child(3) { animation-delay: 0.16s; }
-.how-it-works .step:nth-child(4) { animation-delay: 0.24s; }
 
 .how-it-works .step:hover {
   border-color: var(--og-glow-medium);
@@ -1064,4 +1057,112 @@ header.header {
 
 .oss-link:hover {
   text-shadow: 0 0 8px rgba(56, 239, 125, 0.5);
+}
+
+/* ─── Homepage Pricing Strip ─── */
+.pricing-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem 0 1rem;
+}
+
+@media (max-width: 640px) {
+  .pricing-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.pricing-strip-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem 1rem;
+  border: 1px solid var(--og-border);
+  border-radius: 8px;
+  background: rgba(5, 8, 16, 0.8);
+  text-decoration: none !important;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  cursor: pointer;
+}
+
+.pricing-strip-card:hover {
+  border-color: rgba(56, 239, 125, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.pricing-strip-card.pricing-strip-featured {
+  border-color: var(--og-glow);
+  background: linear-gradient(165deg, rgba(56, 239, 125, 0.08) 0%, rgba(5, 8, 16, 0.95) 40%);
+  box-shadow: 0 0 20px rgba(56, 239, 125, 0.06);
+}
+
+.pricing-strip-card.pricing-strip-featured:hover {
+  box-shadow: 0 0 28px rgba(56, 239, 125, 0.12), 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.pricing-strip-tier {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-2);
+  margin-bottom: 0.4rem;
+}
+
+.pricing-strip-featured .pricing-strip-tier {
+  color: var(--og-glow);
+}
+
+.pricing-strip-price {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.75rem;
+  letter-spacing: -0.03em;
+  color: var(--sl-color-white);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.pricing-strip-price .currency {
+  font-size: 0.9rem;
+  font-weight: 600;
+  vertical-align: super;
+  margin-right: 1px;
+  color: var(--sl-color-gray-2);
+}
+
+.pricing-strip-price .period {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--sl-color-gray-3);
+  letter-spacing: 0;
+}
+
+.pricing-strip-quota {
+  font-family: var(--sl-font-mono);
+  font-size: 0.72rem;
+  color: var(--og-glow);
+  opacity: 0.8;
+}
+
+.pricing-strip-note {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--sl-color-gray-2);
+  margin-top: 0.5rem;
+}
+
+.pricing-strip-note a {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+/* ─── Trust Bar: GitHub badge alignment ─── */
+.trust-bar img {
+  vertical-align: middle;
+  display: inline-block;
 }
