@@ -12,3 +12,42 @@ hero:
       link: /playground/
       variant: minimal
 ---
+
+import PlaygroundMini from '../../components/PlaygroundMini';
+
+## Lightning Fast
+
+| | Puppeteer | OG Engine |
+|---|---|---|
+| **Render time** | ~850ms | **~2ms** |
+| **Memory per render** | ~200-500MB | **~10MB** |
+| **Infrastructure** | Chrome binary, Xvfb, sandboxing | **Node.js process** |
+| **Concurrency** | ~5-10 per instance | **500+ per instance** |
+| **Cold start** | ~2-5s | **~50ms** |
+| **Languages** | All (full browser) | **All (CJK, Arabic, emoji)** |
+
+## Try It Live
+
+Type a title and see the image update in real-time — no API key needed.
+
+<PlaygroundMini client:visible />
+
+## Quick Start
+
+```bash
+curl -X POST https://api.og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"format": "og", "title": "Hello, OG Engine"}' \
+  --output hello.png
+```
+
+## Supported Formats
+
+| Format | Dimensions | Use Case |
+|---|---|---|
+| `og` | 1200x630 | Open Graph / Facebook |
+| `twitter` | 1200x675 | Twitter / X cards |
+| `square` | 1080x1080 | Instagram / general |
+| `linkedin` | 1200x627 | LinkedIn posts |
+| `story` | 1080x1920 | Instagram/TikTok stories |
