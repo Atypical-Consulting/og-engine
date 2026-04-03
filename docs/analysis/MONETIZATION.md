@@ -260,7 +260,7 @@ app.post('/webhooks/stripe', stripeWebhookHandler) // Stripe webhooks
 
 // Protected routes (require API key)
 app.use('/render/*', authMiddleware)
-app.use('/validate/*', authMiddleware)
+app.use('/validate/*', optionalAuthMiddleware)  // Auth optional, never metered
 
 app.post('/render', renderHandler)                // Generate image
 app.post('/render/batch', batchRenderHandler)      // Batch generation (Pro+)
