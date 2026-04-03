@@ -220,7 +220,7 @@ export default function App() {
         <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)", marginTop: 8 }}>
           {[
             ["", "Puppeteer", "OG Engine"],
-            ["Rendu", "~850ms", "~2ms"],
+            ["Rendu", "~130ms (warm)", "~22ms"],
             ["Mémoire", "300-500MB", "~10MB"],
             ["Concurrence", "5-10/inst.", "500+/inst."],
             ["Cold start", "2-5 sec", "50ms"],

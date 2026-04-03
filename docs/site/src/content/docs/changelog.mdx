@@ -13,7 +13,7 @@ All notable changes to OG Engine are documented here. OG Engine follows [Semanti
 
 ### API Endpoints
 
-- **`POST /render`** — Generate a single image from a JSON payload. Returns binary PNG (all plans) or WebP (Starter+). Typical render time: 2–5ms.
+- **`POST /render`** — Generate a single image from a JSON payload. Returns binary PNG (all plans) or WebP (Starter+). Typical render time: ~22ms ([benchmarked](/benchmarks/)).
 - **`POST /validate`** — Check whether title and description text fits a layout without generating an image. **Free, unlimited, no authentication required.** Use it in CI, forms, or content pipelines.
 - **`POST /render/batch`** — Render up to 100 images in a single API call. Returns a ZIP archive. *Available on Pro and Scale plans — ideal for SaaS platforms generating images during deployment.*
 - **`GET /health`** — Returns service status, API version, and lists of available fonts, formats, and templates.

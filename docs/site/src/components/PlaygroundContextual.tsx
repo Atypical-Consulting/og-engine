@@ -21,7 +21,7 @@ interface Props {
 export default function PlaygroundContextual({
   panels = ['content', 'format'],
   initialTitle = 'Hello, OG Engine',
-  initialDescription = 'Generated in 2ms, no browser needed.',
+  initialDescription = 'Generated in ~22ms, no browser needed.',
   initialFormat = 'og',
   initialAccent = '#38ef7d',
 }: Props) {

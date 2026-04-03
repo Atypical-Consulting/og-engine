@@ -28,13 +28,13 @@
 
 ## Why OG Engine?
 
-Every time you generate an OG image with Puppeteer, you're spinning up a **full Chromium instance** to render some text on a rectangle. That's 500MB of RAM and 850ms of latency — for a PNG.
+Every time you generate an OG image with Puppeteer, you're spinning up a **full Chromium instance** to render some text on a rectangle. That's 500MB of RAM and ~130ms (warm) to ~660ms (cold) of latency — for a PNG.
 
 OG Engine measures text and renders images using server-side Canvas. No DOM, no browser, no headless anything.
 
 | | Puppeteer | **OG Engine** |
 |---|---|---|
-| Render time | ~850ms | **~23ms** |
+| Render time | ~130ms (warm) / ~660ms (cold) | **~22ms** |
 | Memory per render | ~200-500MB | **~10MB** |
 | Infrastructure | Chrome binary, Xvfb, sandboxing | **Node.js process** |
 | Concurrency | ~5-10 per instance | **~500+ per instance** |
@@ -278,9 +278,9 @@ The suite runs 1,000 iterations across 4 scenarios (baseline, long text, story f
 | Phase | Typical time |
 |-------|-------------|
 | Text measurement | < 1ms |
-| Canvas draw | 2-5ms |
-| PNG encode | 15-20ms |
-| **Full pipeline** | **~23ms** |
+| Canvas draw | ~0.05ms |
+| PNG encode | ~21ms |
+| **Full pipeline** | **~22ms** |
 
 For Puppeteer comparison baselines, run:
 
@@ -377,7 +377,7 @@ og-engine/
 
 | Feature | OG Engine | @vercel/og | Puppeteer | Cloudinary |
 |---------|-----------|-----------|-----------|------------|
-| Render speed | ~23ms | ~50-200ms | ~850ms | ~500ms |
+| Render speed | ~22ms | ~50-200ms | ~130ms (warm) / ~660ms (cold) | ~500ms |
 | Self-hostable | Yes | Vercel only | Yes | No |
 | No browser needed | Yes | Yes (Satori) | No | N/A |
 | CJK/Arabic/Emoji | Yes | Partial | Yes | Yes |

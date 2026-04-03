@@ -56,12 +56,12 @@
 
 **Canal 1 — Hacker News (Show HN)**
 ```
-Show HN: OG Engine – Generate OG images in 2ms without a browser
+Show HN: OG Engine – Generate OG images in ~22ms without a browser
 
-We built an API that replaces Puppeteer/Playwright for generating social 
+We built an API that replaces Puppeteer/Playwright for generating social
 images. It uses Pretext (text measurement without DOM) + server-side Canvas.
 
-- 500x faster than headless Chrome
+- Up to 30x faster than headless Chrome (6x warm, 30x cold start)
 - 10MB vs 500MB memory per render
 - Supports CJK, Arabic, emoji, mixed bidi
 - Free tier: 500 images/month
@@ -73,7 +73,7 @@ GitHub: https://github.com/xxx/og-engine
 **Timing :** Mardi ou mercredi, 14h UTC (meilleur créneau HN)
 
 **Canal 2 — Product Hunt**
-- Tagline : "Generate OG images 500x faster. No browser needed."
+- Tagline : "Generate OG images up to 30x faster. No browser needed."
 - 4-5 screenshots : landing page, code example, speed comparison, template gallery
 - Premier commentaire du maker expliquant la motivation
 - Demander aux early testers de commenter
@@ -83,7 +83,7 @@ GitHub: https://github.com/xxx/og-engine
 Thread structure (7-8 tweets) :
 1. Hook : "We deleted Puppeteer from our stack. Here's what replaced it."
 2. Le problème (Puppeteer = lent, lourd, cher)
-3. La solution (Canvas + Pretext = 2ms)
+3. La solution (Canvas + Pretext = ~22ms, up to 30x faster)
 4. GIF de la démo (frappe clavier → rendu instantané)
 5. Comparaison chiffrée (tableau Puppeteer vs OG Engine)
 6. Code example (curl one-liner)
@@ -115,7 +115,7 @@ Publier 1 article/semaine sur le blog og-engine.com/blog. Chaque article cible u
 | Semaine | Article | Mot-clé cible | Segment |
 |---------|---------|---------------|---------|
 | S3 | "How Pretext measures text without a browser" | pretext text measurement | A |
-| S4 | "Replace Puppeteer OG images with a 2ms API" | puppeteer og image alternative | A, B |
+| S4 | "Replace Puppeteer OG images with a ~22ms API (30x faster)" | puppeteer og image alternative | A, B |
 | S5 | "Generate dynamic email banners at scale" | dynamic email banner api | C |
 | S6 | "Next.js OG images without @vercel/og limits" | next.js og image api | A |
 | S7 | "Multilingual OG images: CJK, Arabic, emoji" | multilingual og image | B |
@@ -284,7 +284,7 @@ Upgrade Pro/Scale (20-30% des Starters)
 | Métrique | Cible |
 |----------|-------|
 | Uptime API | > 99.9% |
-| Temps de rendu P95 | < 10ms |
+| Temps de rendu P95 | < 25ms |
 | Appels API total/mois | 50k → 500k → 5M |
 
 ---
