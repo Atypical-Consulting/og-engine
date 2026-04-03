@@ -1,3 +1,5 @@
+import '../playground.css';
+
 const TEMPLATES = [
   { key: 'default', label: 'Default', description: 'Accent bar, grid, tag pill' },
   { key: 'social-card', label: 'Social Card', description: 'Large centered title' },
@@ -15,7 +17,7 @@ export function TemplateSelector({ value, onChange, accent }: Props) {
         {TEMPLATES.map((t) => {
           const active = value === t.key;
           return (
-            <button key={t.key} onClick={() => onChange(t.key)} title={t.description} style={{
+            <button key={t.key} onClick={() => onChange(t.key)} title={t.description} className="pg-picker-btn" style={{
               padding: '6px 10px', borderRadius: 6, fontSize: 10, fontFamily: 'inherit',
               border: active ? `1px solid ${accent}66` : '1px solid rgba(255,255,255,0.07)',
               background: active ? `${accent}12` : 'rgba(255,255,255,0.02)',
