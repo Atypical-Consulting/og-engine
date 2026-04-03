@@ -54,6 +54,12 @@ export default defineConfig({
         { label: 'Available Fonts', link: '/fonts/available-fonts/' },
         { label: 'Self-Hosting (Docker)', link: '/self-hosting/docker/' },
         { label: 'Playground', link: '/playground/' },
+        {
+          label: 'Compare',
+          items: [
+            { label: 'OG Engine vs Puppeteer', link: '/compare/puppeteer/' },
+          ],
+        },
         { label: 'Pricing & Limits', link: '/pricing/' },
         { label: 'Changelog', link: '/changelog/' },
       ],

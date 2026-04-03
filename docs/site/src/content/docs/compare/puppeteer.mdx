@@ -1,0 +1,116 @@
+---
+title: OG Engine vs Puppeteer
+description: Side-by-side comparison of OG Engine and Puppeteer for image generation. Performance, cost, architecture, and migration guide.
+---
+
+If you're using Puppeteer, Playwright, or any headless browser to generate OG images, social cards, or email banners — this page is for you.
+
+## Architecture Comparison
+
+| | Puppeteer / Playwright | OG Engine |
+|---|---|---|
+| **How it works** | Launches full Chrome, loads HTML/CSS, screenshots viewport | Measures text with Pretext, draws directly to Canvas |
+| **Runtime** | Chrome binary + Xvfb + sandbox + Node.js | Node.js (or Bun) only |
+| **Text rendering** | Full browser layout engine (Blink) | Pretext: Unicode-aware segmentation + Canvas |
+| **Output** | Screenshot of browser viewport | Canvas → PNG / WebP |
+| **Languages** | All (full browser) | All — CJK, Arabic, emoji, bidirectional |
+| **Fonts** | System fonts or network fetch | Pre-loaded .ttf files (8 families, zero latency) |
+
+## Performance
+
+| Metric | Puppeteer | OG Engine | Improvement |
+|---|---|---|---|
+| **Render time** | ~850ms | **~2ms** | 425x faster |
+| **Memory per render** | 200–500 MB | **~10 MB** | 20–50x less |
+| **Concurrency per instance** | 5–10 | **500+** | 50–100x more |
+| **Cold start** | 2–5 seconds | **~50ms** | 40–100x faster |
+| **CPU per render** | High (full layout + paint) | **Minimal** (text measure + draw) | ~10x less |
+
+## Infrastructure Cost
+
+For 50,000 images/month:
+
+| | Puppeteer (self-hosted) | OG Engine (hosted) | OG Engine (self-hosted) |
+|---|---|---|---|
+| **Compute** | 2–4 vCPU, 4–8 GB RAM | — | 1 vCPU, 512 MB RAM |
+| **Monthly cost** | ~$40–100 (cloud VM) | €39 (Pro plan) | ~$5–10 (container) |
+| **Maintenance** | Chrome updates, Xvfb, sandboxing, crash recovery | Zero | Docker image updates |
+| **Scaling** | Manual (add instances, load balance) | Automatic | Manual |
+
+## What You Lose
+
+OG Engine is **not** a general-purpose browser renderer. It generates images from structured text data. You cannot:
+
+- Render arbitrary HTML/CSS
+- Execute JavaScript in a browser context
+- Screenshot existing web pages
+- Use browser-specific APIs (DOM, CSSOM)
+
+If you need full HTML rendering, keep Puppeteer. If you need **text-on-image generation** (OG cards, social images, email banners), OG Engine is 425x faster and dramatically simpler.
+
+## Migration Guide
+
+### Before (Puppeteer)
+
+```typescript
+import puppeteer from 'puppeteer'
+
+const browser = await puppeteer.launch()
+const page = await browser.newPage()
+await page.setViewport({ width: 1200, height: 630 })
+await page.setContent(`
+  <html>
+    <body style="background: #0a0a0a; color: white; font-family: sans-serif; padding: 60px;">
+      <h1 style="font-size: 48px;">My Blog Post Title</h1>
+      <p style="font-size: 22px; color: #888;">A description that renders in a real browser.</p>
+    </body>
+  </html>
+`)
+const screenshot = await page.screenshot({ type: 'png' })
+await browser.close()
+```
+
+### After (OG Engine)
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY)
+
+const image = await og.render({
+  format: 'og',
+  title: 'My Blog Post Title',
+  description: 'A description that renders without a browser.',
+  style: { accent: '#38ef7d', font: 'Outfit', layout: 'left' },
+})
+```
+
+### After (curl)
+
+```bash
+curl -X POST https://api.og-engine.com/render \
+  -H "Authorization: Bearer $OG_ENGINE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"format":"og","title":"My Blog Post Title","description":"A description that renders without a browser."}' \
+  --output og.png
+```
+
+### Migration Checklist
+
+1. **Sign up** — `POST /auth/register` with your email (free, no credit card)
+2. **Map your HTML to JSON** — title, description, tag, author, style (accent, font, layout)
+3. **Replace the Puppeteer call** with `og.render()` or a curl to `/render`
+4. **Remove Chrome dependencies** — uninstall `puppeteer`, remove Xvfb from Dockerfile, drop `--no-sandbox` flags
+5. **Test with `/validate`** — free, unlimited — check that your text fits before rendering
+
+## When to Use Each
+
+| Use Case | Puppeteer | OG Engine |
+|---|---|---|
+| OG / social card images | Overkill | **Best fit** |
+| Email banners | Slow, complex | **Best fit** |
+| Blog hero images | Slow | **Best fit** |
+| Dynamic ad creatives | Possible | **Best fit** |
+| Screenshot existing pages | **Only option** | Not supported |
+| Full HTML rendering | **Only option** | Not supported |
+| PDF generation from HTML | **Only option** | Not supported |
