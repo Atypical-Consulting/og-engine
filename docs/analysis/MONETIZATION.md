@@ -176,11 +176,15 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 
   if (record.calls_used >= record.calls_limit) {
     return c.json({
-      error: 'Rate limit exceeded',
-      limit: record.calls_limit,
-      used: record.calls_used,
-      plan: record.plan,
-      upgrade_url: 'https://og-engine.com/#pricing'
+      error: 'rate_limited',
+      message: `Monthly render quota exceeded. Resets at next billing cycle.`,
+      details: {
+        limit: record.calls_limit,
+        used: record.calls_used,
+        resetAt: record.period_end,
+        upgradeUrl: 'https://og-engine.com/pricing'
+      },
+      docs: 'https://og-engine.com/api-reference/errors#rate_limited'
     }, 429)
   }
 
@@ -206,7 +210,7 @@ POST /auth/register
 { "email": "user@example.com" }
 ```
 
-→ Generate API key, send by email, plan = "free", limit = 500.
+→ Generate API key, return in HTTP response AND send by email. Response: `{ "apiKey": "oge_sk_...", "plan": "free", "limit": 500, "message": "API key also sent to {email}" }`
 
 No Stripe involved. This maximizes conversion to try the API.
 
