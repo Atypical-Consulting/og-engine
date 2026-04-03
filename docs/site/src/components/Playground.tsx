@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { renderCard, type RenderResult } from './engine/canvas-renderer';
+import { apiRender, checkApiAvailable } from './engine/api-client';
 import { GRADIENTS, type Gradient } from './engine/gradients';
 import { FONTS, loadGoogleFont, type FontEntry } from './engine/fonts';
 import { FORMATS, type FormatKey } from './engine/formats';
@@ -31,23 +32,66 @@ export default function Playground() {
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
+  const [useApi, setUseApi] = useState(false);
+  const [apiAvailable, setApiAvailable] = useState(false);
+  const [apiImageUrl, setApiImageUrl] = useState<string | null>(null);
+  const API_BASE = 'http://localhost:3000';
 
   useEffect(() => { loadGoogleFont(fontEntry); }, [fontEntry]);
 
   useEffect(() => {
+    checkApiAvailable(API_BASE).then(setApiAvailable);
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const id = setTimeout(() => {
-      const t0 = performance.now();
-      const result = renderCard(canvas, {
-        title, description, author, tag, format, accent, layout,
-        titleSize, descSize, fontEntry, gradient, bgImage, overlayOpacity: 0.65,
-      });
-      setRenderTime(performance.now() - t0);
-      setInfo(result);
-    }, 50);
-    return () => clearTimeout(id);
-  }, [title, description, author, tag, format, accent, layout, titleSize, descSize, fontEntry, gradient, bgImage]);
+
+    if (useApi) {
+      const id = setTimeout(async () => {
+        try {
+          const result = await apiRender(API_BASE, {
+            format, title, description, author, tag, accent,
+            layout, font: fontEntry.name, titleSize, descSize,
+            gradient: gradient.slug,
+          });
+          setApiImageUrl(result.imageUrl);
+          setRenderTime(result.renderTimeMs);
+          setInfo({
+            titleTotalLines: result.titleLines,
+            titleVisibleLines: result.titleLines,
+            descTotalLines: result.descLines,
+            descVisibleLines: result.descLines,
+            overflow: result.overflow,
+          });
+        } catch (err) {
+          console.error('API render failed:', err);
+          // Fallback to client-side
+          const t0 = performance.now();
+          const result = renderCard(canvas, {
+            title, description, author, tag, format, accent, layout,
+            titleSize, descSize, fontEntry, gradient, bgImage, overlayOpacity: 0.65,
+          });
+          setRenderTime(performance.now() - t0);
+          setInfo(result);
+          setApiImageUrl(null);
+        }
+      }, 50);
+      return () => clearTimeout(id);
+    } else {
+      setApiImageUrl(null);
+      const id = setTimeout(() => {
+        const t0 = performance.now();
+        const result = renderCard(canvas, {
+          title, description, author, tag, format, accent, layout,
+          titleSize, descSize, fontEntry, gradient, bgImage, overlayOpacity: 0.65,
+        });
+        setRenderTime(performance.now() - t0);
+        setInfo(result);
+      }, 50);
+      return () => clearTimeout(id);
+    }
+  }, [title, description, author, tag, format, accent, layout, titleSize, descSize, fontEntry, gradient, bgImage, useApi]);
 
   const download = useCallback(() => {
     const canvas = canvasRef.current;
@@ -136,20 +180,20 @@ export default function Playground() {
 
         <Section title="Content">
           <div>
-            <label style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Tag</label>
-            <input value={tag} onChange={(e) => setTag(e.target.value)} className="pg-input" style={inputStyle} />
+            <label htmlFor="pg-tag" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Tag</label>
+            <input id="pg-tag" value={tag} onChange={(e) => setTag(e.target.value)} className="pg-input" style={inputStyle} />
           </div>
           <div>
-            <label style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Title</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="pg-input" style={inputStyle} />
+            <label htmlFor="pg-title" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Title</label>
+            <input id="pg-title" value={title} onChange={(e) => setTitle(e.target.value)} className="pg-input" style={inputStyle} />
           </div>
           <div>
-            <label style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="pg-input" style={{ ...inputStyle, resize: 'vertical' }} />
+            <label htmlFor="pg-desc" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Description</label>
+            <textarea id="pg-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="pg-input" style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
           <div>
-            <label style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Author</label>
-            <input value={author} onChange={(e) => setAuthor(e.target.value)} className="pg-input" style={inputStyle} />
+            <label htmlFor="pg-author" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Author</label>
+            <input id="pg-author" value={author} onChange={(e) => setAuthor(e.target.value)} className="pg-input" style={inputStyle} />
           </div>
         </Section>
 
@@ -177,6 +221,17 @@ export default function Playground() {
           onDrop={handleDrop}
         >
           <canvas ref={canvasRef} style={{ width: '100%', display: 'block', aspectRatio: `${fmt.w}/${fmt.h}` }} />
+          {apiImageUrl && (
+            <img
+              src={apiImageUrl}
+              alt="API-rendered preview"
+              style={{
+                position: 'absolute', top: 0, left: 0,
+                width: '100%', height: '100%',
+                objectFit: 'contain',
+              }}
+            />
+          )}
           <RenderHUD renderTime={renderTime} info={info} accent={accent} />
           <DropZone visible={dragging} accent={accent} />
         </div>
@@ -214,6 +269,25 @@ export default function Playground() {
           </div>
         )}
 
+        {apiAvailable && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, color: '#64748b', fontFamily: 'var(--sl-font-mono)' }}>
+            <button
+              onClick={() => setUseApi(!useApi)}
+              className="pg-picker-btn"
+              style={{
+                padding: '4px 10px', borderRadius: 6, fontSize: 10,
+                border: `1px solid ${useApi ? accent : 'rgba(255,255,255,0.08)'}`,
+                background: useApi ? accent + '15' : 'rgba(255,255,255,0.02)',
+                color: useApi ? accent : '#64748b',
+                cursor: 'pointer', fontFamily: 'var(--sl-font-mono)',
+              }}
+            >
+              {useApi ? '⚡ API Mode' : '◻ Client Mode'}
+            </button>
+            {useApi && <span style={{ color: accent }}>Rendering via localhost:3000</span>}
+          </div>
+        )}
+
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={download} className="pg-download-btn" style={{
@@ -230,6 +304,7 @@ export default function Playground() {
               color: '#94a3b8', cursor: 'pointer',
             }}
             title="Fullscreen preview"
+            aria-label="Fullscreen preview"
           >
             ⛶
           </button>
