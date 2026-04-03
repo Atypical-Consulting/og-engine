@@ -1,42 +1,106 @@
+import { join } from 'node:path';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { registerFonts } from './engine/fonts';
+import { batchRoute } from './api/batch';
 import { healthRoute } from './api/health';
-import { validateRoute } from './api/validate';
+import { registerRoute } from './api/register';
 import { renderRoute } from './api/render';
-import { join } from 'path';
+import { templatesRoute } from './api/templates';
+import { triggersRoute } from './api/triggers';
+import { usageRoute } from './api/usage';
+import { validateRoute } from './api/validate';
+import { webhooksRoute } from './api/webhooks';
+import { registerFonts } from './engine/fonts';
+import { authMiddleware, optionalAuthMiddleware, planGate, usageTracking } from './middleware/auth';
+import { rateLimit } from './middleware/rate-limit';
 
 const app = new Hono();
 
 // CORS — allow playground and external clients
-app.use('*', cors({
-  origin: '*',
-  allowHeaders: ['Content-Type', 'Authorization'],
-  exposeHeaders: ['X-Render-Time-Ms', 'X-Title-Lines', 'X-Desc-Lines', 'X-Layout-Overflow'],
-}));
+app.use(
+  '*',
+  cors({
+    origin: '*',
+    allowHeaders: ['Content-Type', 'Authorization'],
+    exposeHeaders: [
+      'X-Render-Time-Ms',
+      'X-Title-Lines',
+      'X-Desc-Lines',
+      'X-Layout-Overflow',
+      'X-Batch-Count',
+      'X-Cache',
+      'X-RateLimit-Limit',
+      'X-RateLimit-Remaining',
+      'X-RateLimit-Reset',
+    ],
+  }),
+);
 
-// Mount routes
+// Rate limiting on render endpoints
+app.use('/render', rateLimit());
+app.use('/render/batch', rateLimit());
+app.use('/validate', rateLimit());
+
+// Auth middleware — conditionally applied based on AUTH_ENABLED env var
+// This allows running without a database in development
+const authEnabled = process.env.AUTH_ENABLED !== 'false';
+
+if (authEnabled) {
+  // Protected endpoints — require API key + track usage
+  app.use('/render', authMiddleware(), usageTracking('/render'));
+  app.use('/render/batch', authMiddleware(), planGate('batch'), usageTracking('/render/batch'));
+
+  // Optional auth for /validate (per DECISIONS.md Decision 3)
+  app.use('/validate', optionalAuthMiddleware());
+
+  // Usage endpoint — requires auth
+  app.use('/usage', authMiddleware());
+
+  // Custom templates — requires auth + Scale plan
+  app.use('/templates', authMiddleware(), planGate('custom_templates'));
+  app.use('/templates/*', authMiddleware(), planGate('custom_templates'));
+
+  // Webhook triggers — requires auth
+  app.use('/triggers', authMiddleware());
+  app.use('/triggers/*', authMiddleware());
+}
+
+// ─── Public routes ───────────────────────────────────────────
 app.route('/', healthRoute);
+app.route('/', registerRoute);
+app.route('/', webhooksRoute);
+
+// ─── API routes ──────────────────────────────────────────────
 app.route('/', validateRoute);
 app.route('/', renderRoute);
+app.route('/', batchRoute);
+app.route('/', usageRoute);
+app.route('/', templatesRoute);
+app.route('/', triggersRoute);
 
 // 404 fallback
 app.notFound((c) => {
-  return c.json({
-    error: 'not_found',
-    message: `No route matches ${c.req.method} ${c.req.path}`,
-    docs: 'https://og-engine.com/api-reference/overview',
-  }, 404);
+  return c.json(
+    {
+      error: 'not_found',
+      message: `No route matches ${c.req.method} ${c.req.path}`,
+      docs: 'https://og-engine.com/api-reference/overview',
+    },
+    404,
+  );
 });
 
 // Global error handler
 app.onError((err, c) => {
   console.error('Unhandled error:', err);
-  return c.json({
-    error: 'server_error',
-    message: 'An unexpected error occurred.',
-    docs: 'https://og-engine.com/api-reference/errors#server_error',
-  }, 500);
+  return c.json(
+    {
+      error: 'server_error',
+      message: 'An unexpected error occurred.',
+      docs: 'https://og-engine.com/api-reference/errors#server_error',
+    },
+    500,
+  );
 });
 
 // Start
@@ -46,6 +110,11 @@ const FONTS_DIR = join(import.meta.dir, '..', 'fonts');
 async function start() {
   await registerFonts(FONTS_DIR);
   console.log(`OG Engine listening on http://localhost:${PORT}`);
+  if (authEnabled) {
+    console.log('Auth: enabled (set AUTH_ENABLED=false to disable)');
+  } else {
+    console.log('Auth: disabled (development mode)');
+  }
 }
 
 start();

@@ -1,6 +1,6 @@
+import { readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import { GlobalFonts } from '@napi-rs/canvas';
-import { readdir, stat } from 'fs/promises';
-import { join } from 'path';
 
 export interface FontEntry {
   name: string;

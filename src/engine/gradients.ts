@@ -13,10 +13,7 @@ export const GRADIENTS: Gradient[] = [
   { name: 'Slate', slug: 'slate', stops: ['#12141a', '#0a0c10'] },
 ];
 
-export const ACCENTS = [
-  '#38ef7d', '#67e8f9', '#c4b5fd', '#fbbf24',
-  '#fb7185', '#fb923c', '#e2e8f0', '#a3e635',
-];
+export const ACCENTS = ['#38ef7d', '#67e8f9', '#c4b5fd', '#fbbf24', '#fb7185', '#fb923c', '#e2e8f0', '#a3e635'];
 
 export function getGradientBySlug(slug: string): Gradient {
   return GRADIENTS.find((g) => g.slug === slug) ?? GRADIENTS[0];

@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { validateRoute } from '../../src/api/validate';
 import { registerFonts } from '../../src/engine/fonts';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = new Hono();
@@ -35,7 +35,8 @@ describe('POST /validate', () => {
   it('returns fits: false for overflowing title', async () => {
     const res = await post({
       format: 'og',
-      title: 'This is an extremely long title that will certainly overflow because it has too many words to possibly fit within three lines of the OG format at the default font size of forty-eight pixels',
+      title:
+        'This is an extremely long title that will certainly overflow because it has too many words to possibly fit within three lines of the OG format at the default font size of forty-eight pixels',
     });
     const body = await res.json();
     expect(body.fits).toBe(false);
@@ -74,5 +75,20 @@ describe('POST /validate', () => {
     const body = await res.json();
     expect(body.description).toBeDefined();
     expect(body.description.lines).toBeGreaterThan(0);
+  });
+
+  it('returns autoFit sizes when autoFit is true', async () => {
+    const res = await post({
+      format: 'og',
+      title:
+        'A very long title that would normally overflow but autoFit should find a smaller size that works perfectly fine',
+      autoFit: true,
+    });
+    const body = await res.json();
+    expect(body.fits).toBe(true);
+    expect(body.autoFit).toBeDefined();
+    expect(body.autoFit.titleSize).toBeGreaterThanOrEqual(28);
+    expect(body.autoFit.titleSize).toBeLessThanOrEqual(48);
+    expect(body.title.overflow).toBe(false);
   });
 });

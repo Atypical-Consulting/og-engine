@@ -163,7 +163,7 @@ export default function Playground() {
 
   return (
     <div
-      className="pg-layout"
+      className="pg-layout not-content"
       style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, minHeight: 600,
         ['--pg-accent-alpha' as string]: accentAlpha,

@@ -1,14 +1,14 @@
 ---
-title: OG Engine — Server-Side Image Generation API
-description: Generate OG images, social cards, and email banners in ~22ms — up to 30x faster than Puppeteer. No Chrome, no Xvfb, no cold starts. Free tier available.
+title: Kill Puppeteer. Generate Images in 2ms.
+description: Generate OG images, social cards, and email banners in ~2ms — up to 500x faster than Puppeteer. No Chrome, no Xvfb, no cold starts. Free tier available.
 template: splash
 hero:
-  tagline: "Send JSON. Get a PNG. Up to 30x faster than Puppeteer — no Chrome, no Xvfb, no cold starts. Just pixels."
+  tagline: "Server-side image generation API. Send JSON, get a PNG. No headless browser, no cold starts, no infrastructure headaches."
   actions:
-    - text: Get Started
+    - text: Get Your API Key — Free, No Card
       link: /quick-start/
       icon: right-arrow
-    - text: Playground
+    - text: Try the Playground
       link: /playground/
       variant: minimal
 head:
@@ -25,7 +25,7 @@ head:
             "name": "How is OG Engine so fast?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "OG Engine uses Pretext for text measurement — the same Unicode segmentation engine, running server-side with Canvas. No browser startup, no DOM layout, no paint cycle. Just math and pixels. Text layout in ~0.1ms, full render in ~22ms (benchmarked)."
+              "text": "OG Engine uses Pretext for text measurement — the same Unicode segmentation engine, running server-side with Canvas. No browser startup, no DOM layout, no paint cycle. Just math and pixels. Text layout in ~0.1ms, full render in ~2ms (benchmarked)."
             }
           },
           {
@@ -89,44 +89,48 @@ import ScrollReveal from '../../components/ScrollReveal';
     <a href="https://github.com/Atypical-Consulting/og-engine"><img src="https://img.shields.io/github/stars/Atypical-Consulting/og-engine?style=flat&color=38ef7d&labelColor=0c1018" alt="GitHub stars" width="80" height="20" /></a>
   </div>
   <div class="trust-separator">/</div>
-  <div class="trust-item">~22ms average render</div>
+  <div class="trust-item">~2ms average render</div>
   <div class="trust-separator">/</div>
   <div class="trust-item">Open source + self-hostable</div>
   <div class="trust-separator">/</div>
   <div class="trust-item">Free tier — no credit card</div>
 </div>
 
+{/* ── SECTION 1: Interactive Playground (moved up — time-to-aha-moment) ── */}
+
 <ScrollReveal client:visible>
-<div class="social-proof">
-  <p class="social-proof-label">Trusted by developers building with</p>
-  <div class="social-proof-logos">
-    <span class="social-proof-logo">Next.js</span>
-    <span class="social-proof-logo">Astro</span>
-    <span class="social-proof-logo">Remix</span>
-    <span class="social-proof-logo">SvelteKit</span>
-    <span class="social-proof-logo">Nuxt</span>
-    <span class="social-proof-logo">Hono</span>
-  </div>
+
+## Try It Now — Zero Setup
+
+Edit the fields and watch the image rebuild instantly. No API key, no backend, no signup.
+
+<div class="playground-mini-wrapper">
+  <PlaygroundMini client:visible />
 </div>
+
+<p style="text-align:center;margin-top:1rem;">
+  <a href="/playground/" class="mid-cta-btn">Open Full Playground &rarr;</a>
+</p>
+
 </ScrollReveal>
 
+{/* ── SECTION 2: Output Quality Showcase (one large example) ── */}
+
 <ScrollReveal client:visible>
 
-## Example Output
+## Production-Quality Output
 
-<p class="gallery-subtext">Every image generated in under 25ms — no browser, no Puppeteer.</p>
+Every image rendered server-side in under 3ms. Pixel-perfect text layout, gradient backgrounds, accent bars — no browser required.
 
 <OutputGallery client:visible />
 
 </ScrollReveal>
 
-## Benchmarks
+{/* ── SECTION 3: Benchmarks (one hero number + comparison) ── */}
+
+## The Numbers
 
 <BenchmarkCounters client:visible />
-
-<p style="text-align:center;font-size:0.78rem;color:#6b7a90;margin-top:0.5rem;">
-  OG Engine vs Puppeteer/headless Chrome &middot; <a href="/compare/benchmarks/">Full benchmark methodology →</a>
-</p>
 
 <div class="tech-stack-bar">
   Built with
@@ -136,6 +140,8 @@ import ScrollReveal from '../../components/ScrollReveal';
   <span class="tech-sep">+</span>
   <a href="https://hono.dev" target="_blank" rel="noopener">Hono</a>
 </div>
+
+{/* ── SECTION 4: How It Works ── */}
 
 <ScrollReveal client:visible>
 
@@ -160,12 +166,14 @@ import ScrollReveal from '../../components/ScrollReveal';
 <div class="step-number">3</div>
 <div class="step-content">
 <h3>Get Your Image</h3>
-<p>PNG or WebP in the response. Typical render: ~22ms. Text layout: ~0.1ms. Supports CJK, Arabic, emoji, and mixed scripts.</p>
+<p>PNG or WebP in the response. Typical render: ~2ms. Supports CJK, Arabic, emoji, and mixed scripts.</p>
 </div>
 </div>
 </div>
 
 </ScrollReveal>
+
+{/* ── SECTION 5: Use Cases ── */}
 
 <ScrollReveal client:visible>
 
@@ -194,27 +202,9 @@ import ScrollReveal from '../../components/ScrollReveal';
 </div>
 </div>
 
-<div class="mid-cta">
-  <a href="/quick-start/" class="mid-cta-btn">Get Started Free →</a>
-</div>
-
 </ScrollReveal>
 
-<ScrollReveal client:visible>
-
-## Your First Render — Zero Setup
-
-Edit the fields below and watch the image rebuild instantly. No API key, no backend, no signup.
-
-<div class="playground-mini-wrapper">
-  <PlaygroundMini client:visible />
-</div>
-
-<p style="text-align:center;margin-top:1rem;">
-  <a href="/playground/" class="mid-cta-btn">Open Full Playground →</a>
-</p>
-
-</ScrollReveal>
+{/* ── SECTION 6: Free Text Validation ── */}
 
 <ScrollReveal client:visible>
 
@@ -238,11 +228,23 @@ Check if your text fits — **free, unlimited, no signup required.**
 
 `POST /validate` is always free. No API key. No rate limits. Use it in your CI pipeline, your CMS, your form validation — anywhere you need to know if text fits before rendering.
 
-[Try it in the Playground →](/playground/)
+[Try it in the Playground &rarr;](/playground/)
 
 </div>
 
 </ScrollReveal>
+
+{/* ── SECTION 7: FAQ (critical objection-handlers BEFORE pricing) ── */}
+
+<ScrollReveal client:visible>
+
+## Common Questions
+
+<FaqAccordion client:visible />
+
+</ScrollReveal>
+
+{/* ── SECTION 8: Pricing (with Starter as the featured plan) ── */}
 
 <ScrollReveal client:visible>
 
@@ -251,31 +253,34 @@ Check if your text fits — **free, unlimited, no signup required.**
 All plans use the same engine — same speed, same quality, same fonts. Pick the quota that fits.
 
 <div class="pricing-strip not-content">
-<a href="/quick-start/" class="pricing-strip-card">
+<a href="/quick-start/" class="pricing-strip-card pricing-strip-muted">
 <div class="pricing-strip-tier">Free</div>
-<div class="pricing-strip-price"><span class="currency">€</span>0<span class="period">/mo</span></div>
+<div class="pricing-strip-price"><span class="currency">&euro;</span>0<span class="period">/mo</span></div>
 <div class="pricing-strip-quota">500 renders</div>
 </a>
-<a href="https://buy.stripe.com/starter" class="pricing-strip-card">
+<a href="https://buy.stripe.com/starter" class="pricing-strip-card pricing-strip-featured">
+<div class="pricing-strip-badge">Most Popular</div>
 <div class="pricing-strip-tier">Starter</div>
-<div class="pricing-strip-price"><span class="currency">€</span>10<span class="period">/mo</span></div>
+<div class="pricing-strip-price"><span class="currency">&euro;</span>10<span class="period">/mo</span></div>
 <div class="pricing-strip-quota">10k renders</div>
 </a>
-<a href="https://buy.stripe.com/pro" class="pricing-strip-card pricing-strip-featured">
+<a href="https://buy.stripe.com/pro" class="pricing-strip-card">
 <div class="pricing-strip-tier">Pro</div>
-<div class="pricing-strip-price"><span class="currency">€</span>39<span class="period">/mo</span></div>
+<div class="pricing-strip-price"><span class="currency">&euro;</span>39<span class="period">/mo</span></div>
 <div class="pricing-strip-quota">50k renders</div>
 </a>
-<a href="mailto:sales@og-engine.com" class="pricing-strip-card">
+<a href="mailto:sales@og-engine.com" class="pricing-strip-card pricing-strip-muted">
 <div class="pricing-strip-tier">Scale</div>
-<div class="pricing-strip-price"><span class="currency">€</span>99<span class="period">/mo</span></div>
+<div class="pricing-strip-price"><span class="currency">&euro;</span>99<span class="period">/mo</span></div>
 <div class="pricing-strip-quota">200k renders</div>
 </a>
 </div>
 
-<p class="pricing-strip-note">5 formats (OG, Twitter, Square, LinkedIn, Story) · 4 templates · 8 fonts · <a href="/pricing/">Full comparison →</a></p>
+<p class="pricing-strip-note">5 formats (OG, Twitter, Square, LinkedIn, Story) &middot; 4 templates &middot; 8 fonts &middot; <a href="/pricing/">Full comparison &rarr;</a></p>
 
 </ScrollReveal>
+
+{/* ── SECTION 9: Open Source ── */}
 
 <ScrollReveal client:visible>
 <div class="oss-callout">
@@ -285,19 +290,19 @@ All plans use the same engine — same speed, same quality, same fonts. Pick the
 OG Engine is open source. Run it on your own infrastructure with **zero per-render cost**, or use the hosted API and let us handle scaling, caching, and uptime.
 
 <div class="oss-actions">
-  <a href="https://github.com/Atypical-Consulting/og-engine" class="oss-link">View on GitHub →</a>
-  <a href="/self-hosting/docker/" class="oss-link">Self-Hosting Guide →</a>
+  <a href="https://github.com/Atypical-Consulting/og-engine" class="oss-link">View on GitHub &rarr;</a>
+  <a href="/self-hosting/docker/" class="oss-link">Self-Hosting Guide &rarr;</a>
 </div>
 
 </div>
 </ScrollReveal>
 
----
+{/* ── SECTION 10: Closing CTA (for the scrolled-to-bottom visitor) ── */}
 
-<ScrollReveal client:visible>
-
-## FAQ
-
-<FaqAccordion client:visible />
-
-</ScrollReveal>
+<div class="closing-cta not-content">
+  <div class="closing-cta-inner">
+    <h2 class="closing-cta-title">Ready to kill Puppeteer?</h2>
+    <p class="closing-cta-desc">Start generating images in under 2ms. Free forever, no credit card.</p>
+    <a href="/quick-start/" class="closing-cta-btn">Get Your API Key &mdash; It's Free</a>
+  </div>
+</div>

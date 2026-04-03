@@ -154,6 +154,8 @@ export default defineConfig({
             { label: 'GET /health', link: '/api-reference/health/' },
             { label: 'POST /auth/register', link: '/api-reference/register/' },
             { label: 'GET /usage', link: '/api-reference/usage/' },
+            { label: 'Custom Templates', link: '/api-reference/templates/' },
+            { label: 'Webhook Triggers', link: '/api-reference/triggers/' },
             { label: 'Errors', link: '/api-reference/errors/' },
           ],
         },

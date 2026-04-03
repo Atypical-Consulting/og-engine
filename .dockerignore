@@ -1,0 +1,9 @@
+node_modules
+.git
+tests
+benchmarks
+docs
+scripts
+*.md
+.dockerignore
+Dockerfile

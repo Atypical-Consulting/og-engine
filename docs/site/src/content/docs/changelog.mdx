@@ -82,13 +82,52 @@ Integration examples included for **Next.js**, **Astro**, **Express**, and **Clo
 
 ---
 
+## v0.2.0 — 2026-04-03
+
+**Scale, polish, and growth features.**
+
+### New Features
+
+- **PDF output** — `output.format: "pdf"` generates a single-page PDF with the rendered image embedded. Zero dependencies.
+- **AI text fitting** — `style.autoFit: true` on `/render` and `autoFit: true` on `/validate`. Binary search finds the largest font size that fits within line limits.
+- **Custom template builder** — JSON DSL with 6 layer types (fill, gradient, rect, text, image, line). Variable interpolation with `{{title}}`, `{{description}}`, `{{author}}`, `{{tag}}`, `{{accent}}`. Scale plan only.
+- **Webhook triggers** — Register callback URLs with saved render configs. `POST /triggers/:id/fire` re-renders and POSTs the image to your URL. Supports content overrides.
+- **Image cache** — In-memory LRU cache for rendered images. Cache hits return instantly with `X-Cache: hit` header.
+
+### API Endpoints
+
+- **`POST /templates`** — Create/update custom templates (Scale plan)
+- **`GET /templates`** — List your custom templates
+- **`DELETE /templates/:id`** — Delete a custom template
+- **`POST /triggers`** — Register a webhook trigger
+- **`GET /triggers`** — List your triggers
+- **`DELETE /triggers/:id`** — Deactivate a trigger
+- **`POST /triggers/:id/fire`** — Fire a trigger with optional content overrides
+
+### Infrastructure
+
+- **SQLite database** for API keys, usage tracking, custom templates, and webhooks
+- **API key authentication** with plan-based feature gating (402 Payment Required)
+- **Usage metering** with per-endpoint and per-format breakdown
+- **Stripe webhook handler** for checkout, subscription updates, and billing cycle resets
+- **Rate limiting** with configurable window and max via environment variables
+- **Biome** linting and formatting
+- **GitHub Actions CI** — lint, type-check, test, Docker build on every PR
+- **Lefthook** pre-commit hooks for lint and type-check
+
+### SDK Updates
+
+- Added `autoFit` to render style options
+- Added `pdf` to output format options
+- Added `custom:<name>` template support
+
+---
+
 ## Upcoming
 
 | Version | Focus | Highlights |
 |---|---|---|
-| **v0.2.0** | Caching & Analytics | Redis cache layer, API key management dashboard, usage analytics |
-| **v0.3.0** | Standards & Fonts | OpenAPI/Swagger specification, additional font families, SVG output |
-| **v0.4.0** | Edge & Customization | Cloudflare Workers deployment, custom template DSL |
+| **v0.3.0** | Edge & Fonts | Cloudflare Workers deployment, additional font families, SVG output |
 | **v1.0.0** | Stability | Stable API contract, SLA guarantees, Python/Go/Ruby SDKs |
 
 Subscribe to [status.og-engine.com](https://status.og-engine.com) for release notifications.

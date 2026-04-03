@@ -18,7 +18,7 @@ POST https://api.og-engine.com/render
 | Field | Type | Required | Default | Constraints |
 |---|---|---|---|---|
 | `format` | string | Yes | — | `og`, `twitter`, `square`, `linkedin`, `story` |
-| `template` | string | No | `"default"` | `default`, `social-card`, `blog-hero`, `email-banner` |
+| `template` | string | No | `"default"` | `default`, `social-card`, `blog-hero`, `email-banner`, or `custom:<name>` (Scale plan) |
 | `title` | string | Yes | — | Max 200 characters |
 | `description` | string | No | — | Max 500 characters |
 | `author` | string | No | — | Max 100 characters |
@@ -30,7 +30,8 @@ POST https://api.og-engine.com/render
 | `style.layout` | string | No | `"left"` | `left`, `center`, `bottom` |
 | `style.gradient` | string | No | `"void"` | `void`, `deep-sea`, `ember`, `forest`, `plum`, `slate` |
 | `style.overlayOpacity` | number | No | `0.65` | 0.2–0.9 (used with background image) |
-| `output.format` | string | No | `"png"` | `png`, `webp` (Starter+ plans only) |
+| `style.autoFit` | boolean | No | `false` | Auto-adjust font sizes to prevent overflow |
+| `output.format` | string | No | `"png"` | `png`, `webp` (Starter+), `pdf` |
 | `output.quality` | number | No | `90` | 1–100 (WebP only) |
 
 ## Example Request
@@ -88,7 +89,8 @@ On success, the response body is the raw binary image. The HTTP status is `200`.
 
 | Header | Example | Description |
 |---|---|---|
-| `Content-Type` | `image/png` | MIME type of the output image |
+| `Content-Type` | `image/png` | MIME type (`image/png`, `image/webp`, or `application/pdf`) |
+| `X-Cache` | `miss` | `hit` if served from image cache, `miss` otherwise |
 | `X-Render-Time-Ms` | `2.34` | Server-side render time in milliseconds |
 | `X-Title-Lines` | `2` | Number of lines the title was wrapped to |
 | `X-Desc-Lines` | `3` | Number of lines the description was wrapped to |
