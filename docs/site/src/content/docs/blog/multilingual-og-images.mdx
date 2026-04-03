@@ -1,0 +1,111 @@
+---
+title: "Multilingual OG Images: CJK, Arabic, and Emoji"
+description: Why most OG image generators fail at non-Latin scripts, and how OG Engine handles them natively.
+---
+
+If your product serves users who write in Japanese, Arabic, Chinese, Korean, or who use emoji in titles — your OG image generator probably has bugs you haven't noticed yet.
+
+## The Problem
+
+Most OG image solutions use one of two approaches:
+
+1. **HTML/CSS in headless Chrome** — works for all scripts, but costs 850ms and 200MB per render
+2. **Simple Canvas text drawing** — fast, but breaks on:
+   - CJK line wrapping (breaks mid-word or at wrong characters)
+   - Arabic bidirectional text (renders backwards or disconnects letter forms)
+   - Emoji sequences (splits multi-codepoint emoji into broken symbols)
+   - Mixed scripts (Japanese + English in one title)
+
+OG Engine handles all of these correctly because it uses Pretext for text segmentation rather than naive string splitting.
+
+## CJK: Chinese, Japanese, Korean
+
+CJK text doesn't use spaces between words. Line breaking follows specific rules:
+
+- **Can break** between most CJK characters
+- **Cannot break** before punctuation like `。`, `、`, `)`, `」`
+- **Cannot break** after opening punctuation like `(`, `「`
+- **Mixed text** (CJK + Latin) requires break opportunities at script boundaries
+
+OG Engine ships with **Noto Sans JP** pre-loaded, covering all CJK Unified Ideographs, Hiragana, and Katakana.
+
+### Example
+
+```json
+{
+  "format": "og",
+  "title": "サーバーサイドの画像生成 — ブラウザ不要",
+  "description": "Pretextエンジンによる高速テキストレイアウト。2msでPNG生成。",
+  "style": { "font": "Noto Sans JP" }
+}
+```
+
+## Arabic: Bidirectional Text
+
+Arabic text is right-to-left (RTL), but numbers and Latin text within Arabic are left-to-right. This creates bidirectional runs that must be reordered for display.
+
+Additionally, Arabic letters change shape based on position:
+
+- **Isolated:** ع
+- **Initial:** عـ
+- **Medial:** ـعـ
+- **Final:** ـع
+
+Pretext handles the Unicode Bidirectional Algorithm (UAX #9), and the font shaping is handled by the Canvas text renderer (Skia via @napi-rs/canvas).
+
+OG Engine ships with **Noto Sans AR** pre-loaded.
+
+### Example
+
+```json
+{
+  "format": "og",
+  "title": "إنشاء صور OG بدون متصفح",
+  "description": "محرك تخطيط النص بدون Chrome — 2 مللي ثانية لكل صورة",
+  "style": { "font": "Noto Sans AR" }
+}
+```
+
+## Emoji
+
+Modern emoji are surprisingly complex:
+
+- Flag emoji: 🇫🇷 = two regional indicator symbols
+- Skin tone: 👋🏽 = hand + skin tone modifier
+- Family: 👨‍👩‍👧‍👦 = four people joined by zero-width joiners (7 codepoints, 1 glyph)
+- Compound: ❤️‍🔥 = heart + ZWJ + fire
+
+Naive string operations (like `str.length` or `str.slice()`) break these sequences. Pretext uses grapheme cluster segmentation (UAX #29) to treat each visual emoji as a single unit for line breaking and measurement.
+
+### Example
+
+```json
+{
+  "format": "og",
+  "title": "Ship Features, Not Browsers 🚀",
+  "description": "From Tokyo 🇯🇵 to Cairo 🇪🇬 — pixel-perfect text in every language."
+}
+```
+
+## Mixed Script Content
+
+Real-world titles mix scripts: "新機能: OG Engine v0.2 リリース" contains Japanese, Latin, numbers, and punctuation. Pretext handles script boundary detection and applies appropriate break rules for each segment.
+
+## Pre-Loaded Fonts
+
+OG Engine ships with 8 font families covering major script systems:
+
+| Font | Scripts | Use Case |
+|---|---|---|
+| Outfit | Latin | Default, modern geometric |
+| Inter | Latin | Technical, neutral |
+| Noto Sans JP | Latin + CJK | Japanese content |
+| Noto Sans AR | Latin + Arabic | Arabic content |
+| Playfair Display | Latin | Editorial, elegant |
+| Sora | Latin | Friendly, rounded |
+| Space Grotesk | Latin | Developer-focused |
+| JetBrains Mono | Latin | Code, monospace |
+
+## Try It
+
+Test multilingual rendering in the [Playground](/playground/) — no API key needed. Switch fonts, paste CJK or Arabic text, and see the result instantly.

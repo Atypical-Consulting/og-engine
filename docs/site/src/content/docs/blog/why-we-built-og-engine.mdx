@@ -1,0 +1,66 @@
+---
+title: Why We Built OG Engine
+description: The problem with headless Chrome for image generation, and how Pretext changes the equation.
+---
+
+Every SaaS product needs OG images. The standard approach — Puppeteer, headless Chrome, screenshot a rendered HTML page — works. But it's absurdly expensive for what it does.
+
+## The Puppeteer Problem
+
+To generate a 1200x630 PNG with some text on a gradient, the typical stack:
+
+1. **Launches a full Chrome browser** (~200MB memory)
+2. **Loads a complete HTML document** with CSS parsing, DOM construction, layout
+3. **Paints pixels** through Blink's rendering pipeline — designed for interactive web pages
+4. **Screenshots the viewport** and encodes to PNG
+5. **Kills the browser** (or pools it, adding connection management complexity)
+
+This takes ~850ms per image. At 50,000 images/month, you need multiple instances, crash recovery, Xvfb for headless rendering, and Chrome security sandboxing. Infrastructure cost alone runs $40–100/month before you write a line of application code.
+
+For rendering text on a background — which is 95% of OG image use cases — this is like driving a semi truck to pick up a letter from the mailbox.
+
+## What Pretext Changes
+
+[Pretext](https://github.com/chenglou/pretext) is a JavaScript text measurement engine built by Cheng Lou. It handles:
+
+- **Unicode segmentation** — correctly identifies grapheme clusters, word boundaries, and line break opportunities
+- **Bidirectional text** — Arabic, Hebrew, and mixed-direction content
+- **CJK line breaking** — Chinese, Japanese, Korean text wrapping rules
+- **Emoji handling** — multi-codepoint emoji sequences treated as single glyphs
+
+Pretext computes exact text layout — line breaks, heights, overflow — without a browser. The measurement step that takes Chrome 200ms+ takes Pretext under 0.1ms.
+
+## The Architecture
+
+OG Engine combines Pretext with server-side Canvas rendering:
+
+1. **Pretext measures text** — computes line breaks, line count, total height (< 0.1ms)
+2. **Canvas draws the image** — gradient, grid pattern, accent bar, text, decorations (< 2ms)
+3. **PNG encode** — Canvas to binary (< 1ms)
+
+Total: **2–5ms per image**. No browser, no DOM, no Xvfb. A single Node.js process handles 500+ concurrent renders.
+
+## The Numbers
+
+| | Puppeteer | OG Engine |
+|---|---|---|
+| Render | ~850ms | ~2ms |
+| Memory | ~200–500MB | ~10MB |
+| Concurrency | 5–10/instance | 500+/instance |
+| Cold start | 2–5s | ~50ms |
+| Infrastructure | Chrome + Xvfb | Node.js |
+
+At 50,000 images/month, OG Engine Pro costs €39/mo and requires zero infrastructure management. Self-hosting runs on a $5/month container.
+
+## Who It's For
+
+- **Blog platforms** generating OG images per post
+- **SaaS products** creating social cards for shared content
+- **E-commerce** producing product images with price overlays
+- **Email marketing** rendering personalized banners at scale
+
+If you're currently running Puppeteer to put text on images, you're running a browser to do canvas math. OG Engine does the canvas math directly.
+
+## Try It
+
+500 free renders/month. No credit card. [Get started](/quick-start/) or try the [playground](/playground/) — zero setup, instant results.
