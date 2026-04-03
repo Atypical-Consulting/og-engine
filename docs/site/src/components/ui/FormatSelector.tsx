@@ -1,3 +1,4 @@
+import '../playground.css';
 import { FORMATS, FORMAT_KEYS, type FormatKey } from '../engine/formats';
 
 interface Props {
@@ -16,6 +17,7 @@ export function FormatSelector({ value, onChange, accent }: Props) {
           <button
             key={key}
             onClick={() => onChange(key)}
+            className="pg-picker-btn"
             style={{
               padding: '5px 8px', borderRadius: 6, fontSize: 10, fontFamily: 'inherit',
               border: active ? `1px solid ${accent}66` : '1px solid rgba(255,255,255,0.07)',
