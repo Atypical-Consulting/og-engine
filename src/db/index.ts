@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import Database from 'better-sqlite3';
+import { openDatabase, type SqliteDatabase } from './sqlite';
 
 export type Plan = 'free' | 'starter' | 'pro' | 'scale';
 
@@ -33,21 +33,18 @@ export interface UsageLogRecord {
   created_at: string;
 }
 
-let db: Database.Database | null = null;
+let db: SqliteDatabase | null = null;
 
-export function getDb(): Database.Database {
+export function getDb(): SqliteDatabase {
   if (!db) {
     const raw = process.env.DATABASE_URL?.replace('file:', '') ?? join(process.cwd(), 'data', 'og-engine.db');
-    const isMemory = raw === ':memory:';
-    db = new Database(isMemory ? ':memory:' : raw);
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
+    db = openDatabase(raw);
     migrate(db);
   }
   return db;
 }
 
-function migrate(d: Database.Database): void {
+function migrate(d: SqliteDatabase): void {
   d.exec(`
     CREATE TABLE IF NOT EXISTS api_keys (
       id TEXT PRIMARY KEY,
