@@ -12,14 +12,14 @@
     "bench:full": "bun run benchmarks/run-full.ts"
   },
   "dependencies": {
-    "@napi-rs/canvas": "^0.1.65",
-    "hono": "^4.7.0",
-    "zod": "^3.25.0"
+    "@napi-rs/canvas": "^0.1.97",
+    "hono": "^4.12.10",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/bun": "^1.3.11",
     "puppeteer": "^24.40.0",
-    "typescript": "^5.8.0",
-    "vitest": "^3.1.0"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   }
 }
