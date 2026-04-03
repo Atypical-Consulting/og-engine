@@ -16,7 +16,7 @@ Similarly, if you're programmatically generating cards from database content, va
 ## Basic Validation Request
 
 ```bash
-curl -X POST https://api.og-engine.com/validate \
+curl -X POST https://og-engine.com/validate \
   -H "Content-Type: application/json" \
   -d '{
     "format": "og",
@@ -40,7 +40,7 @@ The `Authorization` header is optional — if provided, your API key is validate
 ## Checking Both Title and Description
 
 ```bash
-curl -X POST https://api.og-engine.com/validate \
+curl -X POST https://og-engine.com/validate \
   -H "Content-Type: application/json" \
   -d '{
     "format": "og",
@@ -65,7 +65,7 @@ Here the title fits (3 lines, max 3), but the description overflows (5 lines, ma
 You can override the default max-lines limits to match your specific template configuration:
 
 ```bash
-curl -X POST https://api.og-engine.com/validate \
+curl -X POST https://og-engine.com/validate \
   -H "Content-Type: application/json" \
   -d '{
     "format": "og",
@@ -83,7 +83,7 @@ This is useful when a template visually only has room for 2 title lines even tho
 Validating with a different font or size gives you accurate results for non-default configurations. Text measurement is font-metric-dependent — the same string in `Playfair Display` at 52px will wrap differently than `Inter` at 48px.
 
 ```bash
-curl -X POST https://api.og-engine.com/validate \
+curl -X POST https://og-engine.com/validate \
   -H "Content-Type: application/json" \
   -d '{
     "format": "og",
@@ -110,7 +110,7 @@ function OGTitleField() {
   async function handleBlur() {
     if (!title) return
 
-    const res = await fetch('https://api.og-engine.com/validate', {
+    const res = await fetch('https://og-engine.com/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ format: 'og', title }),
@@ -150,7 +150,7 @@ async function findMaxFontSize(title: string, format: string): Promise<number> {
 
   while (lo < hi) {
     const mid = Math.floor((lo + hi + 1) / 2)
-    const res = await fetch('https://api.og-engine.com/validate', {
+    const res = await fetch('https://og-engine.com/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ format, title, titleSize: mid, maxTitleLines: 3 }),

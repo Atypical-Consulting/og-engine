@@ -6,7 +6,7 @@ description: Generate multiple images in a single API call. Returns a ZIP archiv
 Renders multiple images in a single API call. Each item is an independent render request. Returns a ZIP archive containing all generated images.
 
 ```
-POST https://api.og-engine.com/render/batch
+POST https://og-engine.com/render/batch
 ```
 
 **Authentication:** Required (`Authorization: Bearer oge_sk_...`)
@@ -44,7 +44,7 @@ Each item in `items` is a full render request body. See [POST /render](/api-refe
 ## Example Request
 
 ```bash
-curl -X POST https://api.og-engine.com/render/batch \
+curl -X POST https://og-engine.com/render/batch \
   -H "Authorization: Bearer oge_sk_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{

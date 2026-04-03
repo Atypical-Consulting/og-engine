@@ -8,7 +8,7 @@ import PlaygroundContextual from '../../../components/PlaygroundContextual';
 Renders a single image from a structured JSON payload. Returns the binary image bytes directly — not a URL to an image.
 
 ```
-POST https://api.og-engine.com/render
+POST https://og-engine.com/render
 ```
 
 **Authentication:** Required (`Authorization: Bearer oge_sk_...`)
@@ -37,7 +37,7 @@ POST https://api.og-engine.com/render
 ## Example Request
 
 ```bash
-curl -X POST https://api.og-engine.com/render \
+curl -X POST https://og-engine.com/render \
   -H "Authorization: Bearer oge_sk_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -67,7 +67,7 @@ curl -X POST https://api.og-engine.com/render \
 To supply a background image, use `multipart/form-data`. The JSON payload goes in a field named `config`, the image in `image`:
 
 ```bash
-curl -X POST https://api.og-engine.com/render \
+curl -X POST https://og-engine.com/render \
   -H "Authorization: Bearer oge_sk_YOUR_KEY" \
   -F 'config={
     "format": "og",

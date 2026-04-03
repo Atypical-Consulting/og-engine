@@ -6,7 +6,7 @@ description: Check service status and retrieve lists of available fonts, formats
 Returns the current service status along with lists of all available fonts, formats, and templates. Useful for validating your integration and discovering available options programmatically.
 
 ```
-GET https://api.og-engine.com/health
+GET https://og-engine.com/health
 ```
 
 **Authentication:** Not required
@@ -15,7 +15,7 @@ GET https://api.og-engine.com/health
 ## Example Request
 
 ```bash
-curl https://api.og-engine.com/health
+curl https://og-engine.com/health
 ```
 
 ## Response
@@ -75,7 +75,7 @@ In normal operation you will always see `"ok"`. Subscribe to [status.og-engine.c
 The `fonts` array in the response is the authoritative list of valid values for `style.font`. You can fetch it at startup to populate a font selector in your UI:
 
 ```typescript
-const { fonts } = await fetch('https://api.og-engine.com/health').then(r => r.json())
+const { fonts } = await fetch('https://og-engine.com/health').then(r => r.json())
 // ['Outfit', 'Inter', 'Playfair Display', ...]
 ```
 
