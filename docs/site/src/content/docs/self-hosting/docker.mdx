@@ -1,0 +1,165 @@
+---
+title: Self-Hosting with Docker
+description: Run OG Engine on your own infrastructure using Docker, Docker Compose, or Fly.io.
+---
+
+OG Engine is distributed as a Docker image. Self-hosting gives you full control over infrastructure costs, data residency, and uptime SLAs. The API is identical to the hosted version — no API key required for self-hosted instances unless you configure one.
+
+## Quick Start: Docker
+
+Pull and run the image with a single command:
+
+```bash
+docker run -p 3000:3000 ghcr.io/phmatray/og-engine:latest
+```
+
+The server starts on port 3000. Test it:
+
+```bash
+curl -X POST http://localhost:3000/render \
+  -H "Content-Type: application/json" \
+  -d '{"format": "og", "title": "Hello from self-hosted OG Engine"}' \
+  --output test.png
+```
+
+## Docker Compose
+
+For a persistent deployment with health checks and restart policy:
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  og-engine:
+    image: ghcr.io/phmatray/og-engine:latest
+    ports:
+      - '3000:3000'
+    environment:
+      - PORT=3000
+      - FONTS_DIR=/app/fonts
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+```
+
+Start the service:
+
+```bash
+docker compose up -d
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3000` | HTTP port the server listens on |
+| `FONTS_DIR` | `/app/fonts` | Directory containing `.ttf` font files |
+| `CACHE_SIZE` | `500` | LRU cache size for prepared text (items) |
+| `LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
+
+The fonts are bundled inside the Docker image. If you want to add custom fonts, mount a volume over `FONTS_DIR`:
+
+```yaml
+volumes:
+  - ./my-fonts:/app/fonts
+```
+
+Custom fonts must be `.ttf` format. The font family name used in `style.font` will match the family name embedded in the font file's metadata.
+
+## Health Check
+
+The `/health` endpoint is your readiness probe:
+
+```bash
+curl http://localhost:3000/health
+```
+
+```json
+{
+  "status": "ok",
+  "version": "0.1.0",
+  "fonts": ["Outfit", "Inter", "..."],
+  "formats": ["og", "twitter", "square", "linkedin", "story"],
+  "templates": ["default", "social-card", "blog-hero", "email-banner"]
+}
+```
+
+## Fly.io Deployment
+
+Deploy to Fly.io in three commands:
+
+```bash
+# 1. Install flyctl and authenticate
+fly auth login
+
+# 2. Launch a new app (follow the prompts; accepts auto-detected Docker config)
+fly launch --image ghcr.io/phmatray/og-engine:latest
+
+# 3. Scale to two machines for zero-downtime deploys
+fly scale count 2
+```
+
+Fly.io auto-provisions TLS, a global anycast IP, and health-check-based rolling deployments. Recommended machine size: `shared-cpu-1x` with 512MB RAM for up to ~200 concurrent renders.
+
+### fly.toml
+
+```toml
+app = "og-engine-yourapp"
+primary_region = "iad"
+
+[build]
+  image = "ghcr.io/phmatray/og-engine:latest"
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 500
+    soft_limit = 400
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+```
+
+## Railway Deployment
+
+1. Create a new Railway project
+2. Add a service from Docker image: `ghcr.io/phmatray/og-engine:latest`
+3. Set environment variable `PORT` to `$PORT` (Railway injects the port)
+4. Add a health check on `/health`
+
+## Production Recommendations
+
+- **Memory:** Allocate at least 256MB. Canvas rendering uses ~10MB per concurrent render. At 512MB you can handle ~50 simultaneous renders comfortably.
+- **Replicas:** Run at least 2 replicas behind a load balancer for zero-downtime deployments.
+- **Caching:** Place a CDN (Cloudflare, Fastly) in front of the API if you serve the same OG images repeatedly. Cache on the full request URL + body hash with a 24h TTL.
+- **Rate limiting:** The self-hosted image has no built-in rate limiting. Add Nginx or Traefik rate limiting in front if needed.
+
+For managed hosting with automatic scaling, CDN, and zero infrastructure work, see [Pricing](/pricing/).
+
+## Next Steps
+
+- [Pricing & Limits](/pricing/) — managed cloud plans for teams that prefer not to self-host
+- [GET /health](/api-reference/health/) — health endpoint reference
+- [API Reference Overview](/api-reference/overview/) — full API documentation

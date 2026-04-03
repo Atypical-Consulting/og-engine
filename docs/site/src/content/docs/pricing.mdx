@@ -1,0 +1,86 @@
+---
+title: Pricing & Limits
+description: Plans, monthly render quotas, feature availability, and frequently asked questions about billing.
+---
+
+OG Engine offers four plans designed to scale from side projects to enterprise-grade generation pipelines. All plans include the core rendering engine, all 8 fonts, all 5 formats, and all 4 templates.
+
+## Plans
+
+| | Free | Starter | Pro | Scale |
+|---|---|---|---|---|
+| **Price** | $0 / mo | $10 / mo | $39 / mo | $99 / mo |
+| **Monthly renders** | 500 | 10,000 | 50,000 | 200,000 |
+| **PNG output** | Yes | Yes | Yes | Yes |
+| **WebP output** | No | Yes | Yes | Yes |
+| **Batch rendering** | No | No | Yes | Yes |
+| **CDN caching** | No | No | Yes | Yes |
+| **Dedicated infrastructure** | No | No | No | Yes |
+| **Support** | Community | Email | Priority email | Dedicated Slack |
+
+## What Counts as a Render
+
+A render is counted each time a successful image is generated:
+- Each successful call to `POST /render` = 1 render
+- Each successfully rendered item in a `POST /render/batch` call = 1 render
+- Failed renders (4xx errors) = 0 renders consumed
+- `/validate` calls = 0 renders (always free and unlimited)
+- `/health` calls = 0 renders
+
+## Rate Limiting
+
+Monthly quotas reset on the first day of each calendar month at 00:00 UTC. There are no per-second or per-minute rate limits — you can burst your entire monthly quota in minutes if needed.
+
+Rate limiting headers are included on every authenticated response:
+
+```
+X-RateLimit-Limit: 500
+X-RateLimit-Remaining: 347
+X-RateLimit-Reset: 1735689600
+```
+
+When `X-RateLimit-Remaining` reaches `0`, subsequent render requests return a `429 rate_limited` error until the quota resets.
+
+## Scale Beyond 200,000 Renders
+
+If your application exceeds 200,000 renders per month, contact sales@og-engine.com for custom pricing. Enterprise plans include SLA guarantees, dedicated IP addresses, custom domain support, and volume discounts.
+
+## Frequently Asked Questions
+
+### Can I upgrade mid-cycle?
+
+Yes. When you upgrade your plan, you immediately gain access to the higher quota and new features. Your billing is prorated for the remainder of the month — you only pay for the days on the new plan.
+
+### Does unused quota roll over?
+
+No. Monthly quotas reset to zero on the first of each month regardless of usage. Unused renders do not carry forward to the next month.
+
+### What happens if I exceed my quota?
+
+Render requests return a `429 rate_limited` error for the rest of the month. `/validate` remains available — it is never rate limited. You can upgrade your plan at any time to immediately restore render capacity.
+
+### Can I downgrade?
+
+Yes. Downgrades take effect at the start of the next billing cycle. You keep your current plan's features until the cycle ends. If your usage on the new plan's quota would be exceeded, renders above the new limit will fail once the downgrade takes effect.
+
+### Do batch items count individually?
+
+Yes. In a 50-item batch request, 50 renders are consumed from your quota. If you only have 30 renders remaining, the batch will partially succeed (30 items render, 20 fail with a `rate_limited` error in `errors.json`).
+
+### Is there a free trial for paid features?
+
+Yes. New accounts on any paid plan get a 14-day trial that includes all features of the plan without charge. No credit card is required to start the trial.
+
+### Can I use OG Engine for free forever?
+
+Yes. The Free plan has no expiration. 500 renders per month is sufficient for low-traffic sites, personal projects, and evaluation. There is no time limit or feature degradation on the Free plan.
+
+## Self-Hosting
+
+If you prefer not to use the managed service, OG Engine is available as an open-source Docker image. Self-hosting has no per-render cost — you pay only for your own compute. See [Self-Hosting with Docker](/self-hosting/docker/) for instructions.
+
+## Next Steps
+
+- [Quick Start](/quick-start/) — get your free API key
+- [Self-Hosting](/self-hosting/docker/) — run OG Engine on your own infrastructure
+- [Batch Rendering](/guides/batch-rendering/) — bulk generation for Pro and Scale plans
