@@ -1,7 +1,11 @@
 import { Hono } from 'hono';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerRoute } from '../../src/api/register';
 import { closeDb } from '../../src/db';
+
+vi.mock('../../src/email/send', () => ({
+  sendWelcomeEmail: vi.fn().mockResolvedValue(undefined),
+}));
 
 beforeEach(() => {
   closeDb();
@@ -50,6 +54,12 @@ describe('POST /auth/register', () => {
   it('returns 400 for missing email', async () => {
     const res = await post({});
     expect(res.status).toBe(400);
+  });
+
+  it('sends welcome email on new registration', async () => {
+    const { sendWelcomeEmail } = await import('../../src/email/send');
+    await post({ email: 'welcome@example.com' });
+    expect(sendWelcomeEmail).toHaveBeenCalledWith('welcome@example.com', expect.stringMatching(/^oge_sk_/), 'free');
   });
 
   it('returns 400 for invalid JSON', async () => {
