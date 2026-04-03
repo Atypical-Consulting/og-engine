@@ -1,6 +1,6 @@
 ---
 title: How Pretext Measures Text Without a Browser
-description: A technical deep-dive into Unicode segmentation, line breaking, and sub-millisecond text layout.
+description: Technical deep-dive into Pretext's Unicode segmentation, line breaking algorithm, and sub-0.1ms text layout. CJK, Arabic, emoji, and grapheme clusters.
 ---
 
 When a browser renders text, it runs a multi-stage pipeline: parse HTML, resolve CSS styles, build a layout tree, break text into lines, compute positions, rasterize glyphs. This is incredibly powerful — and incredibly wasteful when all you need is "how many lines does this string occupy at 48px in Outfit font?"
