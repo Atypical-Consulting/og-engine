@@ -1,59 +1,645 @@
-/* docs/site/src/styles/custom.css */
+/* OG Engine — "Render Lab" Identity */
+/* Precision instrumentation aesthetics with CRT phosphor energy */
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+/* Typography: Syne (display) + Figtree (body) + Fira Code (mono) */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Figtree:wght@400;500;600;700&family=Fira+Code:wght@400;500;700&display=swap');
 
-/* Force dark mode only */
+/* ─── Color System ─── */
 :root {
   color-scheme: dark;
 }
 
-/* Accent color: #38ef7d green */
 :root,
 [data-theme='dark'] {
-  --sl-color-accent-low: #0d3320;
+  /* Phosphor green palette */
+  --sl-color-accent-low: #071f12;
   --sl-color-accent: #38ef7d;
   --sl-color-accent-high: #a8f5c8;
 
-  --sl-color-bg-nav: #06080c;
-  --sl-color-bg: #080a10;
-  --sl-color-bg-sidebar: #06080c;
+  /* Deep lab backgrounds */
+  --sl-color-bg-nav: #030508;
+  --sl-color-bg: #050810;
+  --sl-color-bg-sidebar: #030508;
 
-  --sl-color-white: #f1f5f9;
-  --sl-color-gray-1: #e2e8f0;
-  --sl-color-gray-2: #94a3b8;
-  --sl-color-gray-3: #475569;
-  --sl-color-gray-4: #1e293b;
-  --sl-color-gray-5: #0f172a;
-  --sl-color-gray-6: #06080c;
-  --sl-color-black: #020205;
+  /* Cool-toned grays — boosted for WCAG AA compliance */
+  --sl-color-white: #eef2f7;
+  --sl-color-gray-1: #d0d8e4;
+  --sl-color-gray-2: #94a1b5;
+  --sl-color-gray-3: #4d5a6e;
+  --sl-color-gray-4: #161d2a;
+  --sl-color-gray-5: #0c1018;
+  --sl-color-gray-6: #030508;
+  --sl-color-black: #010204;
 
-  --sl-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --sl-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  /* Typography stack */
+  --sl-font: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sl-font-mono: 'Fira Code', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --sl-content-width: 55rem;
+
+  /* Identity tokens */
+  --og-glow: #38ef7d;
+  --og-glow-dim: rgba(56, 239, 125, 0.08);
+  --og-glow-soft: rgba(56, 239, 125, 0.15);
+  --og-glow-medium: rgba(56, 239, 125, 0.3);
+  --og-scanline: rgba(56, 239, 125, 0.03);
+  --og-border: rgba(56, 239, 125, 0.12);
+  --og-surface: rgba(56, 239, 125, 0.04);
+  --og-dim-text: #4d5a6e;
+  --og-muted-text: #6b7a90;
 }
 
-/* Hide light mode toggle */
+/* ─── Hide light mode toggle ─── */
 starlight-theme-select {
   display: none;
 }
 
-/* Code blocks - void gradient background */
-pre:has(code) {
-  background: #0c0f1a !important;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+/* ─── Display Typography (Syne) ─── */
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4 {
+  font-family: 'Syne', sans-serif;
+  letter-spacing: -0.02em;
 }
 
-/* Sidebar active item glow */
-nav[aria-label='Main'] a[aria-current='page'] {
-  box-shadow: inset 2px 0 0 #38ef7d;
+.sl-markdown-content h1 {
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
-/* Links */
+/* Hero title uses Syne */
+[data-page-title],
+.hero h1,
+main .page-title {
+  font-family: 'Syne', sans-serif !important;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+/* Site title in nav */
+.site-title span {
+  font-family: 'Syne', sans-serif !important;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* ─── CRT Phosphor Glow Effects ─── */
+
+/* Links glow on hover */
 a:not([class]) {
-  color: #38ef7d;
+  color: var(--og-glow);
+  text-decoration: none;
+  transition: text-shadow 0.2s ease, color 0.2s ease;
 }
 a:not([class]):hover {
   color: #a8f5c8;
+  text-shadow: 0 0 8px rgba(56, 239, 125, 0.5), 0 0 20px rgba(56, 239, 125, 0.2);
+}
+
+/* ─── Sidebar: Circuit Trace Styling ─── */
+nav[aria-label='Main'] a[aria-current='page'] {
+  box-shadow: inset 2px 0 0 var(--og-glow);
+  background: rgba(56, 239, 125, 0.1);
+  color: #eef2f7 !important;
+}
+
+nav[aria-label='Main'] a {
+  transition: all 0.15s ease;
+  border-radius: 0;
+  color: var(--sl-color-gray-2);
+}
+
+nav[aria-label='Main'] a:hover {
+  background: var(--og-surface);
+  color: var(--sl-color-gray-1);
+}
+
+/* Sidebar section labels — measurement notation style */
+nav[aria-label='Main'] .top-level > li > details > summary,
+nav[aria-label='Main'] .top-level > li > a {
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-1);
+}
+
+/* ─── Right TOC: Boost Contrast ─── */
+starlight-toc a {
+  color: var(--sl-color-gray-2) !important;
+  transition: color 0.15s ease;
+}
+
+starlight-toc a:hover {
+  color: var(--sl-color-gray-1) !important;
+}
+
+starlight-toc a[aria-current='true'] {
+  color: var(--og-glow) !important;
+}
+
+/* ─── Code Blocks: Lab Terminal ─── */
+pre:has(code) {
+  background: #06091a !important;
+  border: 1px solid var(--og-border);
+  border-radius: 4px;
+  position: relative;
+}
+
+/* Scan-line overlay on code blocks */
+pre:has(code)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 2px,
+    var(--og-scanline) 2px,
+    var(--og-scanline) 4px
+  );
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+code {
+  font-family: var(--sl-font-mono);
+  font-variant-ligatures: contextual;
+}
+
+/* Inline code */
+:not(pre) > code {
+  background: var(--og-surface);
+  border: 1px solid var(--og-border);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.88em;
+  color: var(--og-glow);
+}
+
+/* ─── Tables: Data Grid ─── */
+.sl-markdown-content table {
+  border: 1px solid var(--og-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sl-markdown-content th {
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--og-glow-dim);
+  color: var(--og-glow);
+  border-bottom: 1px solid var(--og-border);
+}
+
+.sl-markdown-content td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--sl-color-gray-1);
+}
+
+.sl-markdown-content tr:last-child td {
+  border-bottom: none;
+}
+
+/* Bold values in tables get accent color */
+.sl-markdown-content td strong {
+  color: var(--og-glow);
+}
+
+/* ─── Blockquotes: Instrument Panel Callouts ─── */
+.sl-markdown-content blockquote {
+  border-left: 2px solid var(--og-glow);
+  background: var(--og-glow-dim);
+  padding: 1rem 1.25rem;
+  border-radius: 0 4px 4px 0;
+  font-style: normal;
+  color: var(--sl-color-gray-1);
+}
+
+/* ─── Buttons & CTAs ─── */
+a.action.primary {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  border: 1px solid var(--og-glow);
+  box-shadow: 0 0 12px rgba(56, 239, 125, 0.15);
+}
+
+a.action.primary:hover {
+  box-shadow: 0 0 24px rgba(56, 239, 125, 0.3), 0 0 48px rgba(56, 239, 125, 0.1);
+  transform: translateY(-1px);
+}
+
+a.action.minimal {
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-size: 0.85rem;
+}
+
+/* ─── Splash Hero Enhancements ─── */
+.hero {
+  position: relative;
+}
+
+/* Hero tagline — boosted contrast */
+.hero .tagline {
+  font-family: 'Figtree', sans-serif;
+  font-weight: 400;
+  color: var(--sl-color-gray-1);
+  max-width: 42rem;
+}
+
+/* ─── Scanline Background Texture ─── */
+body {
+  position: relative;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 3px,
+    rgba(56, 239, 125, 0.012) 3px,
+    rgba(56, 239, 125, 0.012) 6px
+  );
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: screen;
+}
+
+/* ─── Page Content Area ─── */
+.main-pane {
+  position: relative;
+}
+
+/* Measurement ruler — left border on main content */
+.sl-markdown-content {
+  border-left: 1px solid var(--og-border);
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+/* Ruler tick marks */
+.sl-markdown-content::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--og-border) 0px,
+    var(--og-border) 1px,
+    transparent 1px,
+    transparent 80px
+  );
+  pointer-events: none;
+}
+
+/* ─── Horizontal Rules: Circuit Traces ─── */
+.sl-markdown-content hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--og-border) 10%,
+    var(--og-glow-medium) 50%,
+    var(--og-border) 90%,
+    transparent
+  );
+  margin: 2.5rem 0;
+}
+
+/* ─── Scrollbar Styling — toned down ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sl-color-gray-5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sl-color-gray-3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sl-color-gray-2);
+}
+
+/* Code block scrollbar — subdued, not glowing */
+pre::-webkit-scrollbar-thumb {
+  background: var(--sl-color-gray-3);
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+  background: var(--sl-color-gray-2);
+}
+
+pre::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Selection Color ─── */
+::selection {
+  background: rgba(56, 239, 125, 0.25);
+  color: #fff;
+}
+
+/* ─── Starlight Card Overrides ─── */
+.card {
+  border: 1px solid var(--og-border);
+  background: var(--og-surface);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--og-glow-medium);
+  box-shadow: 0 0 20px rgba(56, 239, 125, 0.08);
+}
+
+/* ─── Aside / Note Boxes ─── */
+.starlight-aside {
+  border-color: var(--og-border);
+  background: var(--og-surface);
+}
+
+.starlight-aside--tip {
+  border-color: var(--og-glow);
+}
+
+/* ─── Footer ─── */
+.page-footer {
+  border-top: 1px solid var(--og-border);
+}
+
+/* ─── Nav Bar: Instrument Header ─── */
+header.header {
+  border-bottom: 1px solid var(--og-border);
+  backdrop-filter: blur(12px);
+}
+
+/* ─── Focus Styles (Accessibility) ─── */
+:focus-visible {
+  outline: 2px solid var(--og-glow);
+  outline-offset: 2px;
+}
+
+/* ─── Animated Cursor Blink for Hero ─── */
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* ─────────────────────────────────────────────── */
+/* ─── Pricing Cards Component ─── */
+/* ─────────────────────────────────────────────── */
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 2rem 0 3rem;
+}
+
+@media (max-width: 900px) {
+  .pricing-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pricing-card {
+  position: relative;
+  border: 1px solid var(--og-border);
+  background: rgba(5, 8, 16, 0.8);
+  border-radius: 6px;
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.pricing-card:hover {
+  border-color: rgba(56, 239, 125, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Highlighted / recommended card */
+.pricing-card.featured {
+  border-color: var(--og-glow);
+  background: linear-gradient(
+    165deg,
+    rgba(56, 239, 125, 0.08) 0%,
+    rgba(5, 8, 16, 0.95) 40%
+  );
+  box-shadow: 0 0 24px rgba(56, 239, 125, 0.08), inset 0 1px 0 rgba(56, 239, 125, 0.15);
+}
+
+.pricing-card.featured:hover {
+  box-shadow: 0 0 36px rgba(56, 239, 125, 0.15), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.pricing-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--og-glow);
+  color: #030508;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 12px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.pricing-tier {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: var(--sl-color-white);
+  margin-bottom: 0.75rem;
+}
+
+.pricing-price {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 2.25rem;
+  letter-spacing: -0.03em;
+  color: var(--sl-color-white);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.pricing-price .currency {
+  font-size: 1.25rem;
+  font-weight: 600;
+  vertical-align: super;
+  margin-right: 2px;
+  color: var(--sl-color-gray-2);
+}
+
+.pricing-price .period {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--sl-color-gray-2);
+  letter-spacing: 0;
+}
+
+.pricing-renders {
+  font-family: 'Figtree', sans-serif;
+  font-size: 0.85rem;
+  color: var(--og-glow);
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--og-border);
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  flex: 1;
+}
+
+.pricing-features li {
+  font-size: 0.82rem;
+  color: var(--sl-color-gray-1);
+  padding: 0.35rem 0;
+  padding-left: 1.25rem;
+  position: relative;
+  line-height: 1.4;
+}
+
+/* Checkmark for included features */
+.pricing-features li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--og-glow);
+  opacity: 0.7;
+}
+
+/* Dimmed features (not included) */
+.pricing-features li.excluded {
+  color: var(--og-dim-text);
+}
+
+.pricing-features li.excluded::before {
+  background: var(--sl-color-gray-3);
+  opacity: 0.4;
+}
+
+.pricing-cta {
+  display: block;
+  text-align: center;
+  padding: 0.6rem 1rem;
+  border-radius: 4px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none !important;
+  transition: all 0.2s ease;
+  margin-top: auto;
+}
+
+.pricing-cta.cta-outline {
+  border: 1px solid var(--og-border);
+  color: var(--sl-color-gray-1) !important;
+  background: transparent;
+}
+
+.pricing-cta.cta-outline:hover {
+  border-color: var(--og-glow-medium);
+  color: var(--sl-color-white) !important;
+  background: var(--og-surface);
+}
+
+.pricing-cta.cta-primary {
+  border: 1px solid var(--og-glow);
+  color: #030508 !important;
+  background: var(--og-glow);
+  box-shadow: 0 0 16px rgba(56, 239, 125, 0.2);
+}
+
+.pricing-cta.cta-primary:hover {
+  background: #a8f5c8;
+  box-shadow: 0 0 28px rgba(56, 239, 125, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Meter bar showing relative quota */
+.pricing-meter {
+  height: 3px;
+  background: var(--sl-color-gray-4);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.pricing-meter-fill {
+  height: 100%;
+  background: var(--og-glow);
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+/* ─── FAQ Styling for Pricing ─── */
+.pricing-faq h3 {
+  font-size: 1rem;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: var(--sl-color-white);
+}
+
+.pricing-faq p {
+  color: var(--sl-color-gray-1);
+}
+
+/* ─── Print: Strip effects ─── */
+@media print {
+  body::after,
+  pre:has(code)::before {
+    display: none;
+  }
+  .sl-markdown-content {
+    border-left: none;
+    padding-left: 0;
+  }
+  .sl-markdown-content::before {
+    display: none;
+  }
 }
