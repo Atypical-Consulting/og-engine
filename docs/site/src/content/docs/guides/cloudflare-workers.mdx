@@ -1,0 +1,91 @@
+---
+title: OG Images on Cloudflare Workers
+description: Generate OG images at the edge with OG Engine and Cloudflare Workers — sub-5ms API calls from 300+ locations.
+---
+
+Deploy an OG image endpoint to Cloudflare Workers. Your images render in 2ms on OG Engine's servers, and Cloudflare's edge cache serves repeat requests in under 1ms worldwide.
+
+## Install the SDK
+
+```bash
+npm install og-engine-sdk
+```
+
+## Worker Code
+
+Create `src/index.ts`:
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+
+export interface Env {
+  OG_ENGINE_KEY: string
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url)
+
+    if (url.pathname !== '/og') {
+      return new Response('Not found', { status: 404 })
+    }
+
+    const title = url.searchParams.get('title') ?? 'My Site'
+    const description = url.searchParams.get('description') ?? ''
+
+    const og = new OGEngine(env.OG_ENGINE_KEY)
+
+    const image = await og.render({
+      format: 'og',
+      title,
+      description,
+      style: { accent: '#38ef7d', font: 'Outfit', layout: 'left' },
+    })
+
+    return new Response(image, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+      },
+    })
+  },
+}
+```
+
+## Environment Setup
+
+```bash
+wrangler secret put OG_ENGINE_KEY
+```
+
+## Deploy
+
+```bash
+wrangler deploy
+```
+
+## Edge Caching
+
+Cloudflare automatically caches responses with `Cache-Control` headers. Repeat requests for the same title + description are served from the edge — zero API calls, zero render cost.
+
+For cache busting, add a version parameter:
+
+```
+/og?title=Hello&v=2
+```
+
+## Validate at the Edge
+
+Use `/validate` to check text fits without consuming renders. It's free and requires no authentication:
+
+```typescript
+const check = await og.validate({
+  format: 'og',
+  title,
+  description,
+})
+
+if (!check.fits) {
+  // Fallback to shorter title
+}
+```
