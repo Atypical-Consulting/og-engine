@@ -56,7 +56,8 @@ A required field was not present in the request body.
 {
   "error": "missing_field",
   "message": "The 'title' field is required.",
-  "details": { "field": "title" }
+  "details": { "field": "title" },
+  "docs": "https://og-engine.com/api-reference/errors#missing_field"
 }
 ```
 
@@ -76,7 +77,8 @@ The value of `style.font` (or `font` on `/validate`) is not one of the supported
     "field": "style.font",
     "provided": "Comic Sans",
     "available": ["Outfit", "Inter", "Playfair Display", "Sora", "Space Grotesk", "JetBrains Mono", "Noto Sans JP", "Noto Sans AR"]
-  }
+  },
+  "docs": "https://og-engine.com/api-reference/errors#invalid_font"
 }
 ```
 
@@ -96,7 +98,8 @@ The `format` field is not one of the five recognized format presets.
     "field": "format",
     "provided": "facebook",
     "allowed": ["og", "twitter", "square", "linkedin", "story"]
-  }
+  },
+  "docs": "https://og-engine.com/api-reference/errors#invalid_format"
 }
 ```
 
@@ -116,7 +119,8 @@ The uploaded background image was rejected. Common causes: file too large, corru
     "field": "image",
     "maxSizeBytes": 5242880,
     "receivedBytes": 7340032
-  }
+  },
+  "docs": "https://og-engine.com/api-reference/errors#invalid_file"
 }
 ```
 
@@ -129,9 +133,9 @@ The uploaded background image was rejected. Common causes: file too large, corru
 All three `unauthorized` variants share the same error code but have distinct messages:
 
 ```json
-{ "error": "unauthorized", "message": "No API key provided. Set the Authorization: Bearer <key> header." }
-{ "error": "unauthorized", "message": "API key is invalid or does not exist." }
-{ "error": "unauthorized", "message": "This API key has been revoked." }
+{ "error": "unauthorized", "message": "No API key provided. Set the Authorization: Bearer <key> header.", "docs": "https://og-engine.com/api-reference/errors#unauthorized" }
+{ "error": "unauthorized", "message": "API key is invalid or does not exist.", "docs": "https://og-engine.com/api-reference/errors#unauthorized" }
+{ "error": "unauthorized", "message": "This API key has been revoked.", "docs": "https://og-engine.com/api-reference/errors#unauthorized" }
 ```
 
 **Fix:** Ensure you are setting `Authorization: Bearer oge_sk_YOUR_KEY` in your request headers. Generate a new key at [og-engine.com/dashboard](https://og-engine.com/dashboard) if yours was revoked.
@@ -152,7 +156,8 @@ The requested feature is not available on your current plan.
     "feature": "webp_output",
     "requiredPlan": "starter",
     "upgradeUrl": "https://og-engine.com/pricing"
-  }
+  },
+  "docs": "https://og-engine.com/api-reference/errors#plan_required"
 }
 ```
 
@@ -176,13 +181,14 @@ Your plan's monthly render quota has been exhausted.
 ```json
 {
   "error": "rate_limited",
-  "message": "Monthly render quota exceeded. Resets 2024-02-01T00:00:00Z.",
+  "message": "Monthly render quota exceeded. Resets at next billing cycle.",
   "details": {
     "limit": 500,
     "used": 500,
-    "resetAt": "2024-02-01T00:00:00Z",
+    "resetAt": "2026-05-15T00:00:00Z",
     "upgradeUrl": "https://og-engine.com/pricing"
-  }
+  },
+  "docs": "https://og-engine.com/api-reference/errors#rate_limited"
 }
 ```
 

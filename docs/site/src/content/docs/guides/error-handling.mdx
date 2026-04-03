@@ -65,7 +65,8 @@ Returned when a required field is absent. The `details.field` property tells you
 {
   "error": "missing_field",
   "message": "The 'format' field is required.",
-  "details": { "field": "format", "allowed": ["og", "twitter", "square", "linkedin", "story"] }
+  "details": { "field": "format", "allowed": ["og", "twitter", "square", "linkedin", "story"] },
+  "docs": "https://og-engine.com/api-reference/errors#missing_field"
 }
 ```
 
@@ -79,7 +80,8 @@ Returned when a required field is absent. The `details.field` property tells you
     "field": "style.font",
     "provided": "Roboto",
     "available": ["Outfit", "Inter", "Playfair Display", "Sora", "Space Grotesk", "JetBrains Mono", "Noto Sans JP", "Noto Sans AR"]
-  }
+  },
+  "docs": "https://og-engine.com/api-reference/errors#invalid_font"
 }
 ```
 
@@ -93,7 +95,8 @@ Returned when a required field is absent. The `details.field` property tells you
     "field": "format",
     "provided": "facebook",
     "allowed": ["og", "twitter", "square", "linkedin", "story"]
-  }
+  },
+  "docs": "https://og-engine.com/api-reference/errors#invalid_format"
 }
 ```
 
@@ -105,7 +108,8 @@ Returned when a background image upload is rejected.
 {
   "error": "invalid_file",
   "message": "Image file exceeds the 5MB size limit.",
-  "details": { "field": "image", "maxSizeBytes": 5242880 }
+  "details": { "field": "image", "maxSizeBytes": 5242880 },
+  "docs": "https://og-engine.com/api-reference/errors#invalid_file"
 }
 ```
 
@@ -129,7 +133,8 @@ Returned when a background image upload is rejected.
     "feature": "webp_output",
     "requiredPlan": "starter",
     "upgradeUrl": "https://og-engine.com/pricing"
-  }
+  },
+  "docs": "https://og-engine.com/api-reference/errors#plan_required"
 }
 ```
 
@@ -138,13 +143,14 @@ Returned when a background image upload is rejected.
 ```json
 {
   "error": "rate_limited",
-  "message": "Monthly render quota exceeded. Resets 2024-02-01T00:00:00Z.",
+  "message": "Monthly render quota exceeded. Resets at next billing cycle.",
   "details": {
     "limit": 500,
     "used": 500,
-    "resetAt": "2024-02-01T00:00:00Z",
+    "resetAt": "2026-05-15T00:00:00Z",
     "upgradeUrl": "https://og-engine.com/pricing"
-  }
+  },
+  "docs": "https://og-engine.com/api-reference/errors#rate_limited"
 }
 ```
 
