@@ -121,7 +121,7 @@ export default defineConfig({
           ]),
         },
       ],
-      customCss: ['./src/styles/custom.css'],
+      customCss: ['./src/styles/custom.css', './src/components/playground.css'],
       sidebar: [
         { label: 'Home', link: '/' },
         { label: 'Quick Start', link: '/quick-start/' },
