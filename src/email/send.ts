@@ -9,7 +9,7 @@ function getResend(): Resend | null {
   return new Resend(apiKey);
 }
 
-const FROM = 'OG Engine <api@og-engine.com>';
+const FROM = process.env.EMAIL_FROM ?? 'OG Engine <delivered@resend.dev>';
 
 export async function sendWelcomeEmail(email: string, apiKey: string, plan: Plan): Promise<void> {
   const resend = getResend();
