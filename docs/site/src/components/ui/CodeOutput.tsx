@@ -22,7 +22,7 @@ function buildCurl(config: Config): string {
   if (config.layout !== 'left') style.layout = config.layout;
   if (Object.keys(style).length > 0) body.style = style;
   const json = JSON.stringify(body, null, 2);
-  return `curl -X POST https://api.og-engine.com/render \\
+  return `curl -X POST https://og-engine.com/render \\
   -H "Authorization: Bearer oge_sk_YOUR_KEY" \\
   -H "Content-Type: application/json" \\
   -d '${json}' \\

@@ -128,7 +128,7 @@ export class OGEngine {
 
   constructor(options: OGEngineOptions) {
     this.apiKey = options.apiKey;
-    this.baseUrl = (options.baseUrl ?? 'https://api.og-engine.com').replace(/\/$/, '');
+    this.baseUrl = (options.baseUrl ?? 'https://og-engine.com').replace(/\/$/, '');
   }
 
   private headers(): Record<string, string> {

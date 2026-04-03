@@ -194,7 +194,7 @@ Server errors (500) are rare but can occur during deployments or transient infra
 ```typescript
 async function renderWithRetry(payload: object, maxRetries = 3) {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const res = await fetch('https://api.og-engine.com/render', {
+    const res = await fetch('https://og-engine.com/render', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OG_ENGINE_KEY}`,

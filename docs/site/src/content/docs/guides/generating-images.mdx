@@ -23,7 +23,7 @@ Total time from request to response: typically **~22ms** for a standard OG image
 The only required fields are `format` and `title`:
 
 ```bash
-curl -X POST https://api.og-engine.com/render \
+curl -X POST https://og-engine.com/render \
   -H "Authorization: Bearer oge_sk_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"format": "og", "title": "Hello, World"}' \
@@ -81,7 +81,7 @@ You can use `X-Layout-Overflow: true` as a signal to call `/validate` with a sma
 
 ```bash
 # Inspect headers without saving the image body
-curl -I -X POST https://api.og-engine.com/render \
+curl -I -X POST https://og-engine.com/render \
   -H "Authorization: Bearer oge_sk_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"format": "og", "title": "Checking overflow"}'

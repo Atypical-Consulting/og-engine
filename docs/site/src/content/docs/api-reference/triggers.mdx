@@ -10,7 +10,7 @@ Webhook triggers let you save a render configuration and fire it later — OG En
 ## Create a Trigger
 
 ```
-POST https://api.og-engine.com/triggers
+POST https://og-engine.com/triggers
 ```
 
 ### Request Body
@@ -48,7 +48,7 @@ Save the `secret` — it's included in the `X-Webhook-Secret` header when OG Eng
 ## Fire a Trigger
 
 ```
-POST https://api.og-engine.com/triggers/:id/fire
+POST https://og-engine.com/triggers/:id/fire
 ```
 
 Re-renders the image using the saved config and POSTs the binary result to your callback URL.
@@ -91,7 +91,7 @@ Body: raw image bytes.
 ## List Triggers
 
 ```
-GET https://api.og-engine.com/triggers
+GET https://og-engine.com/triggers
 ```
 
 ```json
@@ -109,7 +109,7 @@ GET https://api.og-engine.com/triggers
 ## Delete a Trigger
 
 ```
-DELETE https://api.og-engine.com/triggers/:id
+DELETE https://og-engine.com/triggers/:id
 ```
 
 ## Use Cases

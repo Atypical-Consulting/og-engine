@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const LINES = [
-  { type: 'prompt', text: '$ curl -X POST https://api.og-engine.com/render \\' },
+  { type: 'prompt', text: '$ curl -X POST https://og-engine.com/render \\' },
   { type: 'continuation', text: '  -H "Content-Type: application/json" \\' },
   { type: 'continuation', text: '  -d \'{"format":"og","title":"Hello, World"}\' \\' },
   { type: 'continuation', text: '  --output hello.png' },

@@ -10,7 +10,7 @@ import PlaygroundContextual from '../../components/PlaygroundContextual';
 Sign up with your email. No credit card required.
 
 ```bash
-curl -X POST https://api.og-engine.com/auth/register \
+curl -X POST https://og-engine.com/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email": "you@example.com"}'
 ```
@@ -24,7 +24,7 @@ Your API key is in the response above — ready to use immediately. A copy is al
 ## Step 2 — Generate Your First Image
 
 ```bash
-curl -X POST https://api.og-engine.com/render \
+curl -X POST https://og-engine.com/render \
   -H "Authorization: Bearer oge_sk_a1b2c3..." \
   -H "Content-Type: application/json" \
   -d '{"format": "og", "title": "Hello, OG Engine"}' \
@@ -54,7 +54,7 @@ Try editing the title below — the image updates instantly:
 ## Step 4 — Check If Text Fits (Free, Unlimited)
 
 ```bash
-curl -X POST https://api.og-engine.com/validate \
+curl -X POST https://og-engine.com/validate \
   -H "Content-Type: application/json" \
   -d '{"format": "og", "title": "Some very long headline that might not fit..."}'
 ```

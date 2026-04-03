@@ -6,7 +6,7 @@ description: Check whether text fits a layout without generating an image. Free,
 Validates whether title and description text will fit within the specified format's layout constraints. Returns line count, max lines, and overflow status for each text block. Does not generate an image.
 
 ```
-POST https://api.og-engine.com/validate
+POST https://og-engine.com/validate
 ```
 
 **Authentication:** Optional — accepts `Authorization: Bearer` header but does not require it
@@ -29,7 +29,7 @@ POST https://api.og-engine.com/validate
 ## Example Request
 
 ```bash
-curl -X POST https://api.og-engine.com/validate \
+curl -X POST https://og-engine.com/validate \
   -H "Content-Type: application/json" \
   -d '{
     "format": "og",
@@ -76,7 +76,7 @@ curl -X POST https://api.og-engine.com/validate \
 ### Overflow Example
 
 ```bash
-curl -X POST https://api.og-engine.com/validate \
+curl -X POST https://og-engine.com/validate \
   -H "Content-Type: application/json" \
   -d '{
     "format": "og",
@@ -113,7 +113,7 @@ When `fits` is `false`, consider:
 Set `autoFit: true` to let OG Engine find the largest font size that fits within the line limits. Uses binary search for optimal results.
 
 ```bash
-curl -X POST https://api.og-engine.com/validate \
+curl -X POST https://og-engine.com/validate \
   -H "Content-Type: application/json" \
   -d '{
     "format": "og",
@@ -143,7 +143,7 @@ Pass these fitted sizes to `/render` with `style.autoFit: true` to use the same 
 ## Custom Constraints Example
 
 ```bash
-curl -X POST https://api.og-engine.com/validate \
+curl -X POST https://og-engine.com/validate \
   -H "Content-Type: application/json" \
   -d '{
     "format": "og",

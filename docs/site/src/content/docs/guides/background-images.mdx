@@ -23,7 +23,7 @@ The result is a single flat PNG (or WebP) with your image, overlay, and text com
 Background image upload uses `multipart/form-data`. The JSON payload goes in a field named `config`, and the image file goes in a field named `image`:
 
 ```bash
-curl -X POST https://api.og-engine.com/render \
+curl -X POST https://og-engine.com/render \
   -H "Authorization: Bearer oge_sk_YOUR_KEY" \
   -F 'config={
     "format": "og",
