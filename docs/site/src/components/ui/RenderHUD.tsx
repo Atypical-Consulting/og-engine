@@ -1,4 +1,3 @@
-import '../playground.css';
 import { useState, useEffect } from 'react';
 import type { RenderResult } from '../engine/canvas-renderer';
 

@@ -1,4 +1,3 @@
-import '../playground.css';
 import type { Gradient } from '../engine/gradients';
 import type { FontEntry } from '../engine/fonts';
 import { GRADIENTS, ACCENTS } from '../engine/gradients';
