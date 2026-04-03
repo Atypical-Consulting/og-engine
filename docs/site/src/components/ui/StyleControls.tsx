@@ -8,14 +8,16 @@ interface SliderProps {
 
 export function Slider({ label, value, onChange, min, max, accent }: SliderProps) {
   const pct = ((value - min) / (max - min)) * 100;
+  const sliderId = `pg-slider-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#475569', marginBottom: 3 }}>
-        <span style={{ letterSpacing: 2, textTransform: 'uppercase' }}>{label}</span>
+        <label htmlFor={sliderId} style={{ letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer' }}>{label}</label>
         <span style={{ color: accent, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
       </div>
-      <input type="range" min={min} max={max} value={value}
+      <input type="range" id={sliderId} min={min} max={max} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={label}
         className="pg-input"
         style={{
           width: '100%', height: 4, appearance: 'none', WebkitAppearance: 'none',
@@ -34,7 +36,7 @@ export function AccentPicker({ value, onChange }: AccentPickerProps) {
       <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Accent</div>
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {ACCENTS.map((hex) => (
-          <button key={hex} onClick={() => onChange(hex)} className="pg-picker-btn" style={{
+          <button key={hex} onClick={() => onChange(hex)} className="pg-picker-btn" aria-label={`Accent color ${hex}`} aria-pressed={value === hex} style={{
             width: 26, height: 26, borderRadius: 7, background: hex + '22',
             border: value === hex ? `2px solid ${hex}` : '2px solid transparent',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
@@ -101,7 +103,7 @@ export function GradientPicker({ value, onChange, accent }: GradientPickerProps)
       <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Gradient</div>
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {GRADIENTS.map((g) => (
-          <button key={g.slug} onClick={() => onChange(g)} title={g.name} className="pg-picker-btn" style={{
+          <button key={g.slug} onClick={() => onChange(g)} title={g.name} aria-label={`${g.name} gradient`} aria-pressed={value.slug === g.slug} className="pg-picker-btn" style={{
             width: 40, height: 28, borderRadius: 6, cursor: 'pointer', padding: 0,
             background: `linear-gradient(135deg, ${g.stops[0]}, ${g.stops[1]})`,
             border: value.slug === g.slug ? `2px solid ${accent}` : '2px solid rgba(255,255,255,0.08)',

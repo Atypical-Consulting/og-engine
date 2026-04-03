@@ -13,7 +13,7 @@ export default defineConfig({
         alt: 'OG Engine logo',
       },
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/phmatray/og-engine' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/Atypical-Consulting/og-engine' },
       ],
       components: {
         Head: './src/components/Head.astro',
@@ -52,7 +52,7 @@ export default defineConfig({
               name: 'OG Engine',
               url: 'https://og-engine.com',
               logo: 'https://og-engine.com/og-image.svg',
-              sameAs: ['https://github.com/phmatray/og-engine'],
+              sameAs: ['https://github.com/Atypical-Consulting/og-engine'],
               founder: {
                 '@type': 'Organization',
                 name: 'Atypical Consulting',

@@ -78,8 +78,10 @@ export default function PlaygroundContextual({
         )}
         {panels.includes('content') && (
           <Section title="Content" defaultOpen={true}>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="pg-input" style={inputStyle} />
-            <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" className="pg-input" style={inputStyle} />
+            <label htmlFor="pg-ctx-title" className="sr-only">Title</label>
+            <input id="pg-ctx-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="pg-input" style={inputStyle} />
+            <label htmlFor="pg-ctx-desc" className="sr-only">Description</label>
+            <input id="pg-ctx-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" className="pg-input" style={inputStyle} />
           </Section>
         )}
         {panels.includes('style') && (
