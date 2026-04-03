@@ -224,7 +224,7 @@ Every response from authenticated endpoints includes these headers, even on succ
 | `X-RateLimit-Remaining` | integer | Renders remaining for the current month |
 | `X-RateLimit-Reset` | integer | Unix timestamp (seconds) of the next monthly quota reset |
 
-Monitor `X-RateLimit-Remaining` in your application and surface a warning when it drops below 10% of your limit. Quota resets on the first day of each calendar month at 00:00 UTC.
+Monitor `X-RateLimit-Remaining` in your application and surface a warning when it drops below 10% of your limit. Paid plan quotas reset each billing cycle. Free plan quotas reset on the 1st of each month at 00:00 UTC.
 
 ## Next Steps
 
