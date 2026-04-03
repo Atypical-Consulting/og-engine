@@ -1,6 +1,6 @@
 ---
 title: How Pretext Measures Text Without a Browser
-description: Technical deep-dive into Pretext's Unicode segmentation, line breaking algorithm, and sub-0.1ms text layout. CJK, Arabic, emoji, and grapheme clusters.
+description: Technical deep-dive into Pretext's Unicode segmentation, line breaking algorithm, and ~0.1ms text layout. CJK, Arabic, emoji, and grapheme clusters.
 head:
   - tag: script
     attrs:
@@ -10,7 +10,7 @@ head:
         "@context": "https://schema.org",
         "@type": "Article",
         "headline": "How Pretext Measures Text Without a Browser",
-        "description": "Technical deep-dive into Pretext's Unicode segmentation, line breaking algorithm, and sub-0.1ms text layout.",
+        "description": "Technical deep-dive into Pretext's Unicode segmentation, line breaking algorithm, and ~0.1ms text layout.",
         "author": {
           "@type": "Organization",
           "name": "OG Engine",
@@ -71,7 +71,7 @@ const result = layout(prepared, maxWidth, lineHeight)
 // result.height, result.lineCount
 ```
 
-This tells you height and line count — enough for the `/validate` endpoint. Sub-0.1ms.
+This tells you height and line count — enough for the `/validate` endpoint. ~0.1ms ([benchmarked](/benchmarks/)).
 
 ### Full Layout: `prepareWithSegments()` + `layoutWithLines()`
 
@@ -105,7 +105,7 @@ Pretext's `prepare()` step (Unicode segmentation) is deterministic: the same tex
 For OG Engine, this architecture means:
 
 - **`POST /validate`** uses `prepare()` + `layout()` — answers "does it fit?" in < 0.1ms
-- **`POST /render`** uses `prepareWithSegments()` + `layoutWithLines()` + Canvas draw — full image in 2–5ms
+- **`POST /render`** uses `prepareWithSegments()` + `layoutWithLines()` + Canvas draw — full image in ~22ms (PNG encoding dominates; text layout + draw take under 1ms)
 - **No browser** — no Chrome, no Xvfb, no sandbox, no crash recovery
 - **No DOM** — no HTML parsing, no CSS resolution, no layout tree
 
