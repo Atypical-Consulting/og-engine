@@ -38,6 +38,8 @@ export default defineConfig({
             { label: 'POST /validate', link: '/api-reference/validate/' },
             { label: 'POST /render/batch', link: '/api-reference/batch/' },
             { label: 'GET /health', link: '/api-reference/health/' },
+            { label: 'POST /auth/register', link: '/api-reference/register/' },
+            { label: 'GET /usage', link: '/api-reference/usage/' },
             { label: 'Errors', link: '/api-reference/errors/' },
           ],
         },
