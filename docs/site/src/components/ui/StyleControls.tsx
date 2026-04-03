@@ -1,3 +1,4 @@
+import '../playground.css';
 import { ACCENTS, GRADIENTS, type Gradient } from '../engine/gradients';
 import { FONTS, type FontEntry } from '../engine/fonts';
 
@@ -16,6 +17,7 @@ export function Slider({ label, value, onChange, min, max, accent }: SliderProps
       </div>
       <input type="range" min={min} max={max} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
+        className="pg-input"
         style={{
           width: '100%', height: 4, appearance: 'none', WebkitAppearance: 'none',
           background: `linear-gradient(90deg, ${accent}44 ${pct}%, rgba(255,255,255,0.06) 0%)`,
@@ -33,7 +35,7 @@ export function AccentPicker({ value, onChange }: AccentPickerProps) {
       <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Accent</div>
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {ACCENTS.map((hex) => (
-          <button key={hex} onClick={() => onChange(hex)} style={{
+          <button key={hex} onClick={() => onChange(hex)} className="pg-picker-btn" style={{
             width: 26, height: 26, borderRadius: 7, background: hex + '22',
             border: value === hex ? `2px solid ${hex}` : '2px solid transparent',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
@@ -55,7 +57,7 @@ export function FontPicker({ value, onChange, accent }: FontPickerProps) {
         {FONTS.map((f) => {
           const active = value.name === f.name;
           return (
-            <button key={f.name} onClick={() => onChange(f)} style={{
+            <button key={f.name} onClick={() => onChange(f)} className="pg-picker-btn" style={{
               padding: '5px 8px', borderRadius: 6, fontSize: 9, fontFamily: 'inherit',
               border: active ? `1px solid ${accent}66` : '1px solid rgba(255,255,255,0.07)',
               background: active ? `${accent}12` : 'rgba(255,255,255,0.02)',
@@ -80,7 +82,7 @@ export function LayoutPicker({ value, onChange, accent }: LayoutPickerProps) {
         {options.map((o) => {
           const active = value === o.key;
           return (
-            <button key={o.key} onClick={() => onChange(o.key)} style={{
+            <button key={o.key} onClick={() => onChange(o.key)} className="pg-picker-btn" style={{
               padding: '6px 10px', borderRadius: 6, fontSize: 10, fontFamily: 'inherit',
               border: active ? `1px solid ${accent}66` : '1px solid rgba(255,255,255,0.07)',
               background: active ? `${accent}12` : 'rgba(255,255,255,0.02)',
@@ -100,7 +102,7 @@ export function GradientPicker({ value, onChange, accent }: GradientPickerProps)
       <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Gradient</div>
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {GRADIENTS.map((g) => (
-          <button key={g.slug} onClick={() => onChange(g)} title={g.name} style={{
+          <button key={g.slug} onClick={() => onChange(g)} title={g.name} className="pg-picker-btn" style={{
             width: 40, height: 28, borderRadius: 6, cursor: 'pointer', padding: 0,
             background: `linear-gradient(135deg, ${g.stops[0]}, ${g.stops[1]})`,
             border: value.slug === g.slug ? `2px solid ${accent}` : '2px solid rgba(255,255,255,0.08)',
