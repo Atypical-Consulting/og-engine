@@ -24,3 +24,6 @@ Thumbs.db
 # Fonts (downloaded at build time)
 fonts/*.ttf
 fonts/**/*.ttf
+
+# Benchmark raw data (large JSON files)
+benchmarks/results/*.json
