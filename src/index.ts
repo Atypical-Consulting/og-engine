@@ -2,7 +2,9 @@ import { join } from 'node:path';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
 import { cors } from 'hono/cors';
+import { adminRoute } from './api/admin';
 import { batchRoute } from './api/batch';
+import { billingRoute } from './api/billing';
 import { healthRoute } from './api/health';
 import { registerRoute } from './api/register';
 import { renderRoute } from './api/render';
@@ -64,12 +66,16 @@ if (authEnabled) {
   // Webhook triggers — requires auth
   app.use('/triggers', authMiddleware());
   app.use('/triggers/*', authMiddleware());
+
+  // Billing portal — requires auth
+  app.use('/billing/*', authMiddleware());
 }
 
 // ─── Public routes ───────────────────────────────────────────
 app.route('/', healthRoute);
 app.route('/', registerRoute);
 app.route('/', webhooksRoute);
+app.route('/', adminRoute);
 
 // ─── API routes ──────────────────────────────────────────────
 app.route('/', validateRoute);
@@ -78,6 +84,7 @@ app.route('/', batchRoute);
 app.route('/', usageRoute);
 app.route('/', templatesRoute);
 app.route('/', triggersRoute);
+app.route('/', billingRoute);
 
 // ─── Static docs site (Astro build output) ─────────────────
 const DOCS_DIR = join(import.meta.dir, '..', 'docs-dist');
