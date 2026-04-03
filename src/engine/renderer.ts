@@ -18,6 +18,14 @@ export interface RenderOptions {
   gradient: string;
   bgImageBuffer: Buffer | null;
   overlayOpacity: number;
+  timing?: boolean;
+}
+
+export interface RenderPhases {
+  textMeasureMs: number;
+  canvasDrawMs: number;
+  pngEncodeMs: number;
+  totalMs: number;
 }
 
 export interface RenderResult {
@@ -29,13 +37,14 @@ export interface RenderResult {
   descTotalLines: number;
   descVisibleLines: number;
   overflow: boolean;
+  phases?: RenderPhases;
 }
 
 export function renderCard(options: RenderOptions): RenderResult {
   const {
     title, description, author, tag, format, accent, layout,
     titleSize, descSize, fontName, gradient: gradientSlug,
-    bgImageBuffer, overlayOpacity,
+    bgImageBuffer, overlayOpacity, timing,
   } = options;
 
   const fmt = FORMATS[format];
@@ -48,6 +57,7 @@ export function renderCard(options: RenderOptions): RenderResult {
   const s = Math.max(W, H) / 1200;
   const fontEntry = getFontByName(fontName);
   const ff = fontEntry.family;
+  const t = timing ? { t0: performance.now(), t1: 0, t2: 0, t3: 0 } : null;
 
   // Background: gradient (bgImage support deferred)
   const grad = getGradientBySlug(gradientSlug);
@@ -105,6 +115,7 @@ export function renderCard(options: RenderOptions): RenderResult {
   const dLines = measureLines(description || '', dFont, cW);
   const maxD = fmt.maxDescLines;
   const visibleD = dLines.slice(0, maxD);
+  if (t) t.t1 = performance.now();
 
   // Author
   const aFont = `700 ${Math.round(18 * s)}px ${ff}`;
@@ -186,9 +197,23 @@ export function renderCard(options: RenderOptions): RenderResult {
   ctx.strokeRect(fr, fr, W - fr * 2, H - fr * 2);
 
   const overflow = tLines.length > maxT || dLines.length > maxD;
+  if (t) t.t2 = performance.now();
+
+  const buffer = canvas.toBuffer('image/png');
+
+  let phases: RenderPhases | undefined;
+  if (t) {
+    t.t3 = performance.now();
+    phases = {
+      textMeasureMs: Number((t.t1 - t.t0).toFixed(3)),
+      canvasDrawMs: Number((t.t2 - t.t1).toFixed(3)),
+      pngEncodeMs: Number((t.t3 - t.t2).toFixed(3)),
+      totalMs: Number((t.t3 - t.t0).toFixed(3)),
+    };
+  }
 
   return {
-    buffer: canvas.toBuffer('image/png'),
+    buffer,
     width: W,
     height: H,
     titleTotalLines: tLines.length,
@@ -196,5 +221,6 @@ export function renderCard(options: RenderOptions): RenderResult {
     descTotalLines: dLines.length,
     descVisibleLines: visibleD.length,
     overflow,
+    phases,
   };
 }
