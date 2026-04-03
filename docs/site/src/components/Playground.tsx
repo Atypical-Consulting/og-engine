@@ -95,9 +95,14 @@ export default function Playground() {
     setDragging(false);
     const file = e.dataTransfer.files[0];
     if (!file || !file.type.startsWith('image/')) return;
+    const objectUrl = URL.createObjectURL(file);
     const img = new Image();
-    img.onload = () => setBgImage(img);
-    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+      setBgImage(img);
+      URL.revokeObjectURL(objectUrl);
+    };
+    img.onerror = () => URL.revokeObjectURL(objectUrl);
+    img.src = objectUrl;
   }, []);
 
   const clearBgImage = useCallback(() => setBgImage(null), []);

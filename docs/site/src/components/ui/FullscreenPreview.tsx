@@ -1,3 +1,4 @@
+import '../playground.css';
 import { useState, useEffect, useCallback } from 'react';
 
 interface Props {
@@ -21,6 +22,12 @@ export function FullscreenPreview({ canvas, onClose }: Props) {
     return () => window.removeEventListener('keydown', handler);
   }, [handleClose]);
 
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
   if (!canvas) return null;
 
   const dataUrl = canvas.toDataURL('image/png');
@@ -28,6 +35,9 @@ export function FullscreenPreview({ canvas, onClose }: Props) {
   return (
     <div
       className={`pg-modal-backdrop${closing ? ' closing' : ''}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Fullscreen image preview"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
@@ -51,6 +61,7 @@ export function FullscreenPreview({ canvas, onClose }: Props) {
         </div>
         <button
           onClick={handleClose}
+          aria-label="Close preview"
           style={{
             position: 'absolute', top: -12, right: -12,
             width: 28, height: 28, borderRadius: 14,
