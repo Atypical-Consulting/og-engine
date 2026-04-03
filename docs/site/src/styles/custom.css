@@ -517,9 +517,9 @@ header.header {
   font-family: 'Figtree', sans-serif;
   font-size: 0.85rem;
   color: var(--og-glow);
-  margin-bottom: 1.25rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--og-border);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: none;
 }
 
 .pricing-features {
@@ -627,6 +627,18 @@ header.header {
 
 .pricing-faq p {
   color: var(--sl-color-gray-1);
+}
+
+/* ─── Pricing Persona Description ─── */
+.pricing-persona {
+  font-size: 0.78rem;
+  color: var(--og-muted-text);
+  font-style: italic;
+  margin-top: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--og-border);
+  line-height: 1.4;
 }
 
 /* ─── Print: Strip effects ─── */
