@@ -1,3 +1,5 @@
+import '../playground.css';
+
 interface Props {
   visible: boolean;
   accent: string;

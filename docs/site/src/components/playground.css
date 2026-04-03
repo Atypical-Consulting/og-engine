@@ -1,11 +1,6 @@
 /* docs/site/src/components/playground.css */
 
 /* ── Focus states (accessibility) ── */
-.pg-input:focus {
-  box-shadow: 0 0 0 2px rgba(56, 239, 125, 0.2);
-  border-color: rgba(56, 239, 125, 0.3) !important;
-}
-
 .pg-input {
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }

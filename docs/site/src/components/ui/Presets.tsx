@@ -1,3 +1,4 @@
+import '../playground.css';
 import type { Gradient } from '../engine/gradients';
 import type { FontEntry } from '../engine/fonts';
 import { GRADIENTS, ACCENTS } from '../engine/gradients';
@@ -94,6 +95,7 @@ export function Presets({ onSelect, accent }: Props) {
         <button
           onClick={() => onSelect(randomPreset())}
           className="pg-picker-btn"
+          aria-label="Randomize preset"
           style={{
             padding: '4px 10px', borderRadius: 6, fontSize: 10, fontFamily: 'inherit',
             border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)',

@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useLayoutEffect, useId } from 'react';
+import '../playground.css';
 
 interface Props {
   title: string;
@@ -10,17 +11,20 @@ export function Section({ title, defaultOpen = true, children }: Props) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [maxH, setMaxH] = useState<string>('none');
+  const bodyId = useId();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (bodyRef.current) {
       setMaxH(`${bodyRef.current.scrollHeight}px`);
     }
-  });
+  }, [open, children]);
 
   return (
     <div style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: 10 }}>
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls={bodyId}
         style={{
           display: 'flex', alignItems: 'center', gap: 6, width: '100%',
           background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0',
@@ -37,6 +41,7 @@ export function Section({ title, defaultOpen = true, children }: Props) {
         {title}
       </button>
       <div
+        id={bodyId}
         ref={bodyRef}
         className={`pg-section-body${open ? '' : ' collapsed'}`}
         style={{ maxHeight: open ? maxH : 0, display: 'flex', flexDirection: 'column', gap: 10 }}
