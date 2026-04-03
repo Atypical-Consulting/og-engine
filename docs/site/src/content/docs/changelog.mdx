@@ -9,81 +9,86 @@ All notable changes to OG Engine are documented here. OG Engine follows [Semanti
 
 ## v0.1.0 — 2026-04-03
 
-Initial public release of OG Engine.
+**Initial public release.** Everything you need to replace Puppeteer for image generation.
 
 ### API Endpoints
 
 - **`POST /render`** — Generate a single image from a JSON payload. Returns binary PNG (all plans) or WebP (Starter+). Typical render time: 2–5ms.
-- **`POST /validate`** — Check whether title and description text fits a layout without generating an image. Free, unlimited, no authentication required.
-- **`POST /render/batch`** — Render up to 100 images in a single API call. Returns a ZIP archive. Available on Pro and Scale plans.
+- **`POST /validate`** — Check whether title and description text fits a layout without generating an image. **Free, unlimited, no authentication required.** Use it in CI, forms, or content pipelines.
+- **`POST /render/batch`** — Render up to 100 images in a single API call. Returns a ZIP archive. *Available on Pro and Scale plans — ideal for SaaS platforms generating images during deployment.*
 - **`GET /health`** — Returns service status, API version, and lists of available fonts, formats, and templates.
+- **`POST /auth/register`** — Get an API key with just your email. No credit card. Instant access.
+- **`GET /usage`** — Check your quota at any time.
 
 ### Templates
 
+Four production-ready templates — every template works on every plan:
+
 - **`default`** — Accent bar, grid background pattern, tag pill badge, and author line. Supports left, center, and bottom layouts.
 - **`social-card`** — Large centered title with minimal decoration. Designed for Twitter and Instagram.
-- **`blog-hero`** — Background image compositing with dark overlay. Text anchored to the lower canvas.
-- **`email-banner`** — Horizontal CTA-style layout for email headers and newsletter banners.
+- **`blog-hero`** — Background image compositing with dark overlay. Text anchored to the lower canvas. *Perfect for content-heavy sites.*
+- **`email-banner`** — Horizontal CTA-style layout for email headers and newsletter banners. *Use with batch rendering for personalized campaigns.*
 
 ### Formats
 
-Five canonical format presets:
+Five canonical format presets covering every major platform:
 
-| Format | Dimensions |
-|---|---|
-| `og` | 1200 × 630 px |
-| `twitter` | 1200 × 675 px |
-| `square` | 1080 × 1080 px |
-| `linkedin` | 1200 × 627 px |
-| `story` | 1080 × 1920 px |
+| Format | Dimensions | Platform |
+|---|---|---|
+| `og` | 1200 x 630 px | Open Graph / Facebook |
+| `twitter` | 1200 x 675 px | Twitter / X |
+| `square` | 1080 x 1080 px | Instagram |
+| `linkedin` | 1200 x 627 px | LinkedIn |
+| `story` | 1080 x 1920 px | Instagram / TikTok Stories |
 
 ### Fonts
 
-Eight pre-loaded font families, all served from local `.ttf` files:
+Eight pre-loaded font families — including CJK and Arabic support:
 
-- **Outfit** — Modern geometric sans-serif (default)
-- **Inter** — Neutral, screen-optimized
-- **Playfair Display** — Elegant serif
-- **Sora** — Rounded, friendly
-- **Space Grotesk** — Techy sans-serif
-- **JetBrains Mono** — Monospaced
-- **Noto Sans JP** — Latin + Japanese CJK
-- **Noto Sans AR** — Latin + Arabic (bidirectional)
+- **Outfit** — Modern geometric sans-serif (default). Best for tech and SaaS.
+- **Inter** — Neutral, screen-optimized. Best for data-heavy content.
+- **Playfair Display** — Elegant serif. Best for editorial and luxury brands.
+- **Sora** — Rounded, friendly. Best for consumer products.
+- **Space Grotesk** — Techy sans-serif. Best for developer tools.
+- **JetBrains Mono** — Monospaced. Best for code-related content.
+- **Noto Sans JP** — Full Japanese CJK support. *For products serving Japanese users.*
+- **Noto Sans AR** — Full Arabic support with bidirectional text. *For products serving Arabic users.*
 
 ### TypeScript SDK
 
-- `og-engine-sdk` npm package with full TypeScript types
-- Methods: `og.render()`, `og.validate()`, `og.batch()`, `og.usage()`, `og.health()`
-- Auto-retry on 5xx errors with exponential backoff
-- Typed `OGEngineError` class with `code`, `status`, and `details` properties
-- Framework integration examples for Next.js, Astro, Express, and Cloudflare Workers
+`og-engine-sdk` on npm — full TypeScript types, auto-retry, framework examples:
+
+- `og.render()` — generate an image
+- `og.validate()` — check text fits (free)
+- `og.batch()` — bulk generation (Pro+)
+- `og.usage()` — check quota
+- `og.health()` — capabilities and status
+
+Integration examples included for **Next.js**, **Astro**, **Express**, and **Cloudflare Workers**.
 
 ### Infrastructure
 
-- **Docker image** — `ghcr.io/phmatray/og-engine:latest` available for self-hosting
-- Fly.io one-command deployment support
-- `GET /health` endpoint for container health checks
-- LRU cache for Pretext text preparation results
+- **Docker image** available for self-hosting — zero per-render cost
+- Fly.io one-command deployment
 - Sub-50ms cold starts
+- LRU caching for text preparation
 
 ### Documentation
 
-- Full API reference with request/response tables
-- Guides for rendering, validation, batch, background images, error handling
 - Interactive playground (no API key required)
-- Templates gallery with visual descriptions
-- Self-hosting guide for Docker and Fly.io
-- Pricing page with plan comparison and FAQ
+- Framework-specific integration guides
+- Complete API reference
+- Templates gallery with visual examples
 
 ---
 
 ## Upcoming
 
-The following features are planned for future releases:
+| Version | Focus | Highlights |
+|---|---|---|
+| **v0.2.0** | Caching & Analytics | Redis cache layer, API key management dashboard, usage analytics |
+| **v0.3.0** | Standards & Fonts | OpenAPI/Swagger specification, additional font families, SVG output |
+| **v0.4.0** | Edge & Customization | Cloudflare Workers deployment, custom template DSL |
+| **v1.0.0** | Stability | Stable API contract, SLA guarantees, Python/Go/Ruby SDKs |
 
-- **v0.2.0** — Redis cache layer, API key management dashboard, usage analytics
-- **v0.3.0** — OpenAPI/Swagger specification, additional font families, SVG output option
-- **v0.4.0** — Cloudflare Workers edge deployment, custom template DSL
-- **v1.0.0** — Stable API, SLA guarantees, SDK for Python, Go, and Ruby
-
-Subscribe to [status.og-engine.com](https://status.og-engine.com) for release notifications and uptime updates.
+Subscribe to [status.og-engine.com](https://status.og-engine.com) for release notifications.
