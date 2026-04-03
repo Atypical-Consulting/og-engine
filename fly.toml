@@ -1,6 +1,13 @@
 # Fly.io deployment config for OG Engine
 # Deploy: fly deploy
-# Secrets: fly secrets set STRIPE_SECRET_KEY=... STRIPE_WEBHOOK_SECRET=... RESEND_API_KEY=...
+# Secrets (set via fly secrets set):
+#   STRIPE_SECRET_KEY       - Stripe API secret key
+#   STRIPE_WEBHOOK_SECRET   - Stripe webhook signing secret
+#   STRIPE_PRICE_STARTER    - Stripe Price ID for Starter plan
+#   STRIPE_PRICE_PRO        - Stripe Price ID for Pro plan
+#   STRIPE_PRICE_SCALE      - Stripe Price ID for Scale plan
+#   RESEND_API_KEY           - Resend transactional email API key
+#   ADMIN_CRON_SECRET        - Shared secret for GitHub Action cron
 
 app = "og-engine"
 primary_region = "cdg"
