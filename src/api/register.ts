@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { createApiKey, findApiKeyByEmail } from '../db';
+import { sendWelcomeEmail } from '../email/send';
 
 export const registerRoute = new Hono();
 
@@ -53,8 +54,7 @@ registerRoute.post('/auth/register', async (c) => {
 
   const record = createApiKey(email, 'free');
 
-  // TODO: Send API key by email via Resend when RESEND_API_KEY is configured
-  // For now, key is returned in response (instant access per Decision 4)
+  await sendWelcomeEmail(email, record.key, record.plan);
 
   return c.json(
     {
