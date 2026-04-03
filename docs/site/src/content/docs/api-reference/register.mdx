@@ -1,0 +1,65 @@
+---
+title: POST /auth/register
+description: Create a free account and receive an API key. No credit card required.
+---
+
+Register a new free-tier account with just an email address. Returns the API key immediately and sends a copy to the provided email.
+
+```
+POST https://api.og-engine.com/auth/register
+```
+
+**Authentication:** Not required
+
+## Request Body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `email` | string | Yes | Your email address |
+
+## Example Request
+
+```bash
+curl -X POST https://api.og-engine.com/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com"}'
+```
+
+## Response
+
+```json
+{
+  "apiKey": "oge_sk_a1b2c3d4e5f6...",
+  "plan": "free",
+  "limit": 500,
+  "message": "API key also sent to you@example.com"
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `apiKey` | string | Your new API key (prefix `oge_sk_`) |
+| `plan` | string | Always `"free"` for new registrations |
+| `limit` | number | Monthly render quota (500 for free plan) |
+| `message` | string | Confirmation that the key was also emailed |
+
+The API key is returned immediately in the response AND sent to the provided email address. The email includes the key, a curl example, and a link to the documentation.
+
+## Duplicate Registration
+
+If the email is already registered, the existing API key is returned (not a new one). This is idempotent — calling register twice with the same email produces the same result.
+
+## Error Responses
+
+| Status | Code | Cause |
+|---|---|---|
+| 400 | `missing_field` | `email` not provided |
+| 400 | `invalid_request` | `email` is not a valid email address |
+
+## Next Steps
+
+- [Quick Start](/quick-start/) — use your new API key to generate your first image
+- [API Reference Overview](/api-reference/overview/) — full endpoint documentation
+- [Pricing](/pricing/) — upgrade to a paid plan for higher limits

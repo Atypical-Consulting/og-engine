@@ -62,6 +62,8 @@ Rate limiting headers are present on every authenticated response. See the [Erro
 | `POST` | `/validate` | Optional | Check if text fits a layout (free, unlimited) |
 | `POST` | `/render/batch` | Required | Generate multiple images (Pro+) |
 | `GET` | `/health` | Not required | Service status and capabilities |
+| `POST` | `/auth/register` | Not required | Create a free account and get an API key |
+| `GET` | `/usage` | Required | Current quota usage for your API key |
 
 ## Error Format
 
