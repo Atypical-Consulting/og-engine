@@ -1,5 +1,3 @@
-import '../playground.css';
-
 const TEMPLATES = [
   { key: 'default', label: 'Default', description: 'Accent bar, grid, tag pill' },
   { key: 'social-card', label: 'Social Card', description: 'Large centered title' },

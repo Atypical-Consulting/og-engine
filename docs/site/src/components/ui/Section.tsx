@@ -1,5 +1,4 @@
 import { useState, useRef, useLayoutEffect, useId } from 'react';
-import '../playground.css';
 
 interface Props {
   title: string;

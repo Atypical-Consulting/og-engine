@@ -1,4 +1,3 @@
-import '../playground.css';
 import { FORMATS, FORMAT_KEYS, type FormatKey } from '../engine/formats';
 
 interface Props {
