@@ -1,9 +1,9 @@
 ---
 title: OG Engine — Server-Side Image Generation API
-description: Generate OG images, social cards, and email banners in 2ms. 500x faster than Puppeteer — no Chrome, no Xvfb, no cold starts. Free tier available.
+description: Generate OG images, social cards, and email banners in ~22ms — up to 30x faster than Puppeteer. No Chrome, no Xvfb, no cold starts. Free tier available.
 template: splash
 hero:
-  tagline: "Send JSON. Get a PNG. 500x faster than Puppeteer — no Chrome, no Xvfb, no cold starts. Just pixels."
+  tagline: "Send JSON. Get a PNG. Up to 30x faster than Puppeteer — no Chrome, no Xvfb, no cold starts. Just pixels."
   actions:
     - text: Get Started
       link: /quick-start/
@@ -25,7 +25,7 @@ head:
             "name": "How is OG Engine so fast?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "OG Engine uses Pretext for text measurement — the same Unicode segmentation engine, running server-side with Canvas. No browser startup, no DOM layout, no paint cycle. Just math and pixels. Typical render time is 2ms."
+              "text": "OG Engine uses Pretext for text measurement — the same Unicode segmentation engine, running server-side with Canvas. No browser startup, no DOM layout, no paint cycle. Just math and pixels. Text layout in ~0.1ms, full render in ~22ms (benchmarked)."
             }
           },
           {
@@ -74,6 +74,10 @@ head:
 
 import PlaygroundMini from '../../components/PlaygroundMini';
 import HeroTerminal from '../../components/HeroTerminal';
+import BenchmarkCounters from '../../components/BenchmarkCounters';
+import OutputGallery from '../../components/OutputGallery';
+import FaqAccordion from '../../components/FaqAccordion';
+import ScrollReveal from '../../components/ScrollReveal';
 
 <div class="hero-showcase">
   <HeroTerminal client:visible />
@@ -84,33 +88,55 @@ import HeroTerminal from '../../components/HeroTerminal';
     <a href="https://github.com/Atypical-Consulting/og-engine"><img src="https://img.shields.io/github/stars/Atypical-Consulting/og-engine?style=flat&color=38ef7d&labelColor=0c1018" alt="GitHub stars" width="80" height="20" /></a>
   </div>
   <div class="trust-separator">/</div>
-  <div class="trust-item">~2ms average render</div>
+  <div class="trust-item">~22ms average render</div>
   <div class="trust-separator">/</div>
   <div class="trust-item">Open source + self-hostable</div>
   <div class="trust-separator">/</div>
   <div class="trust-item">Free tier — no credit card</div>
 </div>
 
+<ScrollReveal client:visible>
+<div class="social-proof">
+  <p class="social-proof-label">Trusted by developers building with</p>
+  <div class="social-proof-logos">
+    <span class="social-proof-logo">Next.js</span>
+    <span class="social-proof-logo">Astro</span>
+    <span class="social-proof-logo">Remix</span>
+    <span class="social-proof-logo">SvelteKit</span>
+    <span class="social-proof-logo">Nuxt</span>
+    <span class="social-proof-logo">Hono</span>
+  </div>
+</div>
+</ScrollReveal>
+
+<ScrollReveal client:visible>
+
+## Example Output
+
+<p class="gallery-subtext">Every image generated in under 25ms — no browser, no Puppeteer.</p>
+
+<OutputGallery client:visible />
+
+</ScrollReveal>
+
 ## Benchmarks
 
-<table>
-  <thead>
-    <tr>
-      <th></th>
-      <th>Puppeteer</th>
-      <th>OG Engine</th>
-      <th>Delta</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><th scope="row">Render</th><td>~850ms</td><td><strong>~2ms</strong></td><td>425x</td></tr>
-    <tr><th scope="row">Memory</th><td>~200-500MB</td><td><strong>~10MB</strong></td><td>50x</td></tr>
-    <tr><th scope="row">Concurrency</th><td>~5-10/instance</td><td><strong>500+/instance</strong></td><td>100x</td></tr>
-    <tr><th scope="row">Cold start</th><td>~2-5s</td><td><strong>~50ms</strong></td><td>100x</td></tr>
-    <tr><th scope="row">Infrastructure</th><td>Chrome + Xvfb + sandbox</td><td><strong>Node.js</strong></td><td>—</td></tr>
-    <tr><th scope="row">i18n</th><td>Full browser</td><td><strong>CJK, Arabic, emoji</strong></td><td>Parity</td></tr>
-  </tbody>
-</table>
+<BenchmarkCounters client:visible />
+
+<p style="text-align:center;font-size:0.78rem;color:#6b7a90;margin-top:0.5rem;">
+  OG Engine vs Puppeteer/headless Chrome &middot; <a href="/compare/benchmarks/">Full benchmark methodology →</a>
+</p>
+
+<div class="tech-stack-bar">
+  Built with
+  <a href="https://github.com/chenglou/pretext" target="_blank" rel="noopener">Pretext</a>
+  <span class="tech-sep">+</span>
+  <a href="https://github.com/nicknisi/canvas" target="_blank" rel="noopener">@napi-rs/canvas</a>
+  <span class="tech-sep">+</span>
+  <a href="https://hono.dev" target="_blank" rel="noopener">Hono</a>
+</div>
+
+<ScrollReveal client:visible>
 
 ## How It Works
 
@@ -133,55 +159,79 @@ import HeroTerminal from '../../components/HeroTerminal';
 <div class="step-number">3</div>
 <div class="step-content">
 <h3>Get Your Image</h3>
-<p>PNG or WebP in the response. Typical render: 2ms. Supports CJK, Arabic, emoji, and mixed scripts.</p>
+<p>PNG or WebP in the response. Typical render: ~22ms. Text layout: ~0.1ms. Supports CJK, Arabic, emoji, and mixed scripts.</p>
 </div>
 </div>
 </div>
+
+</ScrollReveal>
+
+<ScrollReveal client:visible>
 
 ## Use Cases
 
 <div class="use-cases">
 <div class="use-case">
-<div class="use-case-icon">{ }</div>
+<div class="use-case-icon"><span>{"{ }"}</span></div>
 <h3>Blog Platforms</h3>
 <p>Auto-generate unique OG images for every post. No design tool, no template editor — just your title and brand colors.</p>
 </div>
 <div class="use-case">
-<div class="use-case-icon">~></div>
+<div class="use-case-icon"><span>{"~>"}</span></div>
 <h3>SaaS Products</h3>
 <p>Dynamic social cards when users share dashboards, reports, or public pages. Render on demand, cache at the edge.</p>
 </div>
 <div class="use-case">
-<div class="use-case-icon">$</div>
+<div class="use-case-icon"><span>$_</span></div>
 <h3>E-Commerce</h3>
 <p>Product images with price overlays, sale badges, and localized text — generated at scale for every SKU.</p>
 </div>
 <div class="use-case">
-<div class="use-case-icon">@</div>
+<div class="use-case-icon"><span>@:</span></div>
 <h3>Email Marketing</h3>
 <p>Personalized banners with recipient name, offer details, or dynamic content. No design bottleneck.</p>
 </div>
 </div>
 
-## Try It Live
+<div class="mid-cta">
+  <a href="/quick-start/" class="mid-cta-btn">Get Started Free →</a>
+</div>
 
-Edit the title. Watch the image rebuild in real-time — no API key, no backend.
+</ScrollReveal>
 
-<PlaygroundMini client:visible />
+<ScrollReveal client:visible>
+
+## Your First Render — Zero Setup
+
+Edit the fields below and watch the image rebuild instantly. No API key, no backend, no signup.
+
+<div class="playground-mini-wrapper">
+  <PlaygroundMini client:visible />
+</div>
+
+<p style="text-align:center;margin-top:1rem;">
+  <a href="/playground/" class="mid-cta-btn">Open Full Playground →</a>
+</p>
+
+</ScrollReveal>
+
+<ScrollReveal client:visible>
 
 ## Free Text Validation
 
 Check if your text fits — **free, unlimited, no signup required.**
 
-```bash
-curl -X POST https://api.og-engine.com/validate \
-  -H "Content-Type: application/json" \
-  -d '{"format": "og", "title": "Will this headline fit in two lines?"}'
-```
-
-```json
-{ "fits": true, "title": { "lines": 1, "maxLines": 3, "overflow": false }, "computeTimeMs": 0.08 }
-```
+<div class="validate-terminal">
+  <div class="validate-terminal-bar">
+    <div class="hero-terminal-dots">
+      <span class="dot dot-red"></span>
+      <span class="dot dot-yellow"></span>
+      <span class="dot dot-green"></span>
+    </div>
+    <span class="hero-terminal-title">validate — text-fit check</span>
+  </div>
+  <pre class="validate-terminal-body"><code>{"$ curl -X POST https://api.og-engine.com/validate \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"format\":\"og\",\"title\":\"Will this headline fit?\"}'\n\n"}<span class="term-response">{"HTTP/1.1 200 OK"}</span>{"\n"}<span class="term-header-accent">{"X-Compute-Time-Ms: 0.08"}</span>{"\n\n{\n  "}<span style={{color:'#67e8f9'}}>{'"fits"'}</span>{": "}<span style={{color:'#38ef7d'}}>{"true"}</span>{",\n  "}<span style={{color:'#67e8f9'}}>{'"title"'}</span>{": { "}<span style={{color:'#67e8f9'}}>{'"lines"'}</span>{": "}<span style={{color:'#fbbf24'}}>{"1"}</span>{", "}<span style={{color:'#67e8f9'}}>{'"maxLines"'}</span>{": "}<span style={{color:'#fbbf24'}}>{"3"}</span>{", "}<span style={{color:'#67e8f9'}}>{'"overflow"'}</span>{": "}<span style={{color:'#38ef7d'}}>{"false"}</span>{" }\n}"}</code></pre>
+</div>
 
 <div class="validate-callout">
 
@@ -190,6 +240,10 @@ curl -X POST https://api.og-engine.com/validate \
 [Try it in the Playground →](/playground/)
 
 </div>
+
+</ScrollReveal>
+
+<ScrollReveal client:visible>
 
 ## Pricing
 
@@ -220,40 +274,9 @@ All plans use the same engine — same speed, same quality, same fonts. Pick the
 
 <p class="pricing-strip-note">5 formats (OG, Twitter, Square, LinkedIn, Story) · 4 templates · 8 fonts · <a href="/pricing/">Full comparison →</a></p>
 
----
+</ScrollReveal>
 
-## FAQ
-
-<div class="home-faq">
-
-### How is this so fast?
-
-OG Engine uses [Pretext](https://github.com/chenglou/pretext) for text measurement — the same Unicode segmentation engine, running server-side with Canvas. No browser startup, no DOM layout, no paint cycle. Just math and pixels.
-
-### Does it handle non-Latin scripts?
-
-Yes. Pretext handles CJK (Chinese, Japanese, Korean), Arabic (with bidirectional text), emoji, grapheme clusters, and mixed-script content. Pre-loaded fonts include Noto Sans JP and Noto Sans AR.
-
-### Can I validate text without generating an image?
-
-Yes. `POST /validate` checks if your text fits a layout — free, unlimited, no authentication required. Use it to catch overflow before rendering.
-
-### Is there a free plan?
-
-Yes. 500 renders/month, forever. No credit card, no expiration. Same engine, same speed, same quality as paid plans.
-
-### Can I self-host?
-
-Yes. OG Engine ships as an open-source Docker image. Run it on your own infrastructure with zero per-render cost. See [Self-Hosting](/self-hosting/docker/).
-
-### What about custom templates?
-
-Scale plan (€99/mo) supports custom JSON templates. All plans get 4 built-in templates. A visual template builder is on the roadmap.
-
-</div>
-
----
-
+<ScrollReveal client:visible>
 <div class="oss-callout">
 
 ## Open Source
@@ -266,3 +289,14 @@ OG Engine is open source. Run it on your own infrastructure with **zero per-rend
 </div>
 
 </div>
+</ScrollReveal>
+
+---
+
+<ScrollReveal client:visible>
+
+## FAQ
+
+<FaqAccordion client:visible />
+
+</ScrollReveal>

@@ -1,6 +1,6 @@
 ---
 title: Why We Built OG Engine
-description: Headless Chrome costs 850ms and 200MB per OG image. We built OG Engine with Pretext to render the same images in 2ms with 10MB. Here's why and how.
+description: Headless Chrome costs ~130ms (warm) and 200MB per OG image. We built OG Engine with Pretext to render the same images in ~22ms with 10MB — up to 30x faster. Here's why and how.
 head:
   - tag: script
     attrs:
@@ -10,7 +10,7 @@ head:
         "@context": "https://schema.org",
         "@type": "Article",
         "headline": "Why We Built OG Engine",
-        "description": "Headless Chrome costs 850ms and 200MB per OG image. We built OG Engine with Pretext to render the same images in 2ms with 10MB.",
+        "description": "Headless Chrome costs ~130ms (warm) and 200MB per OG image. We built OG Engine with Pretext to render the same images in ~22ms with 10MB — up to 30x faster.",
         "author": {
           "@type": "Organization",
           "name": "OG Engine",
@@ -43,7 +43,7 @@ To generate a 1200x630 PNG with some text on a gradient, the typical stack:
 4. **Screenshots the viewport** and encodes to PNG
 5. **Kills the browser** (or pools it, adding connection management complexity)
 
-This takes ~850ms per image. At 50,000 images/month, you need multiple instances, crash recovery, Xvfb for headless rendering, and Chrome security sandboxing. Infrastructure cost alone runs $40–100/month before you write a line of application code.
+This takes ~130ms per image (warm browser) or ~660ms (cold start). At 50,000 images/month, you need multiple instances, crash recovery, Xvfb for headless rendering, and Chrome security sandboxing. Infrastructure cost alone runs $40–100/month before you write a line of application code.
 
 For rendering text on a background — which is 95% of OG image use cases — this is like driving a semi truck to pick up a letter from the mailbox.
 
@@ -63,16 +63,16 @@ Pretext computes exact text layout — line breaks, heights, overflow — withou
 OG Engine combines Pretext with server-side Canvas rendering:
 
 1. **Pretext measures text** — computes line breaks, line count, total height (< 0.1ms)
-2. **Canvas draws the image** — gradient, grid pattern, accent bar, text, decorations (< 2ms)
-3. **PNG encode** — Canvas to binary (< 1ms)
+2. **Canvas draws the image** — gradient, grid pattern, accent bar, text, decorations (~0.05ms)
+3. **PNG encode** — Canvas to binary (~21ms)
 
-Total: **2–5ms per image**. No browser, no DOM, no Xvfb. A single Node.js process handles 500+ concurrent renders.
+Total: **~22ms per image** ([benchmarked](/benchmarks/)). PNG encoding dominates; text layout + canvas draw take under 1ms. No browser, no DOM, no Xvfb. A single Node.js process handles 500+ concurrent renders.
 
 ## The Numbers
 
 | | Puppeteer | OG Engine |
 |---|---|---|
-| Render | ~850ms | ~2ms |
+| Render | ~130ms (warm) / ~660ms (cold) | ~22ms |
 | Memory | ~200–500MB | ~10MB |
 | Concurrency | 5–10/instance | 500+/instance |
 | Cold start | 2–5s | ~50ms |
