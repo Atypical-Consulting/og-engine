@@ -37,7 +37,7 @@ function buildSDK(config: Config): string {
   if (config.accent !== '#38ef7d') styleOpts.push(`    accent: '${config.accent}'`);
   if (config.font !== 'Outfit') styleOpts.push(`    font: '${config.font}'`);
   if (styleOpts.length > 0) opts.push(`  style: {\n${styleOpts.join(',\n')}\n  }`);
-  return `import { OGEngine } from 'og-engine-sdk'\n\nconst og = new OGEngine(process.env.OG_ENGINE_API_KEY!)\n\nconst image = await og.render({\n${opts.join(',\n')}\n})`;
+  return `import { OGEngine } from '@atypical-consulting/og-engine-sdk'\n\nconst og = new OGEngine(process.env.OG_ENGINE_API_KEY!)\n\nconst image = await og.render({\n${opts.join(',\n')}\n})`;
 }
 
 function buildJSON(config: Config): string {

@@ -254,11 +254,11 @@ curl -X POST https://api.og-engine.com/validate \
 ### Step 5 — Use the SDK (optional)
 
 ```bash
-npm install og-engine-sdk
+npm install @atypical-consulting/og-engine-sdk
 ```
 
 ```typescript
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 
 const og = new OGEngine('oge_sk_a1b2c3...')
 
@@ -549,13 +549,13 @@ Every error response follows this structure:
 ### Installation
 
 ```bash
-npm install og-engine-sdk    # or bun add / pnpm add
+npm install @atypical-consulting/og-engine-sdk    # or bun add / pnpm add
 ```
 
 ### Client Initialization
 
 ```typescript
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 
 const og = new OGEngine('oge_sk_...')
 // or

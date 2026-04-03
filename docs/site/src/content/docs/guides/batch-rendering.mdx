@@ -105,7 +105,7 @@ Compare this to 100 sequential `/render` requests at ~3ms each: even with HTTP o
 ## SDK Example
 
 ```typescript
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 import { writeFile } from 'fs/promises'
 
 const og = new OGEngine(process.env.OG_ENGINE_KEY!)
@@ -136,7 +136,7 @@ A common pattern is running batch generation as part of a CI/CD pipeline or stat
 
 ```typescript
 // scripts/generate-og-images.ts
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 import { readFile, writeFile, mkdir } from 'fs/promises'
 import AdmZip from 'adm-zip'
 

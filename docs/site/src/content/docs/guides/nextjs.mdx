@@ -8,7 +8,7 @@ Add dynamic Open Graph images to your Next.js app in under 5 minutes. Works with
 ## Install the SDK
 
 ```bash
-npm install og-engine-sdk
+npm install @atypical-consulting/og-engine-sdk
 ```
 
 ## App Router — Route Handler
@@ -16,7 +16,7 @@ npm install og-engine-sdk
 Create `app/api/og/route.ts`:
 
 ```typescript
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 
 const og = new OGEngine(process.env.OG_ENGINE_KEY!)
 
@@ -102,7 +102,7 @@ The route handler above sets a 24-hour cache. For static sites, consider generat
 
 ```typescript
 // scripts/generate-og.ts
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 import { writeFile } from 'fs/promises'
 
 const og = new OGEngine(process.env.OG_ENGINE_KEY!)

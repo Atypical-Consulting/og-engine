@@ -1155,7 +1155,7 @@ function buildSDK(config: Config): string {
   if (config.accent !== '#38ef7d') styleOpts.push(`    accent: '${config.accent}'`);
   if (config.font !== 'Outfit') styleOpts.push(`    font: '${config.font}'`);
   if (styleOpts.length > 0) opts.push(`  style: {\n${styleOpts.join(',\n')}\n  }`);
-  return `import { OGEngine } from 'og-engine-sdk'
+  return `import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 
 const og = new OGEngine(process.env.OG_ENGINE_API_KEY!)
 
@@ -1788,11 +1788,11 @@ curl -X POST https://api.og-engine.com/validate \
 ## Step 5 — Use the SDK (Optional)
 
 ```bash
-npm install og-engine-sdk
+npm install @atypical-consulting/og-engine-sdk
 ```
 
 ```typescript
-import { OGEngine } from 'og-engine-sdk'
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
 
 const og = new OGEngine('oge_sk_a1b2c3...')
 
