@@ -56,7 +56,7 @@ curl -X POST http://localhost:3000/render \
 
 ```bash
 # Clone & install
-git clone https://github.com/aspect-music/og-engine.git
+git clone https://github.com/Atypical-Consulting/og-engine.git
 cd og-engine
 bun install
 
@@ -392,7 +392,7 @@ og-engine/
 Contributions are welcome! Here's how to get started:
 
 ```bash
-git clone https://github.com/aspect-music/og-engine.git
+git clone https://github.com/Atypical-Consulting/og-engine.git
 cd og-engine
 bun install
 bun run fonts:download
@@ -419,7 +419,7 @@ MIT
 </p>
 
 <p align="center">
-  <a href="https://github.com/aspect-music/og-engine">
-    <img src="https://img.shields.io/github/stars/aspect-music/og-engine?style=social" alt="GitHub Stars" />
+  <a href="https://github.com/Atypical-Consulting/og-engine">
+    <img src="https://img.shields.io/github/stars/Atypical-Consulting/og-engine?style=social" alt="GitHub Stars" />
   </a>
 </p>
