@@ -6,7 +6,7 @@ FROM base AS deps
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile --production --ignore-scripts && \
-    cd node_modules/better-sqlite3 && bun run build-release
+    bunx node-gyp rebuild --release --directory=node_modules/better-sqlite3
 
 # Runner stage — no build tools needed
 FROM base AS runner
