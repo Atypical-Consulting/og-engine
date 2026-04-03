@@ -16,7 +16,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY tsconfig.json ./
 COPY src/ ./src/
-COPY fonts/ ./fonts/
+COPY scripts/ ./scripts/
+RUN bun run scripts/download-fonts.ts
 
 # Create data directory for SQLite
 RUN mkdir -p /data
