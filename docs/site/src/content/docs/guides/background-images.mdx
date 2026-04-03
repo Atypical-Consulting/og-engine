@@ -1,0 +1,132 @@
+---
+title: Background Images
+description: Upload a background image to composite with your text using the blog-hero template and overlay controls.
+---
+
+import PlaygroundContextual from '../../../components/PlaygroundContextual';
+
+Background image compositing lets you generate cards that combine a photograph or artwork with your text. OG Engine handles resizing, cropping, and darkening the image so your text always remains legible.
+
+## How Compositing Works
+
+When you supply a background image, OG Engine:
+
+1. Decodes the image (JPEG, PNG, or WebP)
+2. Resizes and center-crops it to exactly fill the canvas dimensions for your chosen format
+3. Applies a dark overlay at the specified `overlayOpacity` to ensure text contrast
+4. Renders text on top using the template's layout rules
+
+The result is a single flat PNG (or WebP) with your image, overlay, and text composited together.
+
+## Uploading via Multipart Form
+
+Background image upload uses `multipart/form-data`. The JSON payload goes in a field named `config`, and the image file goes in a field named `image`:
+
+```bash
+curl -X POST https://api.og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -F 'config={
+    "format": "og",
+    "template": "blog-hero",
+    "title": "Why Server-Side Rendering Still Matters",
+    "description": "A deep dive into modern SSR patterns.",
+    "tag": "Architecture",
+    "style": { "overlayOpacity": 0.6 }
+  }' \
+  -F 'image=@/path/to/cover.jpg' \
+  --output card.png
+```
+
+Note that when uploading an image, `Content-Type` is set automatically by curl. Do not manually set it to `application/json`.
+
+## SDK Example
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+import { readFile } from 'fs/promises'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+
+const coverImage = await readFile('./public/cover.jpg')
+
+const imageBuffer = await og.render({
+  format: 'og',
+  template: 'blog-hero',
+  title: 'Why Server-Side Rendering Still Matters',
+  description: 'A deep dive into modern SSR patterns.',
+  tag: 'Architecture',
+  style: { overlayOpacity: 0.6 },
+  backgroundImage: coverImage,
+})
+```
+
+## Controlling Overlay Darkness
+
+The `style.overlayOpacity` field controls how dark the overlay applied to your background image is:
+
+| Value | Effect |
+|---|---|
+| `0.2` | Very light overlay — image is prominent, text may be hard to read on light images |
+| `0.4` | Light overlay — good for very dark source images |
+| `0.65` | Default — balanced for most photographs |
+| `0.8` | Heavy overlay — maximizes text legibility |
+| `0.9` | Near-opaque — image visible only as a subtle texture |
+
+**Range:** 0.2 – 0.9
+**Default:** 0.65
+
+```json
+{ "style": { "overlayOpacity": 0.7 } }
+```
+
+For bright, colorful images like travel photography, use `0.7`–`0.8`. For dark editorial images, `0.4`–`0.55` often preserves more of the image while keeping text readable.
+
+## Accepted Image Formats
+
+| Format | Extensions | Notes |
+|---|---|---|
+| JPEG | `.jpg`, `.jpeg` | Most common; smallest file size |
+| PNG | `.png` | Supports transparency (composited on black) |
+| WebP | `.webp` | Modern format; good quality-to-size ratio |
+
+**Maximum file size:** 5MB
+
+Images larger than 5MB are rejected with an `invalid_file` error. For high-resolution source images, consider resizing to ~2400×1260 (2x the OG canvas) before sending — this provides sufficient quality without the file size overhead.
+
+## The blog-hero Template
+
+The `blog-hero` template is specifically designed for background image use. It:
+
+- Anchors text to the lower-left quadrant, leaving the upper portion for the image to breathe
+- Renders the tag pill above the title
+- Includes the author line at the very bottom
+- Reduces the grid pattern opacity to avoid fighting with the background image detail
+
+You can use background images with any template, but `blog-hero` produces the most polished results.
+
+```json
+{
+  "format": "og",
+  "template": "blog-hero",
+  "title": "The Hidden Cost of Microservices",
+  "description": "When monoliths are actually the right answer.",
+  "author": "Jane Smith",
+  "tag": "Engineering"
+}
+```
+
+## Without a Background Image
+
+If `template` is set to `blog-hero` but no image is uploaded, the template falls back to the selected `style.gradient` as the background. All other layout rules still apply.
+
+## Preview
+
+The playground preview below uses a solid gradient background (file upload is not available client-side). To see background image compositing, use the curl or SDK examples above with a local image file:
+
+<PlaygroundContextual client:visible panels={['content']} />
+
+## Next Steps
+
+- Learn about [Customizing Styles](/guides/customizing-styles/) — overlay opacity and other style options
+- See [Formats & Templates](/guides/formats-and-templates/) for which formats work best with background images
+- Browse the [Templates Gallery](/templates/gallery/) for visual examples of the `blog-hero` template

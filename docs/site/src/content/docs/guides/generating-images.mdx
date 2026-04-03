@@ -1,0 +1,139 @@
+---
+title: Generating Images
+description: Learn how to call the /render endpoint, understand the rendering pipeline, and read response headers.
+---
+
+import PlaygroundContextual from '../../../components/PlaygroundContextual';
+
+The `/render` endpoint is the heart of OG Engine. Send a JSON payload describing what you want, receive a binary image — PNG by default, WebP on paid plans. This guide walks through what happens under the hood, the minimal and full request shapes, and how to interpret the response headers.
+
+## How Rendering Works
+
+When your request hits the API, OG Engine follows a four-step pipeline:
+
+1. **Text measurement** — Pretext's `prepareWithSegments()` analyzes your title and description text, handling Unicode grapheme clusters, CJK characters, Arabic, emoji, and bidirectional text with full accuracy.
+2. **Layout** — `layoutWithLines()` breaks each text block into lines given the available width, font metrics, and line height. Overflow is detected and an ellipsis is appended if the text exceeds `maxLines`.
+3. **Canvas draw** — The selected template composites the background gradient (or image), decorative elements, and each line of text onto an `@napi-rs/canvas` surface.
+4. **PNG encode** — The canvas is serialized to a binary buffer and streamed back as the HTTP response body.
+
+Total time from request to response: typically **2–5ms** for a standard OG image.
+
+## Minimal Request
+
+The only required fields are `format` and `title`:
+
+```bash
+curl -X POST https://api.og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"format": "og", "title": "Hello, World"}' \
+  --output image.png
+```
+
+This uses all defaults: the `default` template, Outfit font at 48px, the `void` gradient, and left-aligned layout.
+
+## Full Request
+
+A fully specified request gives you control over every visual parameter:
+
+```json
+{
+  "format": "og",
+  "template": "default",
+  "title": "Server-Side Text Layout Without a Browser",
+  "description": "Pure JS text measurement replaces Puppeteer. Sub-5ms renders, zero browser dependencies.",
+  "author": "Pretext Engine",
+  "tag": "Open Source",
+  "style": {
+    "accent": "#38ef7d",
+    "font": "Outfit",
+    "titleSize": 48,
+    "descSize": 22,
+    "layout": "left",
+    "gradient": "void",
+    "overlayOpacity": 0.65
+  },
+  "output": {
+    "format": "png",
+    "quality": 90
+  }
+}
+```
+
+Any field you omit falls back to its default. You never need to send the full object.
+
+## Reading Response Headers
+
+Every successful `/render` response includes diagnostic headers alongside the image bytes:
+
+| Header | Example | Meaning |
+|---|---|---|
+| `Content-Type` | `image/png` | Output format |
+| `X-Render-Time-Ms` | `2.34` | Total server-side render time in milliseconds |
+| `X-Title-Lines` | `2` | Number of lines the title was broken into |
+| `X-Desc-Lines` | `3` | Number of lines the description was broken into |
+| `X-Layout-Overflow` | `false` | Whether any text was truncated with ellipsis |
+| `X-RateLimit-Limit` | `500` | Your plan's monthly render limit |
+| `X-RateLimit-Remaining` | `483` | Renders remaining this month |
+| `X-RateLimit-Reset` | `1735689600` | Unix timestamp when quota resets |
+
+You can use `X-Layout-Overflow: true` as a signal to call `/validate` with a smaller font size and retry — or simply display a warning in your UI.
+
+```bash
+# Inspect headers without saving the image body
+curl -I -X POST https://api.og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"format": "og", "title": "Checking overflow"}'
+```
+
+## Output Formats
+
+### PNG (all plans)
+
+PNG is the default. It is lossless, supports transparency, and is universally accepted by social platforms. Most OG images are 1200×630 at approximately 80–200KB depending on complexity.
+
+```json
+{ "output": { "format": "png" } }
+```
+
+### WebP (Starter and above)
+
+WebP delivers 25–35% smaller files than PNG at equivalent visual quality. Ideal for high-volume scenarios or performance-sensitive applications.
+
+```json
+{ "output": { "format": "webp", "quality": 85 } }
+```
+
+The `quality` field (1–100, default 90) controls the WebP lossy compression level. Values between 80–90 are recommended for social cards. Attempting to request WebP on the Free plan returns a `plan_required` error.
+
+## SDK Example
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+
+const imageBuffer = await og.render({
+  format: 'og',
+  title: 'Server-Side Text Layout Without a Browser',
+  description: 'Pure JS text measurement replaces Puppeteer.',
+  tag: 'Open Source',
+  style: { accent: '#38ef7d', font: 'Outfit' },
+})
+
+// Node.js / Bun
+await Bun.write('output.png', imageBuffer)
+```
+
+## Try It Live
+
+Edit the title and description below to see how rendering works in real time:
+
+<PlaygroundContextual client:visible panels={['content']} />
+
+## Next Steps
+
+- Read [Formats & Templates](/guides/formats-and-templates/) to understand the 5 format presets and 4 templates
+- Learn how to [Customize Styles](/guides/customizing-styles/) with fonts, colors, and gradients
+- Explore the [POST /render API Reference](/api-reference/render/) for the complete field reference

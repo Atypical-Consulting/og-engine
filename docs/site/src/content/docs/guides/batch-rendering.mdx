@@ -1,0 +1,174 @@
+---
+title: Batch Rendering
+description: Generate multiple images in a single API call. Returns a ZIP archive with all rendered images.
+---
+
+The `/render/batch` endpoint accepts an array of render requests and returns a ZIP archive containing all generated images. It is designed for high-volume scenarios where making individual requests would be impractical.
+
+## When to Use Batch
+
+Use the batch endpoint when you need to:
+
+- Generate OG images for an entire blog archive on deploy
+- Pre-render cards for thousands of product pages
+- Create variations of a card across multiple formats simultaneously
+- Process a CSV export of content into images in one operation
+
+For one-off renders or low-volume generation (fewer than 10 images at a time), using individual `/render` requests is simpler and gives you per-image error handling.
+
+**Plan requirement:** `/render/batch` is available on **Pro** and **Scale** plans only. Free and Starter plans receive a `plan_required` error.
+
+## Request Structure
+
+```bash
+curl -X POST https://api.og-engine.com/render/batch \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      {
+        "format": "og",
+        "title": "Introduction to Bun",
+        "description": "A fast all-in-one JavaScript runtime.",
+        "tag": "Tutorial"
+      },
+      {
+        "format": "og",
+        "title": "Building APIs with Hono",
+        "description": "Lightweight HTTP framework for any runtime.",
+        "tag": "Guide"
+      },
+      {
+        "format": "twitter",
+        "template": "social-card",
+        "title": "OG Engine 1.0 Released",
+        "style": { "accent": "#f59e0b" }
+      }
+    ]
+  }' \
+  --output images.zip
+```
+
+Each item in the `items` array is a full render request. Items can have different formats, templates, styles — there are no constraints on mixing configurations within a single batch.
+
+**Maximum items per request:** 100
+
+## Response: ZIP Archive
+
+The response body is a ZIP archive with the following structure:
+
+```
+images.zip
+├── 0.png          ← first item
+├── 1.png          ← second item
+├── 2.png          ← third item
+└── errors.json    ← present only if any items failed
+```
+
+Images are named by their zero-based index in the input array. If an item used `output.format: "webp"`, its file will be `0.webp`.
+
+## Partial Failures
+
+If some items in the batch fail (for example, an invalid font name on item 3), the other items still render successfully. The failing items are recorded in `errors.json` inside the ZIP:
+
+```json
+[
+  {
+    "index": 3,
+    "error": "invalid_font",
+    "message": "Font 'Comic Sans' is not available. See /health for the list of supported fonts."
+  }
+]
+```
+
+Your code should always check for `errors.json` in the extracted ZIP and handle failures appropriately. If **all** items fail, the response is a `400` error with a JSON body rather than a ZIP.
+
+## Response Headers
+
+| Header | Example | Meaning |
+|---|---|---|
+| `Content-Type` | `application/zip` | Always ZIP for batch |
+| `X-Total-Render-Time-Ms` | `14.82` | Total server time for all renders |
+| `X-Batch-Count` | `3` | Number of images in the ZIP |
+| `X-Batch-Errors` | `0` | Number of items that failed |
+
+## Performance
+
+Batch renders run in parallel on the server. Typical throughput:
+
+- 10 images: ~15–30ms total
+- 50 images: ~70–120ms total
+- 100 images: ~130–200ms total
+
+Compare this to 100 sequential `/render` requests at ~3ms each: even with HTTP overhead, batch is substantially more efficient for bulk generation.
+
+## SDK Example
+
+```typescript
+import { OGEngine } from 'og-engine-sdk'
+import { writeFile } from 'fs/promises'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+
+const posts = [
+  { title: 'Introduction to Bun', description: 'A fast JS runtime.' },
+  { title: 'Building APIs with Hono', description: 'Lightweight framework.' },
+  { title: 'Pretext Text Layout', description: 'Sub-5ms text measurement.' },
+]
+
+const zipBuffer = await og.batch(
+  posts.map((post) => ({
+    format: 'og' as const,
+    title: post.title,
+    description: post.description,
+    tag: 'Blog',
+    style: { accent: '#38ef7d' },
+  }))
+)
+
+await writeFile('images.zip', zipBuffer)
+console.log(`Generated ${posts.length} OG images`)
+```
+
+## Using Batch in a Build Script
+
+A common pattern is running batch generation as part of a CI/CD pipeline or static site build:
+
+```typescript
+// scripts/generate-og-images.ts
+import { OGEngine } from 'og-engine-sdk'
+import { readFile, writeFile, mkdir } from 'fs/promises'
+import AdmZip from 'adm-zip'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+
+// Load posts from your CMS or file system
+const posts = JSON.parse(await readFile('./posts.json', 'utf-8'))
+
+const zipBuffer = await og.batch(
+  posts.map((post: any) => ({
+    format: 'og' as const,
+    title: post.title,
+    description: post.excerpt,
+    tag: post.category,
+  }))
+)
+
+// Extract the ZIP to the public directory
+const zip = new AdmZip(zipBuffer)
+await mkdir('./public/og', { recursive: true })
+zip.extractAllTo('./public/og', true)
+
+// Rename files from 0.png to post slug
+posts.forEach((post: any, i: number) => {
+  // rename `./public/og/${i}.png` → `./public/og/${post.slug}.png`
+})
+
+console.log(`Generated OG images for ${posts.length} posts`)
+```
+
+## Next Steps
+
+- Read the [POST /render/batch API Reference](/api-reference/batch/) for the complete request and response schema
+- Understand [Error Handling](/guides/error-handling/) for partial failure patterns
+- See [Pricing & Limits](/pricing/) for plan details and batch availability
