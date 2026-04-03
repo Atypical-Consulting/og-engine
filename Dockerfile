@@ -1,12 +1,13 @@
 FROM oven/bun:1 AS base
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (better-sqlite3 needs python3 + build tools)
 FROM base AS deps
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile --production
 
-# Build stage
+# Runner stage — no build tools needed
 FROM base AS runner
 WORKDIR /app
 
