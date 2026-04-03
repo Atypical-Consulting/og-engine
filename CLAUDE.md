@@ -19,6 +19,8 @@ We built a working browser-based prototype that demonstrates:
 
 The POC runs entirely client-side. The production version should run **server-side as an HTTP API**.
 
+> **Canonical decisions:** Product decisions (pricing, auth model, feature gating) are defined in `docs/analysis/DECISIONS.md`. That file is the source of truth — all documentation and implementation must align with it.
+
 ---
 
 ## 2. Product Vision
@@ -334,7 +336,7 @@ Start with 4 templates:
    → Bun preferred for speed + native TypeScript. Ensure @napi-rs/canvas works in Bun (has native addon support since 1.0).
 
 3. **Pricing model?**
-   → Free tier: 1,000 renders/month. Pro: $29/mo for 50k renders. Scale: usage-based at $0.001/render.
+   → Free tier: 500 renders/month. Starter: €10/mo for 10k. Pro: €39/mo for 50k. Scale: €99/mo for 200k. See docs/analysis/DECISIONS.md for canonical pricing.
 
 4. **Monorepo or separate repos?**
    → Start monorepo: API + landing page + SDK in one repo.
