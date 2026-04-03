@@ -170,7 +170,7 @@
 - Le champ `output.format` accepte "png" (défaut) et "webp"
 - Le champ `output.quality` (1-100) s'applique au WebP
 - Le WebP est disponible à partir du plan Starter
-- Si un utilisateur free demande du WebP, retourner une erreur 403 avec un message d'upgrade
+- Si un utilisateur free demande du WebP, retourner une erreur 402 `plan_required` avec un message d'upgrade
 
 ---
 
@@ -235,7 +235,7 @@
 - Le temps total est retourné dans le header `X-Total-Render-Time-Ms`
 - Chaque image du batch compte comme 1 appel API
 - L'endpoint est réservé aux plans Pro et Scale
-- Si un utilisateur Starter tente un batch, retourner 403 avec message d'upgrade
+- Si un utilisateur Starter tente un batch, retourner 402 `plan_required` avec message d'upgrade
 
 ---
 
@@ -380,10 +380,10 @@
 
 **Critères d'acceptation:**
 - Package npm: `og-engine-sdk`
-- Méthodes: `render()`, `validate()`, `batchRender()`, `usage()`
+- Méthodes: `render()`, `validate()`, `batch()`, `usage()`, `health()`
 - Types TypeScript pour toutes les requêtes et réponses
 - Gestion automatique de l'authentification (clé passée au constructeur)
-- Retry automatique sur erreur 5xx (1 retry, backoff 500ms)
+- Retry automatique sur erreur 5xx (3 retries, exponential backoff 200ms/400ms/800ms)
 - README avec exemples
 
 ---
