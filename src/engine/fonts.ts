@@ -1,31 +1,22 @@
 import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { GlobalFonts } from '@napi-rs/canvas';
+import { CURATED_FONTS, type CuratedFontEntry, isCuratedFont } from './font-catalog';
 
-export interface FontEntry {
-  name: string;
-  family: string;
-  weights: number[];
-  scripts: string[];
-  slug?: string;
-}
+/**
+ * Legacy alias for backward compatibility. Use CURATED_FONTS directly in new code.
+ *
+ * The shape changed slightly (added `slug`, `category`, `subsets`; removed `scripts`)
+ * but the legacy `scripts` field is derived from `subsets` for any caller that
+ * still needs it.
+ */
+export type FontEntry = CuratedFontEntry & { scripts: string[] };
 
-export const FONTS: FontEntry[] = [
-  { name: 'Outfit', family: 'Outfit', weights: [400, 700, 800], scripts: ['Latin'] },
-  { name: 'Inter', family: 'Inter', weights: [400, 700, 800], scripts: ['Latin'] },
-  { name: 'Playfair Display', family: 'Playfair Display', weights: [400, 700, 800], scripts: ['Latin'] },
-  { name: 'Sora', family: 'Sora', weights: [400, 700, 800], scripts: ['Latin'] },
-  { name: 'Space Grotesk', family: 'Space Grotesk', weights: [400, 700], scripts: ['Latin'] },
-  { name: 'JetBrains Mono', family: 'JetBrains Mono', weights: [400, 700], scripts: ['Latin'] },
-  { name: 'Noto Sans JP', family: 'Noto Sans JP', weights: [400, 700], scripts: ['Latin', 'CJK'] },
-  {
-    name: 'Noto Sans AR',
-    family: 'Noto Sans Arabic',
-    weights: [400, 700],
-    scripts: ['Latin', 'Arabic'],
-    slug: 'noto-sans-arabic',
-  },
-];
+/** All fonts the API server is configured to support. */
+export const FONTS: FontEntry[] = CURATED_FONTS.map((f) => ({
+  ...f,
+  scripts: f.subsets.map((s) => (s === 'latin' ? 'Latin' : s === 'cjk' ? 'CJK' : s === 'arabic' ? 'Arabic' : s)),
+}));
 
 const FONT_NAMES = FONTS.map((f) => f.name);
 
@@ -37,8 +28,7 @@ export async function registerFonts(fontsDir: string): Promise<string[]> {
   const loaded: string[] = [];
 
   for (const entry of FONTS) {
-    const slug = entry.slug ?? entry.name.toLowerCase().replace(/\s+/g, '-');
-    const dir = join(fontsDir, slug);
+    const dir = join(fontsDir, entry.slug);
 
     try {
       await stat(dir);
@@ -70,5 +60,5 @@ export function getFontByName(name: string): FontEntry {
 }
 
 export function isValidFont(name: string): boolean {
-  return FONTS.some((f) => f.name === name);
+  return isCuratedFont(name);
 }
