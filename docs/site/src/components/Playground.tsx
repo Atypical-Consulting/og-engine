@@ -9,7 +9,7 @@ import { AccentPicker, FontPicker, LayoutPicker, GradientPicker, Slider } from '
 import { TemplateSelector } from './ui/TemplateSelector';
 import { CodeOutput } from './ui/CodeOutput';
 import { Section } from './ui/Section';
-import { Presets, type PresetData } from './ui/Presets';
+import { Presets, randomPreset, type PresetData } from './ui/Presets';
 import { RenderHUD } from './ui/RenderHUD';
 import { FullscreenPreview } from './ui/FullscreenPreview';
 import { DropZone } from './ui/DropZone';
@@ -119,6 +119,23 @@ export default function Playground() {
     setDescSize(data.descSize);
     setBgImage(null);
   }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'r' && e.key !== 'R') return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (target.isContentEditable) return;
+      }
+      e.preventDefault();
+      applyPreset(randomPreset());
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [applyPreset]);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
