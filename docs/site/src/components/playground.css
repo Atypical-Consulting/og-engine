@@ -22,6 +22,65 @@
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
+/* ── Format selector ─────────────────────────────────────── */
+.pg-format-selector {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.pg-format-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--pg-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.pg-format-btn:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.pg-format-label {
+  font-weight: 500;
+}
+
+.pg-format-ratio {
+  font-size: 9px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Narrow screens: drop the dimensions, keep the glyph + label */
+@media (max-width: 900px) {
+  .pg-format-btn {
+    padding: 6px 9px;
+  }
+  .pg-format-ratio {
+    display: none;
+  }
+}
+
+/* Very narrow screens: icon-only buttons */
+@media (max-width: 520px) {
+  .pg-format-btn {
+    padding: 7px 9px;
+    gap: 6px;
+  }
+  .pg-format-label {
+    font-size: 10px;
+  }
+}
+
 /* ── Picker button hover/press ── */
 .pg-picker-btn {
   transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
