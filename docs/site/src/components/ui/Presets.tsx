@@ -87,38 +87,40 @@ interface Props {
 export function Presets({ onSelect, accent }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <span style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase' }}>
-        Quick Start
-      </span>
-
-      <button
-        onClick={() => onSelect(randomPreset())}
-        className="pg-surprise-btn"
-        aria-label="Randomize all settings"
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          width: '100%', padding: '12px 14px', borderRadius: 10,
-          border: `1px solid ${accent}55`,
-          background: `linear-gradient(135deg, ${accent}1a, ${accent}08)`,
-          color: '#e2e8f0', fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-          cursor: 'pointer', letterSpacing: 0.3,
-          transition: 'transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-        }}
-      >
-        <span>
-          <span style={{ marginRight: 8 }}>🎲</span>
-          Surprise me
+      <div className="pg-surprise-sticky" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <span style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase' }}>
+          Quick Start
         </span>
-        <kbd
+
+        <button
+          onClick={() => onSelect(randomPreset())}
+          className="pg-surprise-btn"
+          aria-label="Randomize all settings"
           style={{
-            fontSize: 10, padding: '2px 6px', borderRadius: 4,
-            border: `1px solid ${accent}66`, background: `${accent}14`,
-            color: accent, fontFamily: 'var(--sl-font-mono)', letterSpacing: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            width: '100%', padding: '12px 14px', borderRadius: 10,
+            border: `1px solid ${accent}55`,
+            background: `linear-gradient(135deg, ${accent}1a, ${accent}08)`,
+            color: '#e2e8f0', fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', letterSpacing: 0.3,
+            transition: 'transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease',
           }}
         >
-          R
-        </kbd>
-      </button>
+          <span>
+            <span style={{ marginRight: 8 }}>🎲</span>
+            Surprise me
+          </span>
+          <kbd
+            style={{
+              fontSize: 10, padding: '2px 6px', borderRadius: 4,
+              border: `1px solid ${accent}66`, background: `${accent}14`,
+              color: accent, fontFamily: 'var(--sl-font-mono)', letterSpacing: 0,
+            }}
+          >
+            R
+          </kbd>
+        </button>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 6 }}>
         {PRESETS.map((p) => (
