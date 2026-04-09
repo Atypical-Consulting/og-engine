@@ -73,13 +73,13 @@ export function CodeOutput({ config, accent }: Props) {
         <div style={{ display: 'flex', gap: 8 }}>
           {(['curl', 'sdk', 'json'] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)} style={{
-              fontSize: 9, color: tab === t ? accent : '#475569', background: 'none',
+              fontSize: 9, color: tab === t ? accent : 'var(--pg-text-secondary)', background: 'none',
               border: 'none', cursor: 'pointer', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'inherit', padding: 0,
               transition: 'color 0.15s ease',
             }}>{t}</button>
           ))}
         </div>
-        <button onClick={copy} style={{ fontSize: 9, color: copied ? accent : '#475569', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color 0.15s ease' }}>
+        <button onClick={copy} style={{ fontSize: 9, color: copied ? accent : 'var(--pg-text-secondary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color 0.15s ease' }}>
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>

@@ -16,7 +16,7 @@ export function DropZone({ visible, accent }: Props) {
         <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 600, marginBottom: 4 }}>
           Drop image here
         </div>
-        <div style={{ fontSize: 11, color: '#64748b' }}>
+        <div style={{ fontSize: 11, color: 'var(--pg-text-secondary)' }}>
           PNG, JPG, or WebP as background
         </div>
       </div>
