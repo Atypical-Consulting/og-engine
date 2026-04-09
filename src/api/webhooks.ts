@@ -40,7 +40,7 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
   } catch (err) {
     console.error('[webhook] signature verification failed:', err instanceof Error ? err.message : err);
     return c.json({ error: 'invalid_request', message: 'Invalid webhook signature.' }, 400);

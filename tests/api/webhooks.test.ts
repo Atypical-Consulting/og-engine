@@ -9,7 +9,7 @@ vi.mock('stripe', () => {
     default: vi.fn().mockImplementation(function () {
       return {
         webhooks: {
-          constructEvent: vi.fn().mockImplementation((body: string) => JSON.parse(body)),
+          constructEventAsync: vi.fn().mockImplementation(async (body: string) => JSON.parse(body)),
         },
         subscriptions: {
           retrieve: vi.fn().mockResolvedValue({
