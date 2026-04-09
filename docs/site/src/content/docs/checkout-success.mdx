@@ -1,0 +1,62 @@
+---
+title: Payment Successful — Welcome to OG Engine
+description: Your subscription is active. Check your inbox for your API key and next steps.
+template: splash
+hero:
+  tagline: Your subscription is active. Your API key is on its way to your inbox.
+  actions:
+    - text: Read the Quick Start
+      link: /quick-start/
+      icon: right-arrow
+      variant: primary
+    - text: Browse the API Reference
+      link: /api-reference/overview/
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What just happened
+
+Your payment was processed by Stripe and your subscription is now active. Within a few seconds you should receive an email containing:
+
+- Your **API key** (starts with `oge_sk_`)
+- A ready-to-use `curl` example
+- A link to the Quick Start guide
+
+If you don't see the email within a minute, check your spam folder.
+
+## Next steps
+
+<CardGrid>
+  <Card title="1. Grab your key" icon="rocket">
+    Check your email for your API key and copy it somewhere safe. You can also paste it into your `.env` as `OG_ENGINE_API_KEY`.
+  </Card>
+  <Card title="2. Generate your first image" icon="setting">
+    Follow the [Quick Start guide](/quick-start/) to render your first OG image in under a minute.
+  </Card>
+  <Card title="3. Manage your subscription" icon="open-book">
+    Visit `GET /billing/portal` with your API key to open the Stripe Customer Portal and manage billing.
+  </Card>
+  <Card title="4. Read the docs" icon="document">
+    The [API Reference](/api-reference/overview/) covers every endpoint, parameter, and error code.
+  </Card>
+</CardGrid>
+
+## Quick reference
+
+```bash
+# Your API key is in your email — use it like this:
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"format":"og","title":"Hello, OG Engine"}' \
+  --output hello.png
+```
+
+## Need help?
+
+- **Lost your API key?** Email [support@og-engine.com](mailto:support@og-engine.com) with the email you used at checkout.
+- **Billing questions?** Use the [Stripe Customer Portal](/api-reference/overview/) (requires authentication).
+- **Technical issues?** Open an issue on [GitHub](https://github.com/Atypical-Consulting/og-engine/issues).
