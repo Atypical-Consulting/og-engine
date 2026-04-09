@@ -41,12 +41,9 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
   let event: Stripe.Event;
   try {
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-  } catch (err) {
-    console.error('[webhook] signature verification failed:', err instanceof Error ? err.message : err);
+  } catch (_err) {
     return c.json({ error: 'invalid_request', message: 'Invalid webhook signature.' }, 400);
   }
-
-  console.log('[webhook] received event:', event.type, event.id);
 
   switch (event.type) {
     case 'checkout.session.completed': {
@@ -55,26 +52,12 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
 
-      console.log('[webhook] checkout session:', {
-        email,
-        customerId,
-        subscriptionId,
-        hasCustomerDetails: !!session.customer_details,
-      });
-
-      if (!email || !subscriptionId) {
-        console.warn('[webhook] missing email or subscriptionId, skipping');
-        break;
-      }
+      if (!email || !subscriptionId) break;
 
       const sub = await stripe.subscriptions.retrieve(subscriptionId);
       const priceId = sub.items.data[0]?.price?.id;
       const plan = priceId ? getPlanFromPriceId(priceId) : null;
-      console.log('[webhook] resolved plan:', { priceId, plan });
-      if (!plan) {
-        console.warn('[webhook] no plan matched price ID, skipping');
-        break;
-      }
+      if (!plan) break;
 
       let record = findApiKeyByEmail(email);
       if (record) {
