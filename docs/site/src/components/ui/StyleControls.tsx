@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { ACCENTS, GRADIENTS, type Gradient } from '../engine/gradients';
-import { FONTS, type FontEntry } from '../engine/fonts';
 
 interface SliderProps {
   label: string;
@@ -59,28 +58,6 @@ export function AccentPicker({ value, onChange }: AccentPickerProps) {
   );
 }
 
-interface FontPickerProps { value: FontEntry; onChange: (value: FontEntry) => void; accent: string; }
-export function FontPicker({ value, onChange, accent }: FontPickerProps) {
-  return (
-    <div>
-      <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Font</div>
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-        {FONTS.map((f) => {
-          const active = value.name === f.name;
-          return (
-            <button key={f.name} onClick={() => onChange(f)} className="pg-picker-btn" style={{
-              padding: '5px 8px', borderRadius: 6, fontSize: 9, fontFamily: 'inherit',
-              border: active ? `1px solid ${accent}66` : '1px solid rgba(255,255,255,0.07)',
-              background: active ? `${accent}12` : 'rgba(255,255,255,0.02)',
-              color: active ? accent : 'var(--pg-text-secondary)', cursor: 'pointer', letterSpacing: 0.5, whiteSpace: 'nowrap',
-            }}>{f.name}</button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 interface LayoutPickerProps { value: 'left' | 'center' | 'bottom'; onChange: (value: 'left' | 'center' | 'bottom') => void; accent: string; }
 export function LayoutPicker({ value, onChange, accent }: LayoutPickerProps) {
   const options: Array<{ key: 'left' | 'center' | 'bottom'; label: string }> = [
@@ -123,3 +100,5 @@ export function GradientPicker({ value, onChange, accent }: GradientPickerProps)
     </div>
   );
 }
+
+export { FontCombobox as FontPicker } from './FontCombobox';
