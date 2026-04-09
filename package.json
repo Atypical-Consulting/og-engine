@@ -2,6 +2,7 @@
   "name": "og-engine",
   "version": "0.1.0",
   "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "start": "bun run src/index.ts",

@@ -363,3 +363,26 @@ bun add -d typescript @types/node vitest
 ```
 
 Then: implement `src/index.ts` with the Hono server, `src/engine/layout.ts` with Pretext integration, and `src/engine/renderer.ts` with the Canvas rendering logic ported from the POC.
+
+---
+
+## 11. Release Checklist (License)
+
+Every time a release tag is pushed, append a row to
+[`LICENSE-HISTORY.md`](./LICENSE-HISTORY.md):
+
+```
+| <version> | <YYYY-MM-DD today> | <YYYY-MM-DD today + 2 years> |
+```
+
+This is required so that the FSL Change Date for each release is
+discoverable. Without it, the license conversion clause is legally vague.
+
+Example for a release cut today (2026-04-10):
+
+```
+| 0.2.0   | 2026-04-10  | 2028-04-10 |
+```
+
+Then update the placeholder row for `0.1.0` when it ships (currently `TBD |
+TBD`).
