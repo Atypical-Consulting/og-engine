@@ -1,14 +1,7 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { CURATED_FONTS, isCuratedFont } from '../../../../../src/engine/font-catalog';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { FEATURED_FONTS as CURATED_FONTS, type CuratedFontEntry } from '../../../../../src/engine/font-catalog';
 import { loadGoogleFontByFamily, type FontEntry, getFontByName } from '../engine/fonts';
-
-interface GoogleFont {
-  family: string;
-  category: string;
-  subsets: string[];
-  variants: string[];
-  popularity: number;
-}
 
 interface Props {
   value: FontEntry;
@@ -21,11 +14,11 @@ const RECENT_MAX = 5;
 
 const CHIP_DEFS = [
   { id: 'all', label: 'All', match: () => true },
-  { id: 'sans', label: 'Sans', match: (f: GoogleFont) => f.category === 'sans-serif' },
-  { id: 'serif', label: 'Serif', match: (f: GoogleFont) => f.category === 'serif' },
-  { id: 'display', label: 'Display', match: (f: GoogleFont) => f.category === 'display' },
-  { id: 'mono', label: 'Mono', match: (f: GoogleFont) => f.category === 'monospace' },
-  { id: 'handwriting', label: 'Handwriting', match: (f: GoogleFont) => f.category === 'handwriting' },
+  { id: 'sans', label: 'Sans', match: (f: CuratedFontEntry) => f.category === 'sans-serif' },
+  { id: 'serif', label: 'Serif', match: (f: CuratedFontEntry) => f.category === 'serif' },
+  { id: 'display', label: 'Display', match: (f: CuratedFontEntry) => f.category === 'display' },
+  { id: 'mono', label: 'Mono', match: (f: CuratedFontEntry) => f.category === 'monospace' },
+  { id: 'handwriting', label: 'Handwriting', match: (f: CuratedFontEntry) => f.category === 'handwriting' },
 ] as const;
 
 type ChipId = (typeof CHIP_DEFS)[number]['id'];
@@ -47,39 +40,34 @@ function saveRecents(names: string[]): void {
   }
 }
 
-function syntheticEntryFromGoogle(family: string): FontEntry {
-  // For Preview-only fonts, build a synthetic FontEntry on the fly
-  return {
-    name: family,
-    family,
-    slug: family.toLowerCase().replace(/\s+/g, '-'),
-    weights: [400, 700],
-    category: 'sans-serif',
-    subsets: ['latin'],
-    google: `${family.replace(/ /g, '+')}:wght@400;700`,
-    scripts: ['Latin'],
-  };
-}
-
 export function FontCombobox({ value, onChange, accent }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [chip, setChip] = useState<ChipId>('all');
-  const [allFonts, setAllFonts] = useState<GoogleFont[]>([]);
   const [recents, setRecents] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState<number>(-1);
+  const [triggerRect, setTriggerRect] = useState<{ top: number; left: number; width: number; bottom: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Lazy-load the Google Fonts JSON the first time the dropdown opens
-  useEffect(() => {
-    if (!open || allFonts.length > 0) return;
-    fetch('/google-fonts.json')
-      .then((r) => r.json())
-      .then((data: GoogleFont[]) => setAllFonts(data))
-      .catch((err) => console.error('Failed to load /google-fonts.json:', err));
-  }, [open, allFonts.length]);
+  // Track trigger bounds while open so the portal-positioned dropdown stays aligned
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const b = triggerRef.current?.getBoundingClientRect();
+      if (b) setTriggerRect({ top: b.top, left: b.left, width: b.width, bottom: b.bottom });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [open]);
 
   // Load recents on mount
   useEffect(() => {
@@ -93,13 +81,14 @@ export function FontCombobox({ value, onChange, accent }: Props) {
     }
   }, [open]);
 
-  // Click outside to close
+  // Click outside to close — account for portal-rendered dropdown
   useEffect(() => {
     if (!open) return;
     const handleClick = (e: MouseEvent) => {
-      if (!dropdownRef.current?.parentElement?.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -121,66 +110,44 @@ export function FontCombobox({ value, onChange, accent }: Props) {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  // Build the section data
+  // Build the section data — only curated fonts. No "preview only" ghetto.
   const sections = useMemo(() => {
     const q = query.trim().toLowerCase();
     const chipDef = CHIP_DEFS.find((c) => c.id === chip) ?? CHIP_DEFS[0];
 
     const matchesQuery = (family: string) => !q || family.toLowerCase().includes(q);
 
-    // Recent section
+    // Recent section (intersect with curated)
     const recentSection = recents
-      .filter((name) => matchesQuery(name))
-      .map((name) => {
-        const curated = CURATED_FONTS.find((f) => f.name === name);
-        return {
-          family: name,
-          category: curated?.category ?? 'sans-serif',
-          curated: !!curated,
-        };
-      });
+      .map((name) => CURATED_FONTS.find((f) => f.name === name))
+      .filter((f): f is CuratedFontEntry => !!f)
+      .filter((f) => matchesQuery(f.name))
+      .filter((f) => chipDef.match(f));
 
-    // Build a map of curated names for fast lookup
-    const curatedNames = new Set(CURATED_FONTS.map((f) => f.name));
-
-    // Curated section (API ready)
-    const curatedSection = CURATED_FONTS
-      .filter((f) => matchesQuery(f.family))
-      .filter((f) => {
-        if (chip === 'all') return true;
-        return chipDef.match({ family: f.family, category: f.category, subsets: f.subsets, variants: [], popularity: 0 });
-      })
-      .map((f) => ({ family: f.name, category: f.category, curated: true }))
-      .sort((a, b) => a.family.localeCompare(b.family));
-
-    // Preview-only section (the Google Fonts dump minus curated)
-    const previewSection = allFonts
-      .filter((f) => !curatedNames.has(f.family))
-      .filter((f) => matchesQuery(f.family))
+    // Everything else — sorted by category then name
+    const recentNames = new Set(recentSection.map((f) => f.name));
+    const allSection = CURATED_FONTS
+      .filter((f) => !recentNames.has(f.name))
+      .filter((f) => matchesQuery(f.name))
       .filter((f) => chipDef.match(f))
-      .map((f) => ({ family: f.family, category: f.category, curated: false }));
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-    return { recent: recentSection, curated: curatedSection, preview: previewSection };
-  }, [query, chip, allFonts, recents]);
+    return { recent: recentSection, all: allSection };
+  }, [query, chip, recents]);
 
-  // Flatten for keyboard navigation
   const flatRows = useMemo(() => {
-    return [...sections.recent, ...sections.curated, ...sections.preview];
+    return [...sections.recent, ...sections.all];
   }, [sections]);
 
   const handleSelect = useCallback(
     (family: string) => {
       const curated = CURATED_FONTS.find((f) => f.name === family);
-      const entry: FontEntry = curated
-        ? getFontByName(curated.name)
-        : syntheticEntryFromGoogle(family);
+      if (!curated) return;
+      const entry = getFontByName(curated.name);
 
-      // Make sure the font CSS is loaded so the canvas re-render uses it
       loadGoogleFontByFamily(entry.family, entry.weights);
-
       onChange(entry);
 
-      // Update recents
       const next = [family, ...recents.filter((n) => n !== family)].slice(0, RECENT_MAX);
       setRecents(next);
       saveRecents(next);
@@ -212,7 +179,7 @@ export function FontCombobox({ value, onChange, accent }: Props) {
     if (e.key === 'Enter') {
       e.preventDefault();
       const target = highlighted >= 0 ? flatRows[highlighted] : flatRows[0];
-      if (target) handleSelect(target.family);
+      if (target) handleSelect(target.name);
     }
   };
 
@@ -235,14 +202,31 @@ export function FontCombobox({ value, onChange, accent }: Props) {
     return () => observer.disconnect();
   }, [open, sections]);
 
-  const isPreviewOnly = !isCuratedFont(value.name);
+  // Compute portal-anchored dropdown position (flip above if no room below)
+  const dropdownStyle = useMemo((): React.CSSProperties => {
+    if (!triggerRect) return { visibility: 'hidden' };
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const maxH = Math.min(520, vh - 32);
+    const spaceBelow = vh - triggerRect.bottom - 16;
+    const openAbove = spaceBelow < Math.min(280, maxH) && triggerRect.top > spaceBelow;
+    return {
+      position: 'fixed',
+      left: triggerRect.left,
+      width: Math.max(280, triggerRect.width),
+      maxHeight: maxH,
+      top: openAbove ? undefined : triggerRect.bottom + 6,
+      bottom: openAbove ? vh - triggerRect.top + 6 : undefined,
+      zIndex: 1000,
+    };
+  }, [triggerRect]);
 
   return (
-    <div className="pg-font-combobox" ref={dropdownRef}>
+    <div className="pg-font-combobox" ref={containerRef}>
       <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>
         Font
       </div>
       <button
+        ref={triggerRef}
         type="button"
         className="pg-font-trigger"
         onClick={() => setOpen(!open)}
@@ -250,19 +234,12 @@ export function FontCombobox({ value, onChange, accent }: Props) {
         aria-expanded={open}
         style={{ fontFamily: value.family }}
       >
-        <span>
-          {value.name}
-          {isPreviewOnly && (
-            <span className="pg-font-preview-badge" style={{ marginLeft: 8 }}>
-              Preview only
-            </span>
-          )}
-        </span>
+        <span>{value.name}</span>
         <span className="pg-font-trigger-chevron">▼</span>
       </button>
 
-      {open && (
-        <div className="pg-font-dropdown" onKeyDown={handleKeyDown}>
+      {open && typeof document !== 'undefined' && createPortal(
+        <div ref={dropdownRef} className="pg-font-dropdown" style={dropdownStyle} onKeyDown={handleKeyDown}>
           <input
             ref={searchInputRef}
             type="text"
@@ -293,60 +270,36 @@ export function FontCombobox({ value, onChange, accent }: Props) {
                 <div className="pg-font-section-header">Recent</div>
                 {sections.recent.map((row, i) => (
                   <button
-                    key={`recent-${row.family}`}
+                    key={`recent-${row.name}`}
                     type="button"
-                    className={`pg-font-row${highlighted === i ? ' highlighted' : ''}${row.family === value.name ? ' active' : ''}`}
+                    className={`pg-font-row${highlighted === i ? ' highlighted' : ''}${row.name === value.name ? ' active' : ''}`}
                     style={{ fontFamily: row.family }}
                     data-family={row.family}
-                    onClick={() => handleSelect(row.family)}
+                    onClick={() => handleSelect(row.name)}
                     onMouseEnter={() => setHighlighted(i)}
                   >
-                    <span>{row.family}</span>
-                    {!row.curated && <span className="pg-font-preview-badge">Preview only</span>}
+                    <span>{row.name}</span>
                   </button>
                 ))}
               </>
             )}
 
-            {sections.curated.length > 0 && (
+            {sections.all.length > 0 && (
               <>
-                <div className="pg-font-section-header">API ready</div>
-                {sections.curated.map((row, i) => {
+                {sections.recent.length > 0 && <div className="pg-font-section-header">All fonts</div>}
+                {sections.all.map((row, i) => {
                   const flatIndex = sections.recent.length + i;
                   return (
                     <button
-                      key={`curated-${row.family}`}
+                      key={`all-${row.name}`}
                       type="button"
-                      className={`pg-font-row${highlighted === flatIndex ? ' highlighted' : ''}${row.family === value.name ? ' active' : ''}`}
+                      className={`pg-font-row${highlighted === flatIndex ? ' highlighted' : ''}${row.name === value.name ? ' active' : ''}`}
                       style={{ fontFamily: row.family }}
                       data-family={row.family}
-                      onClick={() => handleSelect(row.family)}
+                      onClick={() => handleSelect(row.name)}
                       onMouseEnter={() => setHighlighted(flatIndex)}
                     >
-                      <span>{row.family}</span>
-                    </button>
-                  );
-                })}
-              </>
-            )}
-
-            {sections.preview.length > 0 && (
-              <>
-                <div className="pg-font-section-header">Preview only</div>
-                {sections.preview.map((row, i) => {
-                  const flatIndex = sections.recent.length + sections.curated.length + i;
-                  return (
-                    <button
-                      key={`preview-${row.family}`}
-                      type="button"
-                      className={`pg-font-row${highlighted === flatIndex ? ' highlighted' : ''}${row.family === value.name ? ' active' : ''}`}
-                      style={{ fontFamily: row.family }}
-                      data-family={row.family}
-                      onClick={() => handleSelect(row.family)}
-                      onMouseEnter={() => setHighlighted(flatIndex)}
-                    >
-                      <span>{row.family}</span>
-                      <span className="pg-font-preview-badge">Preview only</span>
+                      <span>{row.name}</span>
                     </button>
                   );
                 })}
@@ -359,7 +312,8 @@ export function FontCombobox({ value, onChange, accent }: Props) {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

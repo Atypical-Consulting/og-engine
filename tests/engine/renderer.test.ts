@@ -72,11 +72,14 @@ describe('renderCard', () => {
     }
   });
 
-  it('detects overflow for very long title', async () => {
+  it('detects overflow for extremely long title (even after auto-shrink)', async () => {
+    // The title renderer auto-shrinks the font to fit when possible. We need a
+    // title long enough that even the minimum shrunk size cannot fit within the
+    // format's maxTitleLines, so overflow is reported.
     const result = await renderCard(
       defaultOptions({
         title:
-          'This is an extremely long title that will certainly overflow the maximum number of lines allowed for the OG format which only permits three lines of title text',
+          'This is an extraordinarily long title that will certainly overflow the maximum number of lines allowed for the OG format even after auto-shrink because there is simply too much text here to possibly fit into the three lines of title text that the OG format permits regardless of how small we make the typography',
       }),
     );
     expect(result.overflow).toBe(true);

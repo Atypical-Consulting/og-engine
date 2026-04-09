@@ -10,13 +10,15 @@ interface Props {
 }
 
 export function CodeDrawer({ config, accent }: Props) {
-  const [open, setOpen] = useState(false);
+  // Open by default — the curl snippet is the money shot for API conversion.
+  // A returning user who explicitly closed it stays closed.
+  const [open, setOpen] = useState(true);
 
   // Load persisted state on mount (client-only)
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored === 'true') setOpen(true);
+      if (stored === 'false') setOpen(false);
     } catch {
       // localStorage unavailable — ignore
     }
@@ -55,7 +57,7 @@ export function CodeDrawer({ config, accent }: Props) {
         aria-expanded={open}
         aria-controls="pg-code-drawer-body"
       >
-        <span>{open ? 'Hide code ↓' : 'View code ↑'}</span>
+        <span>{open ? 'Hide integration snippet ↓' : 'Show integration snippet ↑'}</span>
       </button>
       <div id="pg-code-drawer-body" className="pg-code-drawer-body">
         <CodeOutput config={config} accent={accent} />

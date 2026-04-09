@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { ACCENTS, GRADIENTS, type Gradient } from '../engine/gradients';
+import { paintBackgroundMesh } from '../engine/canvas-renderer';
 
 interface SliderProps {
   label: string;
@@ -83,18 +84,92 @@ export function LayoutPicker({ value, onChange, accent }: LayoutPickerProps) {
   );
 }
 
+interface GradientSwatchProps {
+  gradient: Gradient;
+  accent: string;
+  active: boolean;
+  onClick: () => void;
+}
+
+function GradientSwatch({ gradient, accent, active, onClick }: GradientSwatchProps) {
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = 96 * dpr;
+    const H = 60 * dpr;
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
+    // Paint the real background mesh the same way the renderer does,
+    // so users see an honest preview of what this gradient + accent will look like.
+    paintBackgroundMesh(ctx, W, H, gradient, accent);
+  }, [gradient, accent]);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={gradient.name}
+      aria-label={`${gradient.name} gradient`}
+      aria-pressed={active}
+      className="pg-gradient-swatch"
+      style={{
+        position: 'relative',
+        width: 96,
+        height: 60,
+        borderRadius: 10,
+        padding: 0,
+        cursor: 'pointer',
+        overflow: 'hidden',
+        border: active ? `2px solid ${accent}` : '2px solid rgba(255,255,255,0.08)',
+        boxShadow: active ? `0 0 0 3px ${accent}1f` : 'none',
+        transition: 'border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
+      }}
+    >
+      <canvas ref={ref} style={{ width: '100%', height: '100%', display: 'block' }} />
+      <span
+        style={{
+          position: 'absolute',
+          left: 8,
+          bottom: 6,
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: 0.3,
+          color: '#f8fafc',
+          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+          pointerEvents: 'none',
+        }}
+      >
+        {gradient.name}
+      </span>
+    </button>
+  );
+}
+
 interface GradientPickerProps { value: Gradient; onChange: (value: Gradient) => void; accent: string; }
 export function GradientPicker({ value, onChange, accent }: GradientPickerProps) {
   return (
     <div>
-      <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Gradient</div>
-      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+      <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Gradient</div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 8,
+        }}
+      >
         {GRADIENTS.map((g) => (
-          <button key={g.slug} onClick={() => onChange(g)} title={g.name} aria-label={`${g.name} gradient`} aria-pressed={value.slug === g.slug} className="pg-picker-btn" style={{
-            width: 40, height: 28, borderRadius: 6, cursor: 'pointer', padding: 0,
-            background: `linear-gradient(135deg, ${g.stops[0]}, ${g.stops[1]})`,
-            border: value.slug === g.slug ? `2px solid ${accent}` : '2px solid rgba(255,255,255,0.08)',
-          }} />
+          <GradientSwatch
+            key={g.slug}
+            gradient={g}
+            accent={accent}
+            active={value.slug === g.slug}
+            onClick={() => onChange(g)}
+          />
         ))}
       </div>
     </div>

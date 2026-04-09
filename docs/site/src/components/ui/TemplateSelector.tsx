@@ -1,8 +1,8 @@
 const TEMPLATES = [
-  { key: 'default', label: 'Default', description: 'Accent bar, grid, tag pill' },
-  { key: 'social-card', label: 'Social Card', description: 'Large centered title' },
-  { key: 'blog-hero', label: 'Blog Hero', description: 'Background image overlay' },
-  { key: 'email-banner', label: 'Email Banner', description: 'Horizontal CTA-style' },
+  { key: 'default', label: 'Default', description: 'Numbered rule, tight title, metadata strip' },
+  { key: 'social-card', label: 'Social Card', description: 'Centered editorial with accent rule' },
+  { key: 'blog-hero', label: 'Blog Hero', description: 'Magazine lockup, bottom title, chip tag' },
+  { key: 'email-banner', label: 'Email Banner', description: 'Strong left accent with CTA button' },
 ];
 
 interface Props { value: string; onChange: (value: string) => void; accent: string; }
