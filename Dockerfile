@@ -14,6 +14,8 @@ WORKDIR /app/docs/site
 COPY docs/site/package.json docs/site/bun.lock* ./
 RUN bun install --frozen-lockfile
 COPY docs/site/ ./
+# AvailableFontsTable.tsx imports from ../../../../src/engine/font-catalog
+COPY src/engine /app/src/engine
 RUN bun run build
 
 # Runner stage — no build tools needed
