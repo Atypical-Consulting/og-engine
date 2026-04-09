@@ -8,10 +8,11 @@ import {
   updateCustomTemplate,
 } from '../db';
 import { customTemplateSchema } from '../engine/custom-template';
+import { authMiddleware } from '../middleware/auth';
 
 export const templatesRoute = new Hono();
 
-templatesRoute.post('/templates', async (c) => {
+templatesRoute.post('/templates', authMiddleware(), async (c) => {
   const record = c.get('apiKey' as never) as ApiKeyRecord | undefined;
   if (!record) {
     return c.json({ error: 'unauthorized', message: 'API key required.' }, 401);
@@ -72,7 +73,7 @@ templatesRoute.post('/templates', async (c) => {
   );
 });
 
-templatesRoute.get('/templates', async (c) => {
+templatesRoute.get('/templates', authMiddleware(), async (c) => {
   const record = c.get('apiKey' as never) as ApiKeyRecord | undefined;
   if (!record) {
     return c.json({ error: 'unauthorized', message: 'API key required.' }, 401);
@@ -93,13 +94,13 @@ templatesRoute.get('/templates', async (c) => {
   });
 });
 
-templatesRoute.delete('/templates/:id', async (c) => {
+templatesRoute.delete('/templates/:id', authMiddleware(), async (c) => {
   const record = c.get('apiKey' as never) as ApiKeyRecord | undefined;
   if (!record) {
     return c.json({ error: 'unauthorized', message: 'API key required.' }, 401);
   }
 
-  const id = c.req.param('id');
+  const id = c.req.param('id') as string;
   deleteCustomTemplate(id);
   return c.json({ message: 'Template deleted.' });
 });
