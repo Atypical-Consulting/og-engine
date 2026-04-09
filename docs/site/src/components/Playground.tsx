@@ -2,16 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { renderCard, type RenderResult } from './engine/canvas-renderer';
 import { apiRender, checkApiAvailable } from './engine/api-client';
 import { GRADIENTS, type Gradient } from './engine/gradients';
-import { FONTS, loadGoogleFont, type FontEntry } from './engine/fonts';
+import { FONTS, getFontByName, loadGoogleFont, type FontEntry } from './engine/fonts';
 import { FORMATS, type FormatKey } from './engine/formats';
-import { FormatSelector } from './ui/FormatSelector';
 import { AccentPicker, FontPicker, LayoutPicker, GradientPicker, Slider } from './ui/StyleControls';
 import { TemplateSelector } from './ui/TemplateSelector';
-import { CodeOutput } from './ui/CodeOutput';
 import { Section } from './ui/Section';
-import { Presets, type PresetData } from './ui/Presets';
-import { RenderHUD } from './ui/RenderHUD';
+import { Presets, randomPreset, type PresetData } from './ui/Presets';
+import { PreviewToolbar } from './ui/PreviewToolbar';
 import { FullscreenPreview } from './ui/FullscreenPreview';
+import { CodeDrawer } from './ui/CodeDrawer';
 import { DropZone } from './ui/DropZone';
 
 export default function Playground() {
@@ -26,7 +25,7 @@ export default function Playground() {
   const [layout, setLayout] = useState<'left' | 'center' | 'bottom'>('left');
   const [titleSize, setTitleSize] = useState(48);
   const [descSize, setDescSize] = useState(22);
-  const [fontEntry, setFontEntry] = useState<FontEntry>(FONTS[0]);
+  const [fontEntry, setFontEntry] = useState<FontEntry>(getFontByName('Outfit'));
   const [gradient, setGradient] = useState<Gradient>(GRADIENTS[0]);
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
   const [autoFit, setAutoFit] = useState(false);
@@ -120,6 +119,23 @@ export default function Playground() {
     setBgImage(null);
   }, []);
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'r' && e.key !== 'R') return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (target.isContentEditable) return;
+      }
+      e.preventDefault();
+      applyPreset(randomPreset());
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [applyPreset]);
+
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     dragCounter.current++;
@@ -167,20 +183,15 @@ export default function Playground() {
 
   return (
     <div
-      className="pg-layout not-content"
+      className="pg-layout pg-app-shell not-content"
       style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, minHeight: 600,
         ['--pg-accent-alpha' as string]: accentAlpha,
         ['--pg-accent-border' as string]: accentBorder,
       }}
     >
       {/* Controls column */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="pg-controls-col">
         <Presets onSelect={applyPreset} accent={accent} />
-
-        <Section title="Format">
-          <FormatSelector value={format} onChange={setFormat} accent={accent} />
-        </Section>
 
         <Section title="Template">
           <TemplateSelector value={template} onChange={setTemplate} accent={accent} />
@@ -193,19 +204,19 @@ export default function Playground() {
 
         <Section title="Content">
           <div>
-            <label htmlFor="pg-tag" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Tag</label>
+            <label htmlFor="pg-tag" style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Tag</label>
             <input id="pg-tag" value={tag} onChange={(e) => setTag(e.target.value)} className="pg-input" style={inputStyle} />
           </div>
           <div>
-            <label htmlFor="pg-title" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Title</label>
+            <label htmlFor="pg-title" style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Title</label>
             <input id="pg-title" value={title} onChange={(e) => setTitle(e.target.value)} className="pg-input" style={inputStyle} />
           </div>
           <div>
-            <label htmlFor="pg-desc" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Description</label>
+            <label htmlFor="pg-desc" style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Description</label>
             <textarea id="pg-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="pg-input" style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
           <div>
-            <label htmlFor="pg-author" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Author</label>
+            <label htmlFor="pg-author" style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Author</label>
             <input id="pg-author" value={author} onChange={(e) => setAuthor(e.target.value)} className="pg-input" style={inputStyle} />
           </div>
         </Section>
@@ -213,7 +224,7 @@ export default function Playground() {
         <Section title="Colors">
           <AccentPicker value={accent} onChange={setAccent} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-            <label htmlFor="pg-custom-color" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase' }}>
+            <label htmlFor="pg-custom-color" style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase' }}>
               Custom
             </label>
             <input
@@ -228,6 +239,7 @@ export default function Playground() {
               }}
             />
             <input
+              id="pg-custom-color-hex"
               type="text"
               value={accent}
               onChange={(e) => {
@@ -251,7 +263,34 @@ export default function Playground() {
         <Section title="Typography">
           <FontPicker value={fontEntry} onChange={setFontEntry} accent={accent} />
           <LayoutPicker value={layout} onChange={setLayout} accent={accent} />
-          <Slider label="Title size" value={titleSize} onChange={setTitleSize} min={28} max={72} accent={accent} />
+          <Slider
+            label="Title size"
+            value={titleSize}
+            onChange={setTitleSize}
+            min={28}
+            max={72}
+            accent={accent}
+            right={
+              <label
+                htmlFor="pg-autofit"
+                title="Shrinks title size automatically to prevent overflow"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+                  fontSize: 9, color: 'var(--pg-text-secondary)',
+                  letterSpacing: 1, textTransform: 'uppercase',
+                }}
+              >
+                <input
+                  id="pg-autofit"
+                  type="checkbox"
+                  checked={autoFit}
+                  onChange={(e) => setAutoFit(e.target.checked)}
+                  style={{ accentColor: accent, cursor: 'pointer', margin: 0 }}
+                />
+                <span style={{ color: autoFit ? accent : 'var(--pg-text-secondary)' }}>Auto-fit</span>
+              </label>
+            }
+          />
           <Slider label="Description size" value={descSize} onChange={setDescSize} min={14} max={32} accent={accent} />
         </Section>
 
@@ -264,34 +303,18 @@ export default function Playground() {
             max={90}
             accent={accent}
           />
-          <div style={{ marginTop: 8 }}>
-            <label
-              htmlFor="pg-autofit"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                fontSize: 11, color: '#94a3b8',
-              }}
-            >
-              <input
-                id="pg-autofit"
-                type="checkbox"
-                checked={autoFit}
-                onChange={(e) => setAutoFit(e.target.checked)}
-                style={{ accentColor: accent, cursor: 'pointer' }}
-              />
-              <span>
-                <strong style={{ color: autoFit ? accent : '#e2e8f0' }}>Auto-fit text</strong>
-                <span style={{ display: 'block', fontSize: 9, color: '#64748b', marginTop: 2 }}>
-                  Shrinks title size automatically to prevent overflow
-                </span>
-              </span>
-            </label>
-          </div>
         </Section>
       </div>
 
       {/* Preview column */}
-      <div className="pg-preview-col" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="pg-preview-col" style={{ gap: 12 }}>
+        <PreviewToolbar
+          format={format}
+          onFormatChange={setFormat}
+          renderTime={renderTime}
+          info={info}
+          accent={accent}
+        />
         {/* Upgrade / Signup CTA — persistent path from playground into the funnel */}
         <a
           href={useApi ? '/pricing/' : '/quick-start/'}
@@ -335,7 +358,6 @@ export default function Playground() {
               }}
             />
           )}
-          <RenderHUD renderTime={renderTime} info={info} accent={accent} />
           <DropZone visible={dragging} accent={accent} />
         </div>
 
@@ -346,34 +368,15 @@ export default function Playground() {
             style={{
               padding: '6px 12px', borderRadius: 6, fontSize: 10, fontFamily: 'inherit',
               border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)',
-              color: '#64748b', cursor: 'pointer', alignSelf: 'flex-start',
+              color: 'var(--pg-text-secondary)', cursor: 'pointer', alignSelf: 'flex-start',
             }}
           >
             ✕ Remove background image
           </button>
         )}
 
-        {/* Response headers */}
-        {info && (
-          <div style={{ padding: 12, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, marginBottom: 8 }}>RESPONSE HEADERS</div>
-            {[
-              ['X-Render-Time-Ms', renderTime.toFixed(2)],
-              ['X-Title-Lines', String(info.titleVisibleLines)],
-              ['X-Desc-Lines', String(info.descVisibleLines)],
-              ['X-Layout-Overflow', String(info.overflow)],
-              ['Content-Type', 'image/png'],
-            ].map(([k, v], i) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, padding: '3px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                <span style={{ color: '#64748b' }}>{k}</span>
-                <span style={{ color: accent, fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--sl-font-mono)' }}>{v}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
         {apiAvailable && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, color: '#64748b', fontFamily: 'var(--sl-font-mono)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, color: 'var(--pg-text-secondary)', fontFamily: 'var(--sl-font-mono)' }}>
             <button
               onClick={() => setUseApi(!useApi)}
               className="pg-picker-btn"
@@ -381,7 +384,7 @@ export default function Playground() {
                 padding: '4px 10px', borderRadius: 6, fontSize: 10,
                 border: `1px solid ${useApi ? accent : 'rgba(255,255,255,0.08)'}`,
                 background: useApi ? accent + '15' : 'rgba(255,255,255,0.02)',
-                color: useApi ? accent : '#64748b',
+                color: useApi ? accent : 'var(--pg-text-secondary)',
                 cursor: 'pointer', fontFamily: 'var(--sl-font-mono)',
               }}
             >
@@ -413,11 +416,14 @@ export default function Playground() {
           </button>
         </div>
 
-        <CodeOutput config={{ format, template, title, description, author, tag, accent, font: fontEntry.name, titleSize, descSize, layout, gradient: gradient.slug, overlayOpacity, autoFit }} accent={accent} />
-
         {showFullscreen && (
           <FullscreenPreview canvas={canvasRef.current} onClose={() => setShowFullscreen(false)} />
         )}
+
+        <CodeDrawer
+          config={{ format, template, title, description, author, tag, accent, font: fontEntry.name, titleSize, descSize, layout, gradient: gradient.slug, overlayOpacity, autoFit }}
+          accent={accent}
+        />
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ export function FormatSelector({ value, onChange, accent }: Props) {
               padding: '5px 8px', borderRadius: 6, fontSize: 10, fontFamily: 'inherit',
               border: active ? `1px solid ${accent}66` : '1px solid rgba(255,255,255,0.07)',
               background: active ? `${accent}12` : 'rgba(255,255,255,0.02)',
-              color: active ? accent : '#64748b', cursor: 'pointer',
+              color: active ? accent : 'var(--pg-text-secondary)', cursor: 'pointer',
               letterSpacing: 0.5, whiteSpace: 'nowrap',
             }}
           >
