@@ -6,11 +6,11 @@ import { FONTS, loadGoogleFont, type FontEntry } from './engine/fonts';
 import { FORMATS, type FormatKey } from './engine/formats';
 import { AccentPicker, FontPicker, LayoutPicker, GradientPicker, Slider } from './ui/StyleControls';
 import { TemplateSelector } from './ui/TemplateSelector';
-import { CodeOutput } from './ui/CodeOutput';
 import { Section } from './ui/Section';
 import { Presets, randomPreset, type PresetData } from './ui/Presets';
 import { PreviewToolbar } from './ui/PreviewToolbar';
 import { FullscreenPreview } from './ui/FullscreenPreview';
+import { CodeDrawer } from './ui/CodeDrawer';
 import { DropZone } from './ui/DropZone';
 
 export default function Playground() {
@@ -415,11 +415,14 @@ export default function Playground() {
           </button>
         </div>
 
-        <CodeOutput config={{ format, template, title, description, author, tag, accent, font: fontEntry.name, titleSize, descSize, layout, gradient: gradient.slug, overlayOpacity, autoFit }} accent={accent} />
-
         {showFullscreen && (
           <FullscreenPreview canvas={canvasRef.current} onClose={() => setShowFullscreen(false)} />
         )}
+
+        <CodeDrawer
+          config={{ format, template, title, description, author, tag, accent, font: fontEntry.name, titleSize, descSize, layout, gradient: gradient.slug, overlayOpacity, autoFit }}
+          accent={accent}
+        />
       </div>
     </div>
   );
