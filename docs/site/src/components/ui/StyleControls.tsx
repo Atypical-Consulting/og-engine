@@ -1,19 +1,29 @@
+import type { ReactNode } from 'react';
 import { ACCENTS, GRADIENTS, type Gradient } from '../engine/gradients';
 import { FONTS, type FontEntry } from '../engine/fonts';
 
 interface SliderProps {
-  label: string; value: number; onChange: (value: number) => void;
-  min: number; max: number; accent: string;
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+  accent: string;
+  /** Optional content rendered inline next to the label (e.g., an inline toggle). */
+  right?: ReactNode;
 }
 
-export function Slider({ label, value, onChange, min, max, accent }: SliderProps) {
+export function Slider({ label, value, onChange, min, max, accent, right }: SliderProps) {
   const pct = ((value - min) / (max - min)) * 100;
   const sliderId = `pg-slider-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--pg-text-secondary)', marginBottom: 3 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 9, color: 'var(--pg-text-secondary)', marginBottom: 3, gap: 8 }}>
         <label htmlFor={sliderId} style={{ letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer' }}>{label}</label>
-        <span style={{ color: accent, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {right}
+          <span style={{ color: accent, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+        </div>
       </div>
       <input type="range" id={sliderId} min={min} max={max} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
