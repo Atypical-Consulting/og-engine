@@ -182,3 +182,8 @@
   box-shadow: 0 0 0 2px var(--pg-accent-alpha, rgba(56, 239, 125, 0.2));
   border-color: var(--pg-accent-border, rgba(56, 239, 125, 0.3)) !important;
 }
+
+.pg-surprise-btn:hover {
+  transform: scale(1.01);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
