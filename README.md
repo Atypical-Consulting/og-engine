@@ -411,7 +411,20 @@ bun run dev
 
 ## License
 
-MIT
+OG Engine's server (`src/` and everything at the repo root) is licensed under
+the [Functional Source License, Version 1.1, Apache 2.0 Future License](./LICENSE)
+(FSL-1.1-Apache-2.0). You can read, modify, and self-host it for any purpose
+**except** making it available to third parties as a hosted service or
+embedding it in a commercial product you distribute. Every release
+automatically converts to [Apache-2.0](./LICENSE-APACHE-2.0) two years after
+its release date — see [`LICENSE-HISTORY.md`](./LICENSE-HISTORY.md).
+
+The SDK (`sdk/`) is licensed under [Apache-2.0](./sdk/LICENSE) — use it freely
+in any project, commercial or not.
+
+**Using OG Engine inside a commercial product or SaaS?**
+See [`COMMERCIAL-LICENSE.md`](./COMMERCIAL-LICENSE.md) or email
+**philippe@atypical.consulting**.
 
 ---
 
