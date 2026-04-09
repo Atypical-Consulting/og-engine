@@ -1,0 +1,75 @@
+---
+/**
+ * Override of Starlight's SocialIcons component.
+ * Prepends top-nav links (Pricing, Playground) alongside the default social icons
+ * so visitors always have a visible path to the money pages and the playground.
+ */
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+
+const pathname = Astro.url.pathname;
+const isActive = (href: string) =>
+  pathname === href || pathname.startsWith(href);
+---
+
+<nav class="og-header-links" aria-label="Primary">
+  <a
+    href="/playground/"
+    class="og-header-link"
+    aria-current={isActive('/playground/') ? 'page' : undefined}
+  >
+    Playground
+  </a>
+  <a
+    href="/pricing/"
+    class="og-header-link"
+    aria-current={isActive('/pricing/') ? 'page' : undefined}
+  >
+    Pricing
+  </a>
+</nav>
+
+<Default><slot /></Default>
+
+<style>
+  .og-header-links {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-right: 0.25rem;
+  }
+
+  .og-header-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.75rem;
+    font-family: var(--sl-font-system, system-ui, sans-serif);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--sl-color-gray-2, #94a3b8);
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .og-header-link:hover {
+    color: var(--sl-color-white, #e2e8f0);
+    border-color: var(--og-border, rgba(255, 255, 255, 0.12));
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .og-header-link[aria-current='page'] {
+    color: var(--og-glow, #38ef7d);
+    border-color: rgba(56, 239, 125, 0.35);
+    background: rgba(56, 239, 125, 0.08);
+  }
+
+  /* Hide link labels on very narrow screens to keep the header tidy */
+  @media (max-width: 50rem) {
+    .og-header-link {
+      padding: 0.35rem 0.55rem;
+      font-size: 0.75rem;
+    }
+  }
+</style>

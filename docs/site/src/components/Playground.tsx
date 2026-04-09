@@ -6,6 +6,7 @@ import { FONTS, loadGoogleFont, type FontEntry } from './engine/fonts';
 import { FORMATS, type FormatKey } from './engine/formats';
 import { FormatSelector } from './ui/FormatSelector';
 import { AccentPicker, FontPicker, LayoutPicker, GradientPicker, Slider } from './ui/StyleControls';
+import { TemplateSelector } from './ui/TemplateSelector';
 import { CodeOutput } from './ui/CodeOutput';
 import { Section } from './ui/Section';
 import { Presets, type PresetData } from './ui/Presets';
@@ -20,6 +21,7 @@ export default function Playground() {
   const [author, setAuthor] = useState('Pretext Engine');
   const [tag, setTag] = useState('Open Source');
   const [format, setFormat] = useState<FormatKey>('og');
+  const [template, setTemplate] = useState<string>('default');
   const [accent, setAccent] = useState('#38ef7d');
   const [layout, setLayout] = useState<'left' | 'center' | 'bottom'>('left');
   const [titleSize, setTitleSize] = useState(48);
@@ -27,6 +29,8 @@ export default function Playground() {
   const [fontEntry, setFontEntry] = useState<FontEntry>(FONTS[0]);
   const [gradient, setGradient] = useState<Gradient>(GRADIENTS[0]);
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
+  const [autoFit, setAutoFit] = useState(false);
+  const [overlayOpacity, setOverlayOpacity] = useState(0.65);
   const [renderTime, setRenderTime] = useState(0);
   const [info, setInfo] = useState<RenderResult | null>(null);
   const [showFullscreen, setShowFullscreen] = useState(false);
@@ -51,9 +55,9 @@ export default function Playground() {
       const id = setTimeout(async () => {
         try {
           const result = await apiRender(API_BASE, {
-            format, title, description, author, tag, accent,
+            format, template, title, description, author, tag, accent,
             layout, font: fontEntry.name, titleSize, descSize,
-            gradient: gradient.slug,
+            gradient: gradient.slug, overlayOpacity, autoFit,
           });
           setApiImageUrl(result.imageUrl);
           setRenderTime(result.renderTimeMs);
@@ -66,11 +70,11 @@ export default function Playground() {
           });
         } catch (err) {
           console.error('API render failed:', err);
-          // Fallback to client-side
+          // Fallback to client-side (only renders "default" template; other templates show server-only placeholder)
           const t0 = performance.now();
           const result = renderCard(canvas, {
             title, description, author, tag, format, accent, layout,
-            titleSize, descSize, fontEntry, gradient, bgImage, overlayOpacity: 0.65,
+            titleSize, descSize, fontEntry, gradient, bgImage, overlayOpacity,
           });
           setRenderTime(performance.now() - t0);
           setInfo(result);
@@ -84,14 +88,14 @@ export default function Playground() {
         const t0 = performance.now();
         const result = renderCard(canvas, {
           title, description, author, tag, format, accent, layout,
-          titleSize, descSize, fontEntry, gradient, bgImage, overlayOpacity: 0.65,
+          titleSize, descSize, fontEntry, gradient, bgImage, overlayOpacity,
         });
         setRenderTime(performance.now() - t0);
         setInfo(result);
       }, 50);
       return () => clearTimeout(id);
     }
-  }, [title, description, author, tag, format, accent, layout, titleSize, descSize, fontEntry, gradient, bgImage, useApi]);
+  }, [title, description, author, tag, format, template, accent, layout, titleSize, descSize, fontEntry, gradient, bgImage, useApi, overlayOpacity, autoFit]);
 
   const download = useCallback(() => {
     const canvas = canvasRef.current;
@@ -178,6 +182,15 @@ export default function Playground() {
           <FormatSelector value={format} onChange={setFormat} accent={accent} />
         </Section>
 
+        <Section title="Template">
+          <TemplateSelector value={template} onChange={setTemplate} accent={accent} />
+          {template !== 'default' && !useApi && (
+            <p style={{ fontSize: 10, color: '#94a3b8', margin: '6px 0 0', lineHeight: 1.4 }}>
+              Preview shows the <strong>default</strong> template. Toggle API mode to see <code>{template}</code> rendered server-side.
+            </p>
+          )}
+        </Section>
+
         <Section title="Content">
           <div>
             <label htmlFor="pg-tag" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>Tag</label>
@@ -199,6 +212,39 @@ export default function Playground() {
 
         <Section title="Colors">
           <AccentPicker value={accent} onChange={setAccent} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            <label htmlFor="pg-custom-color" style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase' }}>
+              Custom
+            </label>
+            <input
+              id="pg-custom-color"
+              type="color"
+              value={accent}
+              onChange={(e) => setAccent(e.target.value)}
+              aria-label="Custom accent color"
+              style={{
+                width: 28, height: 28, padding: 0, borderRadius: 7,
+                border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', cursor: 'pointer',
+              }}
+            />
+            <input
+              type="text"
+              value={accent}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setAccent(v);
+              }}
+              maxLength={7}
+              aria-label="Hex color code"
+              className="pg-input"
+              style={{
+                width: 80, padding: '6px 8px', borderRadius: 6, fontSize: 11,
+                fontFamily: 'var(--sl-font-mono)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.03)', color: '#e2e8f0', outline: 'none',
+              }}
+            />
+          </div>
           <GradientPicker value={gradient} onChange={setGradient} accent={accent} />
         </Section>
 
@@ -208,10 +254,67 @@ export default function Playground() {
           <Slider label="Title size" value={titleSize} onChange={setTitleSize} min={28} max={72} accent={accent} />
           <Slider label="Description size" value={descSize} onChange={setDescSize} min={14} max={32} accent={accent} />
         </Section>
+
+        <Section title="Fine-tuning">
+          <Slider
+            label="Overlay opacity"
+            value={Math.round(overlayOpacity * 100)}
+            onChange={(v) => setOverlayOpacity(v / 100)}
+            min={20}
+            max={90}
+            accent={accent}
+          />
+          <div style={{ marginTop: 8 }}>
+            <label
+              htmlFor="pg-autofit"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                fontSize: 11, color: '#94a3b8',
+              }}
+            >
+              <input
+                id="pg-autofit"
+                type="checkbox"
+                checked={autoFit}
+                onChange={(e) => setAutoFit(e.target.checked)}
+                style={{ accentColor: accent, cursor: 'pointer' }}
+              />
+              <span>
+                <strong style={{ color: autoFit ? accent : '#e2e8f0' }}>Auto-fit text</strong>
+                <span style={{ display: 'block', fontSize: 9, color: '#64748b', marginTop: 2 }}>
+                  Shrinks title size automatically to prevent overflow
+                </span>
+              </span>
+            </label>
+          </div>
+        </Section>
       </div>
 
       {/* Preview column */}
       <div className="pg-preview-col" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Upgrade / Signup CTA — persistent path from playground into the funnel */}
+        <a
+          href={useApi ? '/pricing/' : '/quick-start/'}
+          className="pg-upgrade-pill"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 10, padding: '10px 14px', borderRadius: 10,
+            border: `1px solid ${accent}44`,
+            background: `linear-gradient(135deg, ${accent}14, ${accent}06)`,
+            color: '#e2e8f0', textDecoration: 'none', fontSize: 12,
+            fontFamily: 'inherit', transition: 'border-color 0.2s ease, transform 0.15s ease',
+          }}
+        >
+          <span>
+            {useApi ? (
+              <><strong style={{ color: accent }}>Loving it?</strong> Upgrade to Starter — 10k renders/mo.</>
+            ) : (
+              <><strong style={{ color: accent }}>Free forever.</strong> Get your API key — no credit card.</>
+            )}
+          </span>
+          <span style={{ color: accent, fontWeight: 700 }}>→</span>
+        </a>
+
         <div
           className="pg-canvas-wrapper"
           style={{ border: `1px solid ${accent}15` }}
@@ -310,7 +413,7 @@ export default function Playground() {
           </button>
         </div>
 
-        <CodeOutput config={{ format, title, description, author, tag, accent, font: fontEntry.name, titleSize, descSize, layout, gradient: gradient.slug }} accent={accent} />
+        <CodeOutput config={{ format, template, title, description, author, tag, accent, font: fontEntry.name, titleSize, descSize, layout, gradient: gradient.slug, overlayOpacity, autoFit }} accent={accent} />
 
         {showFullscreen && (
           <FullscreenPreview canvas={canvasRef.current} onClose={() => setShowFullscreen(false)} />

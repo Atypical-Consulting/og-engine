@@ -488,6 +488,38 @@ header.header {
   backdrop-filter: blur(12px);
 }
 
+/* Search button — give it a visible border so it reads as a control */
+header.header button[data-open-modal],
+header.header .sl-search-button {
+  border: 1px solid var(--og-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+header.header button[data-open-modal]:hover,
+header.header .sl-search-button:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Minimal hero CTA — match search-button border treatment for visual parity */
+.sl-link-button.minimal,
+a.sl-link-button.minimal {
+  border: 1px solid var(--og-border) !important;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.sl-link-button.minimal:hover,
+a.sl-link-button.minimal:hover {
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
 /* ─── Focus Styles (Accessibility) ─── */
 :focus-visible {
   outline: 2px solid var(--og-glow);

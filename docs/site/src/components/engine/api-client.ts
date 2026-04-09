@@ -10,6 +10,7 @@ export async function apiRender(
   baseUrl: string,
   config: {
     format: string;
+    template?: string;
     title: string;
     description: string;
     author: string;
@@ -20,6 +21,8 @@ export async function apiRender(
     titleSize: number;
     descSize: number;
     gradient: string;
+    overlayOpacity?: number;
+    autoFit?: boolean;
   },
 ): Promise<ApiRenderResult> {
   const res = await fetch(`${baseUrl}/render`, {
@@ -27,6 +30,7 @@ export async function apiRender(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       format: config.format,
+      template: config.template ?? 'default',
       title: config.title,
       description: config.description,
       author: config.author,
@@ -38,6 +42,8 @@ export async function apiRender(
         titleSize: config.titleSize,
         descSize: config.descSize,
         gradient: config.gradient,
+        overlayOpacity: config.overlayOpacity ?? 0.65,
+        autoFit: config.autoFit ?? false,
       },
     }),
   });
