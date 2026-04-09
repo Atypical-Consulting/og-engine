@@ -50,7 +50,7 @@ export function FullscreenPreview({ canvas, onClose }: Props) {
         />
         <div style={{
           position: 'absolute', bottom: -40, left: 0, right: 0,
-          textAlign: 'center', fontSize: 11, color: '#64748b',
+          textAlign: 'center', fontSize: 11, color: 'var(--pg-text-secondary)',
         }}>
           {canvas.width} &times; {canvas.height}px &middot; Press <kbd style={{
             padding: '2px 6px', borderRadius: 4, fontSize: 10,

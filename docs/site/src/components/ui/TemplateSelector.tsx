@@ -10,7 +10,7 @@ interface Props { value: string; onChange: (value: string) => void; accent: stri
 export function TemplateSelector({ value, onChange, accent }: Props) {
   return (
     <div>
-      <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Template</div>
+      <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Template</div>
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
         {TEMPLATES.map((t) => {
           const active = value === t.key;
@@ -19,7 +19,7 @@ export function TemplateSelector({ value, onChange, accent }: Props) {
               padding: '6px 10px', borderRadius: 6, fontSize: 10, fontFamily: 'inherit',
               border: active ? `1px solid ${accent}66` : '1px solid rgba(255,255,255,0.07)',
               background: active ? `${accent}12` : 'rgba(255,255,255,0.02)',
-              color: active ? accent : '#64748b', cursor: 'pointer', letterSpacing: 0.5, whiteSpace: 'nowrap',
+              color: active ? accent : 'var(--pg-text-secondary)', cursor: 'pointer', letterSpacing: 0.5, whiteSpace: 'nowrap',
             }}>{t.label}</button>
           );
         })}

@@ -1,5 +1,22 @@
 /* docs/site/src/components/playground.css */
 
+/*
+ * Playground text color tokens.
+ *
+ * Use these for any new playground UI text. They were introduced to fix
+ * WCAG AA contrast failures (slate-600 was 2.64:1 against the dark bg).
+ *
+ *   --pg-text-secondary  ~7:1   form labels, helper text, sublabels
+ *   --pg-text-tertiary   ~9:1   icon-only buttons, key UI affordances
+ *
+ * Reference from inline React styles via var():
+ *   style={{ color: 'var(--pg-text-secondary)' }}
+ */
+.pg-layout {
+  --pg-text-secondary: #94a3b8; /* slate-400 */
+  --pg-text-tertiary: #cbd5e1;  /* slate-300 */
+}
+
 /* ── Focus states (accessibility) ── */
 .pg-input {
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
@@ -138,25 +155,89 @@
   transform: translateY(0);
 }
 
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .pg-layout {
-    grid-template-columns: 1fr !important;
-  }
+/* ── App shell page chrome overrides ──
+ * Splash template renders a title content-panel above the MDX body and adds
+ * padding around each content-panel. The app shell is meant to fill the
+ * viewport directly below the Starlight header, so we strip both. The page
+ * title and description still live in the frontmatter for SEO.
+ */
+main:has(.pg-app-shell) > .content-panel:first-of-type {
+  display: none;
+}
+main:has(.pg-app-shell) > .content-panel {
+  padding: 0;
+  border: none;
+}
+/* Starlight applies a top margin to every direct child of .sl-markdown-content;
+   strip it for our app shell so the playground starts flush with the header. */
+main:has(.pg-app-shell) .sl-markdown-content > * {
+  margin-top: 0;
+}
 
-  .pg-preview-col {
-    position: sticky !important;
-    top: 16px;
-    z-index: 5;
+/* ── App shell layout ── */
+.pg-app-shell {
+  /* Full-bleed escape from Starlight splash content container */
+  position: relative;
+  width: 100vw;
+  margin-top: 0; /* override Starlight's default sibling spacing */
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  /* Fill the viewport below the Starlight header (64px = 4rem) */
+  min-height: calc(100dvh - var(--sl-nav-height, 4rem));
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 0;
+  background: #050810;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .pg-app-shell {
+    grid-template-columns: 340px 1fr;
   }
 }
 
-/* ── Sticky preview (desktop) ── */
-@media (min-width: 769px) {
+@media (max-width: 767px) {
+  .pg-app-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    min-height: auto;
+  }
+}
+
+.pg-controls-col {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100dvh - var(--sl-nav-height, 4rem));
+  padding: 16px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pg-preview-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+  max-height: calc(100dvh - var(--sl-nav-height, 4rem));
+}
+
+@media (max-width: 767px) {
+  .pg-controls-col {
+    max-height: none;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    order: 2;
+  }
   .pg-preview-col {
-    position: sticky;
-    top: 20px;
-    align-self: start;
+    max-height: none;
+    order: 1;
+  }
+  .pg-preview-col .pg-canvas-wrapper {
+    max-height: 50vh;
   }
 }
 
@@ -164,4 +245,245 @@
 .pg-input:focus {
   box-shadow: 0 0 0 2px var(--pg-accent-alpha, rgba(56, 239, 125, 0.2));
   border-color: var(--pg-accent-border, rgba(56, 239, 125, 0.3)) !important;
+}
+
+.pg-surprise-btn:hover {
+  transform: scale(1.01);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Sticky Surprise me button ── */
+.pg-surprise-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding: 8px 0;
+  background: #050810;
+  margin: -16px -16px 0;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* ── Code drawer ── */
+.pg-code-drawer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 60%;
+  display: flex;
+  flex-direction: column;
+  background: #0a0d16;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transform: translateY(calc(100% - 40px));
+  transition: transform 0.25s ease;
+  z-index: 20;
+}
+
+.pg-code-drawer.open {
+  transform: translateY(0);
+}
+
+.pg-code-drawer-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 40px;
+  padding: 0 16px;
+  background: transparent;
+  border: none;
+  color: var(--pg-text-secondary);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  flex: 0 0 40px;
+}
+
+.pg-code-drawer-handle:hover {
+  color: #e2e8f0;
+}
+
+.pg-code-drawer-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 0 16px 16px;
+}
+
+@media (max-width: 767px) {
+  .pg-code-drawer {
+    position: fixed;
+    max-height: 70vh;
+  }
+}
+
+/* ── Font combobox ── */
+.pg-font-combobox {
+  position: relative;
+  width: 100%;
+}
+
+.pg-font-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pg-font-trigger:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.pg-font-trigger-chevron {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--pg-text-secondary);
+}
+
+.pg-font-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: #0a0d16;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.pg-font-search {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.pg-font-search::placeholder {
+  color: var(--pg-text-secondary);
+}
+
+.pg-font-chips {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.pg-font-chip {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--pg-text-secondary);
+  font-size: 10px;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+}
+
+.pg-font-chip.active {
+  border-color: rgba(56, 239, 125, 0.5);
+  background: rgba(56, 239, 125, 0.08);
+  color: #38ef7d;
+}
+
+.pg-font-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.pg-font-section-header {
+  padding: 6px 12px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--pg-text-secondary);
+  position: sticky;
+  top: 0;
+  background: #0a0d16;
+  z-index: 1;
+}
+
+.pg-font-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #e2e8f0;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+
+.pg-font-row:hover,
+.pg-font-row.highlighted {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pg-font-row.active {
+  background: rgba(56, 239, 125, 0.08);
+  color: #38ef7d;
+}
+
+.pg-font-preview-badge {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--pg-text-secondary);
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-family: var(--sl-font-mono, monospace);
+}
+
+.pg-font-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--pg-text-secondary);
+  font-size: 12px;
+}
+
+@media (max-width: 767px) {
+  .pg-font-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 80vh;
+    border-radius: 12px 12px 0 0;
+  }
 }

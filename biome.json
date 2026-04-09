@@ -36,6 +36,6 @@
     }
   },
   "files": {
-    "includes": ["src/**", "tests/**"]
+    "includes": ["src/**", "tests/**", "!src/data/*.json"]
   }
 }
