@@ -42,11 +42,3 @@ We'll get back to you within 2 business days with terms.
 
 Email **philippe@atypical.consulting** with your use case. We'll tell you
 for free. No gotchas.
-
-## Why this license model?
-
-OG Engine is built and maintained by one person. The Functional Source
-License lets individuals and open-source projects use the software freely
-while asking commercial users who build on top of it to help sustain
-development. If you're here, thank you for reading — and for doing the right
-thing.
