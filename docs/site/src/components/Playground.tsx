@@ -268,7 +268,34 @@ export default function Playground() {
         <Section title="Typography">
           <FontPicker value={fontEntry} onChange={setFontEntry} accent={accent} />
           <LayoutPicker value={layout} onChange={setLayout} accent={accent} />
-          <Slider label="Title size" value={titleSize} onChange={setTitleSize} min={28} max={72} accent={accent} />
+          <Slider
+            label="Title size"
+            value={titleSize}
+            onChange={setTitleSize}
+            min={28}
+            max={72}
+            accent={accent}
+            right={
+              <label
+                htmlFor="pg-autofit"
+                title="Shrinks title size automatically to prevent overflow"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+                  fontSize: 9, color: 'var(--pg-text-secondary)',
+                  letterSpacing: 1, textTransform: 'uppercase',
+                }}
+              >
+                <input
+                  id="pg-autofit"
+                  type="checkbox"
+                  checked={autoFit}
+                  onChange={(e) => setAutoFit(e.target.checked)}
+                  style={{ accentColor: accent, cursor: 'pointer', margin: 0 }}
+                />
+                <span style={{ color: autoFit ? accent : 'var(--pg-text-secondary)' }}>Auto-fit</span>
+              </label>
+            }
+          />
           <Slider label="Description size" value={descSize} onChange={setDescSize} min={14} max={32} accent={accent} />
         </Section>
 
@@ -281,29 +308,6 @@ export default function Playground() {
             max={90}
             accent={accent}
           />
-          <div style={{ marginTop: 8 }}>
-            <label
-              htmlFor="pg-autofit"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                fontSize: 11, color: '#94a3b8',
-              }}
-            >
-              <input
-                id="pg-autofit"
-                type="checkbox"
-                checked={autoFit}
-                onChange={(e) => setAutoFit(e.target.checked)}
-                style={{ accentColor: accent, cursor: 'pointer' }}
-              />
-              <span>
-                <strong style={{ color: autoFit ? accent : '#e2e8f0' }}>Auto-fit text</strong>
-                <span style={{ display: 'block', fontSize: 9, color: '#64748b', marginTop: 2 }}>
-                  Shrinks title size automatically to prevent overflow
-                </span>
-              </span>
-            </label>
-          </div>
         </Section>
       </div>
 
