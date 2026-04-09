@@ -12,6 +12,8 @@ import { PreviewToolbar } from './ui/PreviewToolbar';
 import { FullscreenPreview } from './ui/FullscreenPreview';
 import { CodeDrawer } from './ui/CodeDrawer';
 import { DropZone } from './ui/DropZone';
+import { ToastStack, toast } from './ui/Toast';
+import { ShortcutsCheatsheet } from './ui/ShortcutsCheatsheet';
 
 const DEFAULTS = {
   title: 'Server-Side Text Layout Without a Browser',
@@ -48,6 +50,7 @@ export default function Playground() {
   const [renderTime, setRenderTime] = useState(0);
   const [info, setInfo] = useState<RenderResult | null>(null);
   const [showFullscreen, setShowFullscreen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
   const [useApi, setUseApi] = useState(false);
@@ -124,18 +127,48 @@ export default function Playground() {
   const copyToClipboard = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    // Preflight: the Clipboard image API needs a secure context and a browser
+    // that supports it. Fail early with a useful message instead of a silent catch.
+    if (typeof window !== 'undefined' && window.isSecureContext === false) {
+      setCopyState('failed');
+      toast({
+        kind: 'error',
+        title: 'Copy requires a secure context',
+        detail: 'Clipboard images only work on https:// or localhost. Use Download PNG instead.',
+      });
+      setTimeout(() => setCopyState('idle'), 1800);
+      return;
+    }
+    // biome-ignore lint/suspicious/noExplicitAny: ClipboardItem feature-detect
+    const hasClipboardItem = typeof (window as any).ClipboardItem !== 'undefined';
+    if (!hasClipboardItem || !navigator.clipboard?.write) {
+      setCopyState('failed');
+      toast({
+        kind: 'error',
+        title: 'Clipboard images not supported',
+        detail: 'This browser can\u2019t copy images to the clipboard. Use Download PNG instead.',
+      });
+      setTimeout(() => setCopyState('idle'), 1800);
+      return;
+    }
     try {
-      // Prefer the async canvas.toBlob API so the clipboard item is a real PNG blob
       const blob: Blob | null = await new Promise((resolve) =>
         canvas.toBlob((b) => resolve(b), 'image/png'),
       );
-      if (!blob) throw new Error('toBlob returned null');
-      // @ts-expect-error — ClipboardItem is widely supported in modern browsers
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      if (!blob) throw new Error('Canvas toBlob returned null');
+      // biome-ignore lint/suspicious/noExplicitAny: ClipboardItem is available after the feature-detect above
+      await navigator.clipboard.write([new (window as any).ClipboardItem({ 'image/png': blob })]);
       setCopyState('copied');
+      toast({ kind: 'success', title: 'Copied to clipboard', duration: 2200 });
     } catch (err) {
       console.error('Clipboard copy failed:', err);
       setCopyState('failed');
+      const message = err instanceof Error ? err.message : String(err);
+      toast({
+        kind: 'error',
+        title: 'Copy failed',
+        detail: `${message} \u2014 try Download PNG.`,
+      });
     }
     setTimeout(() => setCopyState('idle'), 1800);
   }, []);
@@ -173,16 +206,28 @@ export default function Playground() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'r' && e.key !== 'R') return;
-      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      // Ignore chorded combos and typing targets for every global shortcut
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (target) {
         const tag = target.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
         if (target.isContentEditable) return;
       }
-      e.preventDefault();
-      applyPreset(randomPreset());
+
+      // ? opens the shortcuts cheatsheet. On most layouts this is shift+/
+      if (e.key === '?') {
+        e.preventDefault();
+        setShowShortcuts((s) => !s);
+        return;
+      }
+
+      if (e.shiftKey) return;
+
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        applyPreset(randomPreset());
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -234,6 +279,8 @@ export default function Playground() {
   const accentBorder = accent + '4d';
 
   return (
+    <>
+    <ToastStack accent={accent} />
     <div
       className="pg-layout pg-app-shell not-content"
       style={{
@@ -246,7 +293,20 @@ export default function Playground() {
         <Presets onSelect={applyPreset} onReset={resetDefaults} accent={accent} />
 
         <Section title="Template">
-          <TemplateSelector value={template} onChange={setTemplate} accent={accent} />
+          <TemplateSelector
+            value={template}
+            onChange={setTemplate}
+            accent={accent}
+            title={title}
+            description={description}
+            author={author}
+            tag={tag}
+            layout={layout}
+            titleSize={titleSize}
+            descSize={descSize}
+            fontEntry={fontEntry}
+            gradient={gradient}
+          />
         </Section>
 
         <Section title="Content">
@@ -488,6 +548,12 @@ export default function Playground() {
           <FullscreenPreview canvas={canvasRef.current} onClose={() => setShowFullscreen(false)} />
         )}
 
+        <ShortcutsCheatsheet
+          open={showShortcuts}
+          onClose={() => setShowShortcuts(false)}
+          accent={accent}
+        />
+
         <CodeDrawer
           config={{ format, template, title, description, author, tag, accent, font: fontEntry.name, titleSize, descSize, layout, gradient: gradient.slug, overlayOpacity }}
           accent={accent}
@@ -515,7 +581,44 @@ export default function Playground() {
           </span>
           <span style={{ color: accent, fontWeight: 700 }}>→</span>
         </a>
+
+        {/* Subtle hint that keyboard shortcuts exist */}
+        <button
+          type="button"
+          onClick={() => setShowShortcuts(true)}
+          aria-label="Show keyboard shortcuts"
+          title="Keyboard shortcuts"
+          style={{
+            alignSelf: 'flex-end',
+            background: 'transparent',
+            border: 'none',
+            padding: '4px 2px',
+            color: 'var(--pg-text-secondary)',
+            fontSize: 10,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <span>Shortcuts</span>
+          <kbd
+            style={{
+              fontFamily: 'var(--sl-font-mono, monospace)',
+              padding: '1px 6px',
+              borderRadius: 4,
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.03)',
+              fontSize: 10,
+              lineHeight: 1.4,
+            }}
+          >
+            ?
+          </kbd>
+        </button>
       </div>
     </div>
+    </>
   );
 }
