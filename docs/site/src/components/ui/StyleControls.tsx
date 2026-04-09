@@ -11,7 +11,7 @@ export function Slider({ label, value, onChange, min, max, accent }: SliderProps
   const sliderId = `pg-slider-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#475569', marginBottom: 3 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--pg-text-secondary)', marginBottom: 3 }}>
         <label htmlFor={sliderId} style={{ letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer' }}>{label}</label>
         <span style={{ color: accent, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
       </div>
@@ -33,7 +33,7 @@ interface AccentPickerProps { value: string; onChange: (value: string) => void; 
 export function AccentPicker({ value, onChange }: AccentPickerProps) {
   return (
     <div>
-      <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Accent</div>
+      <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Accent</div>
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {ACCENTS.map((hex) => (
           <button key={hex} onClick={() => onChange(hex)} className="pg-picker-btn" aria-label={`Accent color ${hex}`} aria-pressed={value === hex} style={{
@@ -53,7 +53,7 @@ interface FontPickerProps { value: FontEntry; onChange: (value: FontEntry) => vo
 export function FontPicker({ value, onChange, accent }: FontPickerProps) {
   return (
     <div>
-      <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Font</div>
+      <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Font</div>
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
         {FONTS.map((f) => {
           const active = value.name === f.name;
@@ -62,7 +62,7 @@ export function FontPicker({ value, onChange, accent }: FontPickerProps) {
               padding: '5px 8px', borderRadius: 6, fontSize: 9, fontFamily: 'inherit',
               border: active ? `1px solid ${accent}66` : '1px solid rgba(255,255,255,0.07)',
               background: active ? `${accent}12` : 'rgba(255,255,255,0.02)',
-              color: active ? accent : '#64748b', cursor: 'pointer', letterSpacing: 0.5, whiteSpace: 'nowrap',
+              color: active ? accent : 'var(--pg-text-secondary)', cursor: 'pointer', letterSpacing: 0.5, whiteSpace: 'nowrap',
             }}>{f.name}</button>
           );
         })}
@@ -78,7 +78,7 @@ export function LayoutPicker({ value, onChange, accent }: LayoutPickerProps) {
   ];
   return (
     <div>
-      <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Layout</div>
+      <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Layout</div>
       <div style={{ display: 'flex', gap: 5 }}>
         {options.map((o) => {
           const active = value === o.key;
@@ -87,7 +87,7 @@ export function LayoutPicker({ value, onChange, accent }: LayoutPickerProps) {
               padding: '6px 10px', borderRadius: 6, fontSize: 10, fontFamily: 'inherit',
               border: active ? `1px solid ${accent}66` : '1px solid rgba(255,255,255,0.07)',
               background: active ? `${accent}12` : 'rgba(255,255,255,0.02)',
-              color: active ? accent : '#64748b', cursor: 'pointer', letterSpacing: 0.5,
+              color: active ? accent : 'var(--pg-text-secondary)', cursor: 'pointer', letterSpacing: 0.5,
             }}>{o.label}</button>
           );
         })}
@@ -100,7 +100,7 @@ interface GradientPickerProps { value: Gradient; onChange: (value: Gradient) => 
 export function GradientPicker({ value, onChange, accent }: GradientPickerProps) {
   return (
     <div>
-      <div style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Gradient</div>
+      <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 5 }}>Gradient</div>
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
         {GRADIENTS.map((g) => (
           <button key={g.slug} onClick={() => onChange(g)} title={g.name} aria-label={`${g.name} gradient`} aria-pressed={value.slug === g.slug} className="pg-picker-btn" style={{
