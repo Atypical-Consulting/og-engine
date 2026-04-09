@@ -5,9 +5,12 @@ interface Props {
   renderTime: number;
   info: RenderResult | null;
   accent: string;
+  /** 'toolbar' renders inline (no self-positioning). 'overlay' keeps the
+   *  legacy absolute positioning used when the HUD sits on top of a canvas. */
+  variant?: 'toolbar' | 'overlay';
 }
 
-export function RenderHUD({ renderTime, info, accent }: Props) {
+export function RenderHUD({ renderTime, info, accent, variant = 'toolbar' }: Props) {
   const [pulse, setPulse] = useState(false);
 
   useEffect(() => {
@@ -16,18 +19,22 @@ export function RenderHUD({ renderTime, info, accent }: Props) {
     return () => clearTimeout(id);
   }, [renderTime]);
 
+  const baseStyle: React.CSSProperties = {
+    display: 'flex', gap: 8, alignItems: 'center',
+    padding: '6px 12px', borderRadius: 8,
+    background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(8px)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    fontSize: 10, fontFamily: 'var(--sl-font-mono, monospace)',
+    color: '#94a3b8', pointerEvents: 'none',
+  };
+
+  const overlayStyle: React.CSSProperties = {
+    position: 'absolute', bottom: 10, right: 10, zIndex: 5,
+    ...baseStyle,
+  };
+
   return (
-    <div
-      style={{
-        position: 'absolute', bottom: 10, right: 10, zIndex: 5,
-        display: 'flex', gap: 8, alignItems: 'center',
-        padding: '6px 12px', borderRadius: 8,
-        background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(8px)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        fontSize: 10, fontFamily: 'var(--sl-font-mono, monospace)',
-        color: '#94a3b8', pointerEvents: 'none',
-      }}
-    >
+    <div style={variant === 'overlay' ? overlayStyle : baseStyle}>
       <span className={pulse ? 'pg-render-pulse' : ''} style={{ color: accent, fontVariantNumeric: 'tabular-nums' }}>
         {renderTime.toFixed(1)}ms
       </span>
