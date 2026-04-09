@@ -86,7 +86,7 @@ interface Props {
 
 export function Presets({ onSelect, accent }: Props) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <>
       <div className="pg-surprise-sticky" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase' }}>
           Quick Start
@@ -122,7 +122,7 @@ export function Presets({ onSelect, accent }: Props) {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 6, marginTop: 4 }}>
         {PRESETS.map((p) => (
           <button
             key={p.name}
@@ -140,6 +140,6 @@ export function Presets({ onSelect, accent }: Props) {
           </button>
         ))}
       </div>
-    </div>
+    </>
   );
 }
