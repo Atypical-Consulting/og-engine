@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormatKey } from '../engine/formats';
 import { SyntaxPre } from './SyntaxPre';
+import { isCuratedFont } from '../../../../../src/engine/font-catalog';
 
 interface Config {
   format: FormatKey; template?: string; title: string; description: string; author: string; tag: string;
@@ -69,6 +70,33 @@ export function CodeOutput({ config, accent }: Props) {
   const copy = async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   return (
     <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+      {config.font && !isCuratedFont(config.font) && (
+        <div
+          style={{
+            display: 'flex', alignItems: 'flex-start', gap: 8,
+            padding: '10px 12px',
+            background: 'rgba(251, 191, 36, 0.08)',
+            borderBottom: '1px solid rgba(251, 191, 36, 0.18)',
+            color: 'var(--pg-text-secondary)',
+            fontSize: 11, lineHeight: 1.4,
+          }}
+        >
+          <span style={{ flex: '0 0 auto', color: '#fbbf24' }}>⚠</span>
+          <span>
+            <strong style={{ color: '#fbbf24' }}>"{config.font}"</strong> is preview-only —
+            the API server doesn't have this font yet. Pick an "API ready" font in the picker, or see the{' '}
+            <a
+              href="/fonts/available-fonts/"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: accent, textDecoration: 'underline' }}
+            >
+              supported list
+            </a>
+            .
+          </span>
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ display: 'flex', gap: 8 }}>
           {(['curl', 'sdk', 'json'] as const).map((t) => (
