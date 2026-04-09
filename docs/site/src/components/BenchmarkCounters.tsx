@@ -101,7 +101,7 @@ export default function BenchmarkCounters() {
       </div>
 
       <p className="bench-footnote">
-        Benchmarked on identical hardware &middot; <a href="/compare/benchmarks/">Full methodology &rarr;</a>
+        Benchmarked on identical hardware &middot; <a href="/benchmarks/">Full methodology &rarr;</a>
       </p>
     </div>
   );
