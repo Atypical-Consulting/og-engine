@@ -4,13 +4,12 @@ import { apiRender, checkApiAvailable } from './engine/api-client';
 import { GRADIENTS, type Gradient } from './engine/gradients';
 import { FONTS, loadGoogleFont, type FontEntry } from './engine/fonts';
 import { FORMATS, type FormatKey } from './engine/formats';
-import { FormatSelector } from './ui/FormatSelector';
 import { AccentPicker, FontPicker, LayoutPicker, GradientPicker, Slider } from './ui/StyleControls';
 import { TemplateSelector } from './ui/TemplateSelector';
 import { CodeOutput } from './ui/CodeOutput';
 import { Section } from './ui/Section';
 import { Presets, randomPreset, type PresetData } from './ui/Presets';
-import { RenderHUD } from './ui/RenderHUD';
+import { PreviewToolbar } from './ui/PreviewToolbar';
 import { FullscreenPreview } from './ui/FullscreenPreview';
 import { DropZone } from './ui/DropZone';
 
@@ -194,10 +193,6 @@ export default function Playground() {
       <div className="pg-controls-col">
         <Presets onSelect={applyPreset} accent={accent} />
 
-        <Section title="Format">
-          <FormatSelector value={format} onChange={setFormat} accent={accent} />
-        </Section>
-
         <Section title="Template">
           <TemplateSelector value={template} onChange={setTemplate} accent={accent} />
           {template !== 'default' && !useApi && (
@@ -312,6 +307,13 @@ export default function Playground() {
 
       {/* Preview column */}
       <div className="pg-preview-col" style={{ gap: 12 }}>
+        <PreviewToolbar
+          format={format}
+          onFormatChange={setFormat}
+          renderTime={renderTime}
+          info={info}
+          accent={accent}
+        />
         {/* Upgrade / Signup CTA — persistent path from playground into the funnel */}
         <a
           href={useApi ? '/pricing/' : '/quick-start/'}
@@ -355,7 +357,6 @@ export default function Playground() {
               }}
             />
           )}
-          <RenderHUD renderTime={renderTime} info={info} accent={accent} />
           <DropZone visible={dragging} accent={accent} />
         </div>
 
@@ -371,25 +372,6 @@ export default function Playground() {
           >
             ✕ Remove background image
           </button>
-        )}
-
-        {/* Response headers */}
-        {info && (
-          <div style={{ padding: 12, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, marginBottom: 8 }}>RESPONSE HEADERS</div>
-            {[
-              ['X-Render-Time-Ms', renderTime.toFixed(2)],
-              ['X-Title-Lines', String(info.titleVisibleLines)],
-              ['X-Desc-Lines', String(info.descVisibleLines)],
-              ['X-Layout-Overflow', String(info.overflow)],
-              ['Content-Type', 'image/png'],
-            ].map(([k, v], i) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, padding: '3px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                <span style={{ color: 'var(--pg-text-secondary)' }}>{k}</span>
-                <span style={{ color: accent, fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--sl-font-mono)' }}>{v}</span>
-              </div>
-            ))}
-          </div>
         )}
 
         {apiAvailable && (
