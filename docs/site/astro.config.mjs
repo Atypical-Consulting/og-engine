@@ -129,6 +129,9 @@ export default defineConfig({
       customCss: ['./src/styles/fonts.css', './src/styles/custom.css', './src/components/playground.css'],
       sidebar: [
         { label: 'Home', link: '/' },
+        { label: 'Playground', link: '/playground/', badge: { text: 'Try it', variant: 'success' } },
+        { label: 'Templates Gallery', link: '/templates/gallery/' },
+        { label: 'Benchmarks', link: '/benchmarks/' },
         { label: 'Quick Start', link: '/quick-start/' },
         {
           label: 'Guides',
@@ -167,18 +170,15 @@ export default defineConfig({
             { label: 'Reference', link: '/sdk/reference/' },
           ],
         },
-        { label: 'Self-Hosting (Docker)', link: '/self-hosting/docker/' },
-        { label: 'Templates Gallery', link: '/templates/gallery/' },
-        { label: 'Available Fonts', link: '/fonts/available-fonts/' },
-        { label: 'Playground', link: '/playground/' },
-        { label: 'Benchmarks', link: '/benchmarks/' },
         {
-          label: 'Compare',
+          label: 'Resources',
           items: [
+            { label: 'Available Fonts', link: '/fonts/available-fonts/' },
             { label: 'OG Engine vs Puppeteer', link: '/compare/puppeteer/' },
+            { label: 'Self-Hosting (Docker)', link: '/self-hosting/docker/' },
           ],
         },
-        { label: 'Pricing & Limits', link: '/pricing/' },
+        { label: 'Pricing', link: '/pricing/' },
         { label: 'Changelog', link: '/changelog/' },
         {
           label: 'Blog',
