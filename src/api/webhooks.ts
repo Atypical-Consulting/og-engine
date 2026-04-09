@@ -51,16 +51,30 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      const email = session.customer_email;
+      const email = session.customer_email ?? session.customer_details?.email ?? null;
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
 
-      if (!email || !subscriptionId) break;
+      console.log('[webhook] checkout session:', {
+        email,
+        customerId,
+        subscriptionId,
+        hasCustomerDetails: !!session.customer_details,
+      });
+
+      if (!email || !subscriptionId) {
+        console.warn('[webhook] missing email or subscriptionId, skipping');
+        break;
+      }
 
       const sub = await stripe.subscriptions.retrieve(subscriptionId);
       const priceId = sub.items.data[0]?.price?.id;
       const plan = priceId ? getPlanFromPriceId(priceId) : null;
-      if (!plan) break;
+      console.log('[webhook] resolved plan:', { priceId, plan });
+      if (!plan) {
+        console.warn('[webhook] no plan matched price ID, skipping');
+        break;
+      }
 
       let record = findApiKeyByEmail(email);
       if (record) {
