@@ -242,3 +242,59 @@
   padding-left: 16px;
   padding-right: 16px;
 }
+
+/* ── Code drawer ── */
+.pg-code-drawer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 60%;
+  display: flex;
+  flex-direction: column;
+  background: #0a0d16;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transform: translateY(calc(100% - 40px));
+  transition: transform 0.25s ease;
+  z-index: 20;
+}
+
+.pg-code-drawer.open {
+  transform: translateY(0);
+}
+
+.pg-code-drawer-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 40px;
+  padding: 0 16px;
+  background: transparent;
+  border: none;
+  color: var(--pg-text-secondary);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  flex: 0 0 40px;
+}
+
+.pg-code-drawer-handle:hover {
+  color: #e2e8f0;
+}
+
+.pg-code-drawer-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 0 16px 16px;
+}
+
+@media (max-width: 767px) {
+  .pg-code-drawer {
+    position: fixed;
+    max-height: 70vh;
+  }
+}
