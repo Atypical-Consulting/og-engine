@@ -17,6 +17,7 @@ export default defineConfig({
       ],
       components: {
         Head: './src/components/Head.astro',
+        SocialIcons: './src/components/SocialIcons.astro',
       },
       head: [
         // Default OG image for all pages

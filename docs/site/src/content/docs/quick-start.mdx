@@ -4,10 +4,16 @@ description: Get your API key and generate your first OG image in under 2 minute
 ---
 
 import PlaygroundContextual from '../../components/PlaygroundContextual';
+import SignupForm from '../../components/SignupForm';
 
 ## Step 1 — Get Your API Key
 
 Sign up with your email. No credit card required.
+
+<SignupForm client:load />
+
+<details>
+<summary>Prefer the terminal? Use curl instead.</summary>
 
 ```bash
 curl -X POST https://og-engine.com/auth/register \
@@ -19,7 +25,9 @@ curl -X POST https://og-engine.com/auth/register \
 { "apiKey": "oge_sk_a1b2c3...", "plan": "free", "limit": 500, "message": "API key also sent to you@example.com" }
 ```
 
-Your API key is in the response above — ready to use immediately. A copy is also sent to your email for safekeeping.
+The API key is returned in the response and also emailed as a backup.
+
+</details>
 
 ## Step 2 — Generate Your First Image
 
