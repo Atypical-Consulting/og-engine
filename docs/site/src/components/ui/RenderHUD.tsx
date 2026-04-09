@@ -51,7 +51,12 @@ export function RenderHUD({ renderTime, info, accent, variant = 'toolbar' }: Pro
         </>
       )}
       <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
-      <span style={{ color: '#fbbf24' }}>{Math.round(850 / Math.max(0.1, renderTime))}x</span>
+      <span
+        style={{ color: '#fbbf24', fontVariantNumeric: 'tabular-nums' }}
+        title="Speedup vs Puppeteer warm render (~130ms baseline)"
+      >
+        {Math.round(130 / Math.max(0.1, renderTime))}× vs Puppeteer
+      </span>
     </div>
   );
 }

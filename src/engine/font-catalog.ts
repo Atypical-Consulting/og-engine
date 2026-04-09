@@ -378,3 +378,55 @@ const CURATED_NAMES = new Set(CURATED_FONTS.map((f) => f.name));
 export function isCuratedFont(name: string): boolean {
   return CURATED_NAMES.has(name);
 }
+
+/**
+ * A tighter, tasteful subset surfaced in the playground font picker.
+ * The full CURATED_FONTS list remains accepted by the API; this is
+ * purely a UI narrowing so first-time users don't drown in choice.
+ *
+ * Rules for inclusion:
+ * - Distinctive voice (skip "also a sans" clones)
+ * - Good at display sizes
+ * - At least one bold weight available
+ * - Covers the typographic range: modern/neo-grotesk, friendly, geometric,
+ *   editorial serif, display, mono, script — one of each, no filler.
+ */
+const FEATURED_NAMES = new Set<string>([
+  // Modern / neo-grotesk sans — the workhorses
+  'Inter',
+  'Space Grotesk',
+  'DM Sans',
+  'Plus Jakarta Sans',
+  'Manrope',
+  'Onest',
+  // Friendly / humanist sans
+  'Outfit',
+  'Sora',
+  'Figtree',
+  // Editorial serif
+  'Playfair Display',
+  'Fraunces',
+  'Cormorant Garamond',
+  'EB Garamond',
+  'Source Serif 4',
+  // Display / headline
+  'Bebas Neue',
+  'Anton',
+  'Archivo Black',
+  'Bricolage Grotesque',
+  'Syne',
+  'Unbounded',
+  // Monospace (for tech/dev feel)
+  'JetBrains Mono',
+  'IBM Plex Mono',
+  'Geist Mono',
+  // Handwriting / script (for personality)
+  'Caveat',
+  'Pacifico',
+]);
+
+export const FEATURED_FONTS: CuratedFontEntry[] = CURATED_FONTS.filter((f) => FEATURED_NAMES.has(f.name));
+
+export function isFeaturedFont(name: string): boolean {
+  return FEATURED_NAMES.has(name);
+}

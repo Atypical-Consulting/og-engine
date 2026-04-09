@@ -37,72 +37,86 @@ export interface TemplateResult {
 
 export type TemplateFn = (input: TemplateInput) => TemplateResult;
 
-// ─── Shared helpers ──────────────────────────────────────────
+// ─── helpers ─────────────────────────────────────────────────
 
-function drawBackground(ctx: SKRSContext2D, w: number, h: number, gradientSlug: string) {
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace('#', '');
+  const n =
+    h.length === 3
+      ? h
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : h;
+  const i = Number.parseInt(n, 16);
+  return [(i >> 16) & 255, (i >> 8) & 255, i & 255];
+}
+
+function rgba(hex: string, a: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function paintBackgroundMesh(ctx: SKRSContext2D, W: number, H: number, gradientSlug: string, accent: string) {
   const grad = getGradientBySlug(gradientSlug);
-  const bg = ctx.createLinearGradient(0, 0, w * 0.3, h);
-  bg.addColorStop(0, grad.stops[0]);
-  bg.addColorStop(1, grad.stops[1]);
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, w, h);
+  const base = ctx.createLinearGradient(0, 0, 0, H);
+  base.addColorStop(0, grad.stops[0]);
+  base.addColorStop(1, grad.stops[1]);
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, W, H);
+
+  const g1 = ctx.createRadialGradient(W * 0.2, H * 0.18, 0, W * 0.2, H * 0.18, Math.max(W, H) * 0.6);
+  g1.addColorStop(0, rgba(accent, 0.22));
+  g1.addColorStop(0.5, rgba(accent, 0.06));
+  g1.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g1;
+  ctx.fillRect(0, 0, W, H);
+
+  const g2 = ctx.createRadialGradient(W * 0.88, H * 0.95, 0, W * 0.88, H * 0.95, W * 0.55);
+  g2.addColorStop(0, rgba(accent, 0.1));
+  g2.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g2;
+  ctx.fillRect(0, 0, W, H);
+
+  const sheen = ctx.createLinearGradient(0, 0, W, H);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.02)');
+  sheen.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = sheen;
+  ctx.fillRect(0, 0, W, H);
 }
 
-function drawBgImage(ctx: SKRSContext2D, img: Image, w: number, h: number, opacity: number) {
-  // Draw image scaled to cover
-  const imgW = img.width;
-  const imgH = img.height;
-  const scale = Math.max(w / imgW, h / imgH);
-  const dw = imgW * scale;
-  const dh = imgH * scale;
-  const dx = (w - dw) / 2;
-  const dy = (h - dh) / 2;
+function drawBgImage(ctx: SKRSContext2D, img: Image, W: number, H: number, opacity: number) {
+  const iw = img.width;
+  const ih = img.height;
+  const scale = Math.max(W / iw, H / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  const dx = (W - dw) / 2;
+  const dy = (H - dh) / 2;
   ctx.drawImage(img, dx, dy, dw, dh);
-
-  // Dark overlay
-  ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
-  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = `rgba(6,8,12,${opacity})`;
+  ctx.fillRect(0, 0, W, H);
 }
 
-function drawGrid(ctx: SKRSContext2D, w: number, h: number, accent: string, s: number) {
-  ctx.strokeStyle = `${accent}05`;
-  ctx.lineWidth = 1;
-  const gs = 50 * s;
-  for (let x = 0; x < w; x += gs) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, h);
-    ctx.stroke();
+function fitTitleLines(
+  text: string,
+  family: string,
+  baseSize: number,
+  weight: number,
+  cW: number,
+  maxLines: number,
+  scale: number,
+): { lines: ReturnType<typeof measureLines>; fontSize: number } {
+  let size = baseSize;
+  const min = Math.max(20, Math.round(baseSize * 0.7));
+  while (size > min) {
+    const font = `${weight} ${Math.round(size * scale)}px ${family}`;
+    const lines = measureLines(text, font, cW);
+    if (lines.length <= maxLines) return { lines, fontSize: size };
+    size -= 2;
   }
-  for (let y = 0; y < h; y += gs) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-    ctx.stroke();
-  }
-}
-
-function drawGlow(ctx: SKRSContext2D, w: number, h: number, accent: string) {
-  const g = ctx.createRadialGradient(w * 0.15, h * 0.8, 0, w * 0.15, h * 0.8, w * 0.35);
-  g.addColorStop(0, `${accent}10`);
-  g.addColorStop(1, 'transparent');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
-}
-
-function drawFrame(ctx: SKRSContext2D, w: number, h: number, accent: string, s: number) {
-  ctx.strokeStyle = `${accent}12`;
-  ctx.lineWidth = 1;
-  const fr = 24 * s;
-  ctx.strokeRect(fr, fr, w - fr * 2, h - fr * 2);
-}
-
-function drawBadge(ctx: SKRSContext2D, w: number, h: number, accent: string, s: number, px: number) {
-  ctx.fillStyle = `${accent}33`;
-  ctx.font = `500 ${Math.round(12 * s)}px monospace`;
-  ctx.textAlign = 'right';
-  ctx.fillText('\u26A1 no browser required', w - px, h - px * 0.7);
-  ctx.textAlign = 'left';
+  const font = `${weight} ${Math.round(size * scale)}px ${family}`;
+  return { lines: measureLines(text, font, cW), fontSize: size };
 }
 
 // ─── DEFAULT template ────────────────────────────────────────
@@ -113,110 +127,109 @@ const defaultTemplate: TemplateFn = (input) => {
   const { accent, layout, fontFamily: ff, titleSize, descSize, gradient: gradientSlug } = style;
   const s = Math.max(W, H) / 1200;
 
-  // Background
   if (bgImage) {
     drawBgImage(ctx, bgImage, W, H, overlayOpacity);
+    ctx.fillStyle = rgba(accent, 0.05);
+    ctx.fillRect(0, 0, W, H);
   } else {
-    drawBackground(ctx, W, H, gradientSlug);
+    paintBackgroundMesh(ctx, W, H, gradientSlug, accent);
   }
-  drawGrid(ctx, W, H, accent, s);
-  drawGlow(ctx, W, H, accent);
 
-  const px = Math.round(64 * s);
+  const px = Math.round(84 * s);
   const cW = W - px * 2;
   const isCenter = layout === 'center';
   const isBottom = layout === 'bottom';
 
-  // Tag
-  const tagFont = `600 ${Math.round(14 * s)}px ${ff}`;
-  let tagH = 0;
-  if (tag) tagH = 28 * s + 16 * s;
+  const { lines: tLines, fontSize: eff } = fitTitleLines(title || '', ff, titleSize, 800, cW, fmt.maxTitleLines, s);
+  const tFont = `800 ${Math.round(eff * s)}px ${ff}`;
+  const tLH = Math.round(eff * 1.08 * s);
+  const visibleT = tLines.slice(0, fmt.maxTitleLines);
 
-  // Title
-  const tFont = `800 ${Math.round(titleSize * s)}px ${ff}`;
-  const tLH = Math.round(titleSize * 1.2 * s);
-  const tLines = measureLines(title || 'Untitled', tFont, cW);
-  const maxT = fmt.maxTitleLines;
-  const visibleT = tLines.slice(0, maxT);
-
-  // Description
   const dFont = `400 ${Math.round(descSize * s)}px ${ff}`;
-  const dLH = Math.round(descSize * 1.55 * s);
+  const dLH = Math.round(descSize * 1.5 * s);
   const dLines = measureLines(description || '', dFont, cW);
-  const maxD = fmt.maxDescLines;
-  const visibleD = dLines.slice(0, maxD);
+  const visibleD = dLines.slice(0, fmt.maxDescLines);
 
-  // Author
-  const aFont = `700 ${Math.round(18 * s)}px ${ff}`;
-  const aH = 24 * s;
-  const g3v = 20 * s;
-  const g4v = 28 * s;
-  const totalH = tagH + visibleT.length * tLH + g3v + visibleD.length * dLH + g4v + aH;
+  const tagFont = `600 ${Math.round(14 * s)}px ${ff}`;
+  const tagH = tag ? 26 * s : 0;
+  const tagGap = tag ? 24 * s : 0;
+  const descGap = visibleD.length ? 24 * s : 0;
+  const authorGap = author ? 40 * s : 0;
+  const authorH = author ? 20 * s : 0;
+  const totalH = tagH + tagGap + visibleT.length * tLH + descGap + visibleD.length * dLH + authorGap + authorH;
 
-  let yPos = isBottom ? H - px - totalH : isCenter ? (H - totalH) / 2 : Math.round(px * 1.2);
+  let yPos = isBottom ? H - px - totalH : isCenter ? (H - totalH) / 2 : Math.round(px * 1.1);
   const align: CanvasTextAlign = isCenter ? 'center' : 'left';
   const xP = isCenter ? W / 2 : px;
   ctx.textAlign = align;
   ctx.textBaseline = 'top';
 
-  // Accent bar
-  if (!isCenter && !bgImage) {
-    ctx.fillStyle = accent;
-    ctx.fillRect(px, yPos, 4 * s, Math.min(visibleT.length * tLH + tagH, 80 * s));
-  }
-
-  // Tag pill
   if (tag) {
     ctx.font = tagFont;
-    const tagText = tag.toUpperCase();
-    const tgW = measureTextWidth(tagText, tagFont);
-    const pW = tgW + 24 * s;
-    const pH = 28 * s;
-    const pX = isCenter ? (W - pW) / 2 : px;
-    ctx.fillStyle = `${accent}18`;
-    ctx.beginPath();
-    ctx.roundRect(pX, yPos, pW, pH, pH / 2);
-    ctx.fill();
-    ctx.fillStyle = accent;
-    ctx.font = tagFont;
-    ctx.textAlign = 'center';
-    ctx.fillText(tagText, pX + pW / 2, yPos + pH / 2 - 7 * s);
-    ctx.textAlign = align;
-    yPos += tagH;
+    const dot = '\u25cf';
+    const tagText = tag;
+    if (isCenter) {
+      const dotW = measureTextWidth(`${dot}  `, tagFont);
+      const tgW = measureTextWidth(tagText, tagFont);
+      const startX = W / 2 - (dotW + tgW) / 2;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = accent;
+      ctx.fillText(dot, startX, yPos + 2 * s);
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.fillText(tagText, startX + dotW, yPos + 2 * s);
+      ctx.textAlign = align;
+    } else {
+      ctx.fillStyle = accent;
+      ctx.fillText(dot, xP, yPos + 2 * s);
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.fillText(tagText, xP + measureTextWidth(`${dot}  `, tagFont), yPos + 2 * s);
+    }
+    yPos += tagH + tagGap;
   }
 
-  // Title
-  ctx.fillStyle = '#f1f5f9';
+  ctx.fillStyle = '#f8fafc';
   ctx.font = tFont;
   for (let i = 0; i < visibleT.length; i++) {
     let t = visibleT[i].text;
-    if (i === visibleT.length - 1 && tLines.length > maxT) t += '\u2026';
+    if (i === visibleT.length - 1 && tLines.length > fmt.maxTitleLines) t += '\u2026';
     ctx.fillText(t, xP, yPos);
     yPos += tLH;
   }
-  yPos += g3v;
+  yPos += descGap;
 
-  // Description
-  ctx.fillStyle = bgImage ? '#d1d5db' : '#94a3b8';
+  ctx.fillStyle = bgImage ? 'rgba(226,232,240,0.88)' : 'rgba(203,213,225,0.78)';
   ctx.font = dFont;
   for (let i = 0; i < visibleD.length; i++) {
     let t = visibleD[i].text;
-    if (i === visibleD.length - 1 && dLines.length > maxD) t += '\u2026';
+    if (i === visibleD.length - 1 && dLines.length > fmt.maxDescLines) t += '\u2026';
     ctx.fillText(t, xP, yPos);
     yPos += dLH;
   }
-  yPos += g4v;
+  yPos += authorGap;
 
-  // Author
-  ctx.fillStyle = accent;
-  ctx.font = aFont;
-  ctx.fillText(author || '', xP, yPos);
+  if (author) {
+    const aFont = `500 ${Math.round(16 * s)}px ${ff}`;
+    ctx.font = aFont;
+    const bullet = '\u2014';
+    const name = ` ${author}`;
+    if (isCenter) {
+      const bw = measureTextWidth(bullet + name, aFont);
+      const startX = W / 2 - bw / 2;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = accent;
+      ctx.fillText(bullet, startX, yPos);
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.fillText(name, startX + measureTextWidth(bullet, aFont), yPos);
+      ctx.textAlign = align;
+    } else {
+      ctx.fillStyle = accent;
+      ctx.fillText(bullet, xP, yPos);
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.fillText(name, xP + measureTextWidth(bullet, aFont), yPos);
+    }
+  }
 
-  // Badge + Frame
-  drawBadge(ctx, W, H, accent, s, px);
-  drawFrame(ctx, W, H, accent, s);
-
-  const overflow = tLines.length > maxT || dLines.length > maxD;
+  const overflow = tLines.length > fmt.maxTitleLines || dLines.length > fmt.maxDescLines;
   return {
     titleTotalLines: tLines.length,
     titleVisibleLines: visibleT.length,
@@ -227,7 +240,6 @@ const defaultTemplate: TemplateFn = (input) => {
 };
 
 // ─── SOCIAL-CARD template ────────────────────────────────────
-// Large centered title, minimal design, no description by default
 
 const socialCardTemplate: TemplateFn = (input) => {
   const { ctx, width: W, height: H, format: fmt, content, style, bgImage, overlayOpacity } = input;
@@ -238,75 +250,53 @@ const socialCardTemplate: TemplateFn = (input) => {
   if (bgImage) {
     drawBgImage(ctx, bgImage, W, H, overlayOpacity);
   } else {
-    drawBackground(ctx, W, H, gradientSlug);
+    paintBackgroundMesh(ctx, W, H, gradientSlug, accent);
   }
 
-  // Subtle radial glow in center
-  const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.5);
-  g.addColorStop(0, `${accent}08`);
-  g.addColorStop(1, 'transparent');
-  ctx.fillStyle = g;
+  const gcenter = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.55);
+  gcenter.addColorStop(0, rgba(accent, 0.14));
+  gcenter.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gcenter;
   ctx.fillRect(0, 0, W, H);
 
-  const px = Math.round(80 * s);
+  const px = Math.round(110 * s);
   const cW = W - px * 2;
 
-  // Title — large, centered
-  const bigSize = Math.round(titleSize * 1.15);
-  const tFont = `800 ${Math.round(bigSize * s)}px ${ff}`;
-  const tLH = Math.round(bigSize * 1.15 * s);
-  const tLines = measureLines(title || 'Untitled', tFont, cW);
-  const maxT = fmt.maxTitleLines;
-  const visibleT = tLines.slice(0, maxT);
-
+  const bigSize = Math.round(titleSize * 1.3);
+  const { lines: tLines, fontSize: eff } = fitTitleLines(title || '', ff, bigSize, 800, cW, fmt.maxTitleLines, s);
+  const tFont = `800 ${Math.round(eff * s)}px ${ff}`;
+  const tLH = Math.round(eff * 1.06 * s);
+  const visibleT = tLines.slice(0, fmt.maxTitleLines);
   const totalTextH = visibleT.length * tLH;
-  let yPos = (H - totalTextH) / 2 - 20 * s;
 
+  if (tag) {
+    ctx.font = `500 ${Math.round(15 * s)}px ${ff}`;
+    ctx.fillStyle = accent;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`\u25cf  ${tag}`, W / 2, (H - totalTextH) / 2 - 52 * s);
+  }
+
+  let yPos = (H - totalTextH) / 2;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#ffffff';
   ctx.font = tFont;
   for (let i = 0; i < visibleT.length; i++) {
     let t = visibleT[i].text;
-    if (i === visibleT.length - 1 && tLines.length > maxT) t += '\u2026';
+    if (i === visibleT.length - 1 && tLines.length > fmt.maxTitleLines) t += '\u2026';
     ctx.fillText(t, W / 2, yPos);
     yPos += tLH;
   }
 
-  // Tag pill above title
-  if (tag) {
-    const tagFont = `600 ${Math.round(13 * s)}px ${ff}`;
-    ctx.font = tagFont;
-    const tagText = tag.toUpperCase();
-    const tgW = measureTextWidth(tagText, tagFont);
-    const pW = tgW + 28 * s;
-    const pH = 26 * s;
-    const pX = (W - pW) / 2;
-    const pY = (H - totalTextH) / 2 - 20 * s - pH - 16 * s;
-    ctx.fillStyle = `${accent}20`;
-    ctx.beginPath();
-    ctx.roundRect(pX, pY, pW, pH, pH / 2);
-    ctx.fill();
-    ctx.fillStyle = accent;
-    ctx.textAlign = 'center';
-    ctx.fillText(tagText, W / 2, pY + pH / 2 - 7 * s);
-  }
-
-  // Author at bottom center
   if (author) {
-    ctx.fillStyle = accent;
-    ctx.font = `700 ${Math.round(16 * s)}px ${ff}`;
+    ctx.font = `500 ${Math.round(17 * s)}px ${ff}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.68)';
     ctx.textAlign = 'center';
-    ctx.fillText(author, W / 2, H - px * 0.8);
+    ctx.fillText(`\u2014 ${author}`, W / 2, H - px * 0.6);
   }
 
-  // Accent line under title
-  ctx.fillStyle = accent;
-  ctx.fillRect(W / 2 - 30 * s, yPos + 12 * s, 60 * s, 3 * s);
-
-  drawFrame(ctx, W, H, accent, s);
-
-  const overflow = tLines.length > maxT;
+  const overflow = tLines.length > fmt.maxTitleLines;
   return {
     titleTotalLines: tLines.length,
     titleVisibleLines: visibleT.length,
@@ -317,7 +307,6 @@ const socialCardTemplate: TemplateFn = (input) => {
 };
 
 // ─── BLOG-HERO template ─────────────────────────────────────
-// Background image focused, text overlay at bottom
 
 const blogHeroTemplate: TemplateFn = (input) => {
   const { ctx, width: W, height: H, format: fmt, content, style, bgImage, overlayOpacity } = input;
@@ -325,99 +314,83 @@ const blogHeroTemplate: TemplateFn = (input) => {
   const { accent, fontFamily: ff, titleSize, descSize, gradient: gradientSlug } = style;
   const s = Math.max(W, H) / 1200;
 
-  // Background — image preferred, gradient fallback
   if (bgImage) {
-    drawBgImage(ctx, bgImage, W, H, 0); // no full overlay
+    drawBgImage(ctx, bgImage, W, H, 0);
   } else {
-    drawBackground(ctx, W, H, gradientSlug);
-    drawGrid(ctx, W, H, accent, s);
+    paintBackgroundMesh(ctx, W, H, gradientSlug, accent);
   }
 
-  // Bottom gradient overlay for text legibility
-  const bottomGrad = ctx.createLinearGradient(0, H * 0.35, 0, H);
+  const bottomGrad = ctx.createLinearGradient(0, H * 0.25, 0, H);
   bottomGrad.addColorStop(0, 'rgba(0,0,0,0)');
-  bottomGrad.addColorStop(0.5, `rgba(0,0,0,${overlayOpacity * 0.6})`);
-  bottomGrad.addColorStop(1, `rgba(0,0,0,${overlayOpacity})`);
+  bottomGrad.addColorStop(0.55, `rgba(0,0,0,${overlayOpacity * 0.7})`);
+  bottomGrad.addColorStop(1, `rgba(0,0,0,${Math.min(0.92, overlayOpacity + 0.18)})`);
   ctx.fillStyle = bottomGrad;
   ctx.fillRect(0, 0, W, H);
 
-  const px = Math.round(64 * s);
+  const px = Math.round(84 * s);
   const cW = W - px * 2;
 
-  // Title
-  const tFont = `800 ${Math.round(titleSize * s)}px ${ff}`;
-  const tLH = Math.round(titleSize * 1.2 * s);
-  const tLines = measureLines(title || 'Untitled', tFont, cW);
-  const maxT = fmt.maxTitleLines;
-  const visibleT = tLines.slice(0, maxT);
+  const { lines: tLines, fontSize: eff } = fitTitleLines(title || '', ff, titleSize, 800, cW, fmt.maxTitleLines, s);
+  const tFont = `800 ${Math.round(eff * s)}px ${ff}`;
+  const tLH = Math.round(eff * 1.08 * s);
+  const visibleT = tLines.slice(0, fmt.maxTitleLines);
 
-  // Description
   const dFont = `400 ${Math.round(descSize * s)}px ${ff}`;
-  const dLH = Math.round(descSize * 1.55 * s);
+  const dLH = Math.round(descSize * 1.5 * s);
   const dLines = measureLines(description || '', dFont, cW);
-  const maxD = fmt.maxDescLines;
-  const visibleD = dLines.slice(0, maxD);
+  const visibleD = dLines.slice(0, fmt.maxDescLines);
 
-  // Calculate bottom-anchored position
-  const aH = author ? 24 * s : 0;
-  const g3v = description ? 16 * s : 0;
-  const g4v = author ? 20 * s : 0;
-  const totalH = visibleT.length * tLH + g3v + visibleD.length * dLH + g4v + aH;
+  const tagH = tag ? 24 * s : 0;
+  const tagGap = tag ? 22 * s : 0;
+  const descGap = description ? 20 * s : 0;
+  const authorGap = author ? 32 * s : 0;
+  const authorH = author ? 20 * s : 0;
+  const totalH = tagH + tagGap + visibleT.length * tLH + descGap + visibleD.length * dLH + authorGap + authorH;
   let yPos = H - px - totalH;
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
 
-  // Tag pill (top-left floating)
   if (tag) {
-    const tagFont = `600 ${Math.round(13 * s)}px ${ff}`;
-    ctx.font = tagFont;
-    const tagText = tag.toUpperCase();
-    const tgW = measureTextWidth(tagText, tagFont);
-    const pW = tgW + 24 * s;
-    const pH = 26 * s;
+    ctx.font = `500 ${Math.round(14 * s)}px ${ff}`;
     ctx.fillStyle = accent;
-    ctx.beginPath();
-    ctx.roundRect(px, px, pW, pH, pH / 2);
-    ctx.fill();
-    ctx.fillStyle = '#000000';
-    ctx.textAlign = 'center';
-    ctx.fillText(tagText, px + pW / 2, px + pH / 2 - 7 * s);
-    ctx.textAlign = 'left';
+    ctx.fillText(`\u25cf  ${tag}`, px, yPos);
+    yPos += tagH + tagGap;
   }
 
-  // Title
   ctx.fillStyle = '#ffffff';
   ctx.font = tFont;
   for (let i = 0; i < visibleT.length; i++) {
     let t = visibleT[i].text;
-    if (i === visibleT.length - 1 && tLines.length > maxT) t += '\u2026';
+    if (i === visibleT.length - 1 && tLines.length > fmt.maxTitleLines) t += '\u2026';
     ctx.fillText(t, px, yPos);
     yPos += tLH;
   }
-  yPos += g3v;
+  yPos += descGap;
 
-  // Description
   if (description) {
-    ctx.fillStyle = '#d1d5db';
+    ctx.fillStyle = 'rgba(226,232,240,0.82)';
     ctx.font = dFont;
     for (let i = 0; i < visibleD.length; i++) {
       let t = visibleD[i].text;
-      if (i === visibleD.length - 1 && dLines.length > maxD) t += '\u2026';
+      if (i === visibleD.length - 1 && dLines.length > fmt.maxDescLines) t += '\u2026';
       ctx.fillText(t, px, yPos);
       yPos += dLH;
     }
-    yPos += g4v;
+    yPos += authorGap;
   }
 
-  // Author
   if (author) {
+    const aFont = `500 ${Math.round(15 * s)}px ${ff}`;
+    ctx.font = aFont;
     ctx.fillStyle = accent;
-    ctx.font = `700 ${Math.round(16 * s)}px ${ff}`;
-    ctx.fillText(author, px, yPos);
+    ctx.fillText('\u2014 ', px, yPos);
+    const dashW = measureTextWidth('\u2014 ', aFont);
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.fillText(author, px + dashW, yPos);
   }
 
-  const overflow = tLines.length > maxT || dLines.length > maxD;
+  const overflow = tLines.length > fmt.maxTitleLines || dLines.length > fmt.maxDescLines;
   return {
     titleTotalLines: tLines.length,
     titleVisibleLines: visibleT.length,
@@ -428,98 +401,93 @@ const blogHeroTemplate: TemplateFn = (input) => {
 };
 
 // ─── EMAIL-BANNER template ──────────────────────────────────
-// Horizontal layout with CTA-style design
 
 const emailBannerTemplate: TemplateFn = (input) => {
   const { ctx, width: W, height: H, format: fmt, content, style, bgImage, overlayOpacity } = input;
-  const { title, description, author } = content;
+  const { title, description, author, tag } = content;
   const { accent, fontFamily: ff, titleSize, descSize, gradient: gradientSlug } = style;
   const s = Math.max(W, H) / 1200;
 
   if (bgImage) {
     drawBgImage(ctx, bgImage, W, H, overlayOpacity);
   } else {
-    drawBackground(ctx, W, H, gradientSlug);
+    paintBackgroundMesh(ctx, W, H, gradientSlug, accent);
   }
 
-  // Accent strip on left
-  ctx.fillStyle = accent;
-  ctx.fillRect(0, 0, 6 * s, H);
-
-  // Subtle horizontal gradient accent
-  const hg = ctx.createLinearGradient(0, 0, W, 0);
-  hg.addColorStop(0, `${accent}0a`);
-  hg.addColorStop(1, 'transparent');
-  ctx.fillStyle = hg;
+  const rightGlow = ctx.createRadialGradient(W * 0.88, H * 0.5, 0, W * 0.88, H * 0.5, W * 0.55);
+  rightGlow.addColorStop(0, rgba(accent, 0.14));
+  rightGlow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rightGlow;
   ctx.fillRect(0, 0, W, H);
 
-  const px = Math.round(64 * s);
-  const leftPad = px + 10 * s; // extra for accent strip
-  const cW = W - leftPad - px;
+  const px = Math.round(88 * s);
+  const cW = W - px * 2;
 
-  // Title
-  const tFont = `800 ${Math.round(titleSize * s)}px ${ff}`;
-  const tLH = Math.round(titleSize * 1.2 * s);
-  const tLines = measureLines(title || 'Untitled', tFont, cW);
-  const maxT = Math.min(fmt.maxTitleLines, 2); // email banners: max 2 title lines
+  const maxT = Math.min(fmt.maxTitleLines, 2);
+  const { lines: tLines, fontSize: eff } = fitTitleLines(title || '', ff, titleSize, 800, cW, maxT, s);
+  const tFont = `800 ${Math.round(eff * s)}px ${ff}`;
+  const tLH = Math.round(eff * 1.1 * s);
   const visibleT = tLines.slice(0, maxT);
 
-  // Description
   const dFont = `400 ${Math.round(descSize * s)}px ${ff}`;
-  const dLH = Math.round(descSize * 1.55 * s);
+  const dLH = Math.round(descSize * 1.5 * s);
   const dLines = measureLines(description || '', dFont, cW);
-  const maxD = Math.min(fmt.maxDescLines, 2); // email banners: max 2 desc lines
+  const maxD = Math.min(fmt.maxDescLines, 2);
   const visibleD = dLines.slice(0, maxD);
 
-  // Vertically center content
-  const g3v = 12 * s;
-  const ctaH = author ? 44 * s : 0;
-  const ctaGap = author ? 24 * s : 0;
-  const totalH = visibleT.length * tLH + g3v + visibleD.length * dLH + ctaGap + ctaH;
+  const tagH = tag ? 22 * s : 0;
+  const tagGap = tag ? 18 * s : 0;
+  const descGap = 16 * s;
+  const ctaGap = author ? 30 * s : 0;
+  const ctaH = author ? 52 * s : 0;
+  const totalH = tagH + tagGap + visibleT.length * tLH + descGap + visibleD.length * dLH + ctaGap + ctaH;
   let yPos = (H - totalH) / 2;
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
 
-  // Title
-  ctx.fillStyle = '#f1f5f9';
+  if (tag) {
+    ctx.font = `500 ${Math.round(14 * s)}px ${ff}`;
+    ctx.fillStyle = accent;
+    ctx.fillText(`\u25cf  ${tag}`, px, yPos);
+    yPos += tagH + tagGap;
+  }
+
+  ctx.fillStyle = '#f8fafc';
   ctx.font = tFont;
   for (let i = 0; i < visibleT.length; i++) {
     let t = visibleT[i].text;
     if (i === visibleT.length - 1 && tLines.length > maxT) t += '\u2026';
-    ctx.fillText(t, leftPad, yPos);
+    ctx.fillText(t, px, yPos);
     yPos += tLH;
   }
-  yPos += g3v;
+  yPos += descGap;
 
-  // Description
-  ctx.fillStyle = '#94a3b8';
+  ctx.fillStyle = 'rgba(203,213,225,0.8)';
   ctx.font = dFont;
   for (let i = 0; i < visibleD.length; i++) {
     let t = visibleD[i].text;
     if (i === visibleD.length - 1 && dLines.length > maxD) t += '\u2026';
-    ctx.fillText(t, leftPad, yPos);
+    ctx.fillText(t, px, yPos);
     yPos += dLH;
   }
 
-  // CTA button (using author as CTA text)
   if (author) {
     yPos += ctaGap;
-    const ctaFont = `700 ${Math.round(15 * s)}px ${ff}`;
+    const ctaFont = `700 ${Math.round(16 * s)}px ${ff}`;
     ctx.font = ctaFont;
-    const ctaW = measureTextWidth(author, ctaFont) + 40 * s;
-    const ctaH2 = 40 * s;
+    const label = author;
+    const ctaW = measureTextWidth(label, ctaFont) + 64 * s;
+    const ctaH2 = 52 * s;
     ctx.fillStyle = accent;
     ctx.beginPath();
-    ctx.roundRect(leftPad, yPos, ctaW, ctaH2, 6 * s);
+    ctx.roundRect(px, yPos, ctaW, ctaH2, 10 * s);
     ctx.fill();
-    ctx.fillStyle = '#000000';
-    ctx.textAlign = 'center';
-    ctx.fillText(author, leftPad + ctaW / 2, yPos + ctaH2 / 2 - 8 * s);
+    ctx.fillStyle = '#06080c';
     ctx.textAlign = 'left';
+    ctx.fillText(label, px + 24 * s, yPos + ctaH2 / 2 - 8 * s);
+    ctx.fillText('\u2192', px + ctaW - 30 * s, yPos + ctaH2 / 2 - 8 * s);
   }
-
-  drawFrame(ctx, W, H, accent, s);
 
   const overflow = tLines.length > maxT || dLines.length > maxD;
   return {
@@ -531,7 +499,7 @@ const emailBannerTemplate: TemplateFn = (input) => {
   };
 };
 
-// ─── Template registry ───────────────────────────────────────
+// ─── registry ────────────────────────────────────────────────
 
 export const TEMPLATES: Record<string, TemplateFn> = {
   default: defaultTemplate,
