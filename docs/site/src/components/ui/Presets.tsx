@@ -1,7 +1,7 @@
 import type { Gradient } from '../engine/gradients';
 import type { FontEntry } from '../engine/fonts';
 import { GRADIENTS, ACCENTS } from '../engine/gradients';
-import { FONTS } from '../engine/fonts';
+import { FONTS, getFontByName } from '../engine/fonts';
 
 export interface PresetData {
   title: string;
@@ -24,7 +24,7 @@ const PRESETS: Array<{ name: string; emoji: string; data: PresetData }> = [
       title: 'We Just Launched on Product Hunt',
       description: 'The fastest way to generate OG images. No headless browser, no Puppeteer, just pure speed.',
       author: 'OG Engine', tag: 'Launch Day',
-      accent: '#38ef7d', gradient: GRADIENTS[0], fontEntry: FONTS[0],
+      accent: '#38ef7d', gradient: GRADIENTS[0], fontEntry: getFontByName('Outfit'),
       layout: 'left', titleSize: 52, descSize: 22,
     },
   },
@@ -35,7 +35,7 @@ const PRESETS: Array<{ name: string; emoji: string; data: PresetData }> = [
       title: 'Understanding Text Layout Algorithms',
       description: 'A deep dive into how modern engines break text into lines, handle bidirectional scripts, and measure grapheme clusters.',
       author: 'Engineering Blog', tag: 'Deep Dive',
-      accent: '#67e8f9', gradient: GRADIENTS[1], fontEntry: FONTS[2],
+      accent: '#67e8f9', gradient: GRADIENTS[1], fontEntry: getFontByName('Playfair Display'),
       layout: 'left', titleSize: 46, descSize: 20,
     },
   },
@@ -46,7 +46,7 @@ const PRESETS: Array<{ name: string; emoji: string; data: PresetData }> = [
       title: 'DevConf 2026',
       description: 'Join 2,000 developers for three days of talks, workshops, and hallway conversations.',
       author: 'June 15-17 \u00b7 Berlin', tag: 'Conference',
-      accent: '#c4b5fd', gradient: GRADIENTS[4], fontEntry: FONTS[3],
+      accent: '#c4b5fd', gradient: GRADIENTS[4], fontEntry: getFontByName('Sora'),
       layout: 'center', titleSize: 56, descSize: 22,
     },
   },
@@ -57,7 +57,7 @@ const PRESETS: Array<{ name: string; emoji: string; data: PresetData }> = [
       title: 'Introducing Batch Rendering',
       description: 'Generate thousands of images in a single API call. Perfect for e-commerce catalogs and dynamic content at scale.',
       author: 'OG Engine v2.0', tag: 'New Feature',
-      accent: '#fbbf24', gradient: GRADIENTS[2], fontEntry: FONTS[0],
+      accent: '#fbbf24', gradient: GRADIENTS[2], fontEntry: getFontByName('Outfit'),
       layout: 'left', titleSize: 48, descSize: 21,
     },
   },

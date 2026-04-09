@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { renderCard, type RenderResult } from './engine/canvas-renderer';
 import { apiRender, checkApiAvailable } from './engine/api-client';
 import { GRADIENTS, type Gradient } from './engine/gradients';
-import { FONTS, loadGoogleFont, type FontEntry } from './engine/fonts';
+import { FONTS, getFontByName, loadGoogleFont, type FontEntry } from './engine/fonts';
 import { FORMATS, type FormatKey } from './engine/formats';
 import { AccentPicker, FontPicker, LayoutPicker, GradientPicker, Slider } from './ui/StyleControls';
 import { TemplateSelector } from './ui/TemplateSelector';
@@ -25,7 +25,7 @@ export default function Playground() {
   const [layout, setLayout] = useState<'left' | 'center' | 'bottom'>('left');
   const [titleSize, setTitleSize] = useState(48);
   const [descSize, setDescSize] = useState(22);
-  const [fontEntry, setFontEntry] = useState<FontEntry>(FONTS[0]);
+  const [fontEntry, setFontEntry] = useState<FontEntry>(getFontByName('Outfit'));
   const [gradient, setGradient] = useState<Gradient>(GRADIENTS[0]);
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
   const [autoFit, setAutoFit] = useState(false);
