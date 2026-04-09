@@ -41,9 +41,12 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (_err) {
+  } catch (err) {
+    console.error('[webhook] signature verification failed:', err instanceof Error ? err.message : err);
     return c.json({ error: 'invalid_request', message: 'Invalid webhook signature.' }, 400);
   }
+
+  console.log('[webhook] received event:', event.type, event.id);
 
   switch (event.type) {
     case 'checkout.session.completed': {
