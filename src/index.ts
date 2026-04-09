@@ -59,9 +59,12 @@ if (authEnabled) {
   // Usage endpoint — requires auth
   app.use('/usage', authMiddleware());
 
-  // Custom templates — requires auth + Scale plan
-  app.use('/templates', authMiddleware(), planGate('custom_templates'));
-  app.use('/templates/*', authMiddleware(), planGate('custom_templates'));
+  // Custom templates — auth is applied per-route in src/api/templates.ts
+  // so it doesn't shadow the /templates/gallery/ docs page. planGate stays
+  // path-wide: it no-ops when no apiKey is set in context, so docs requests
+  // fall through to the static handler.
+  app.use('/templates', planGate('custom_templates'));
+  app.use('/templates/*', planGate('custom_templates'));
 
   // Webhook triggers — requires auth
   app.use('/triggers', authMiddleware());
