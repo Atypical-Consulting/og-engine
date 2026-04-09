@@ -1,5 +1,22 @@
 /* docs/site/src/components/playground.css */
 
+/*
+ * Playground text color tokens.
+ *
+ * Use these for any new playground UI text. They were introduced to fix
+ * WCAG AA contrast failures (slate-600 was 2.64:1 against the dark bg).
+ *
+ *   --pg-text-secondary  ~7:1   form labels, helper text, sublabels
+ *   --pg-text-tertiary   ~9:1   icon-only buttons, key UI affordances
+ *
+ * Reference from inline React styles via var():
+ *   style={{ color: 'var(--pg-text-secondary)' }}
+ */
+.pg-layout {
+  --pg-text-secondary: #94a3b8; /* slate-400 */
+  --pg-text-tertiary: #cbd5e1;  /* slate-300 */
+}
+
 /* ── Focus states (accessibility) ── */
 .pg-input {
   transition: box-shadow 0.15s ease, border-color 0.15s ease;

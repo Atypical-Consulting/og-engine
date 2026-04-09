@@ -88,7 +88,7 @@ export function Presets({ onSelect, accent }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 9, color: '#475569', letterSpacing: 2, textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 9, color: 'var(--pg-text-secondary)', letterSpacing: 2, textTransform: 'uppercase' }}>
           Quick Start
         </span>
         <button
@@ -98,7 +98,7 @@ export function Presets({ onSelect, accent }: Props) {
           style={{
             padding: '4px 10px', borderRadius: 6, fontSize: 10, fontFamily: 'inherit',
             border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)',
-            color: '#64748b', cursor: 'pointer', letterSpacing: 0.5,
+            color: 'var(--pg-text-secondary)', cursor: 'pointer', letterSpacing: 0.5,
           }}
         >
           🎲 Randomize
@@ -112,13 +112,13 @@ export function Presets({ onSelect, accent }: Props) {
             onClick={() => onSelect(p.data)}
             style={{
               padding: '10px 12px', borderRadius: 8, textAlign: 'left',
-              border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.05)',
               cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
             <div style={{ fontSize: 16, marginBottom: 4 }}>{p.emoji}</div>
             <div style={{ fontSize: 11, color: '#e2e8f0', fontWeight: 600, marginBottom: 2 }}>{p.name}</div>
-            <div style={{ fontSize: 9, color: '#475569', lineHeight: 1.3 }}>{p.data.tag}</div>
+            <div style={{ fontSize: 9, color: 'var(--pg-text-secondary)', lineHeight: 1.3 }}>{p.data.tag}</div>
           </button>
         ))}
       </div>
