@@ -184,15 +184,14 @@ export default function Playground() {
 
   return (
     <div
-      className="pg-layout not-content"
+      className="pg-layout pg-app-shell not-content"
       style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, minHeight: 600,
         ['--pg-accent-alpha' as string]: accentAlpha,
         ['--pg-accent-border' as string]: accentBorder,
       }}
     >
       {/* Controls column */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="pg-controls-col">
         <Presets onSelect={applyPreset} accent={accent} />
 
         <Section title="Format">
@@ -312,7 +311,7 @@ export default function Playground() {
       </div>
 
       {/* Preview column */}
-      <div className="pg-preview-col" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="pg-preview-col" style={{ gap: 12 }}>
         {/* Upgrade / Signup CTA — persistent path from playground into the funnel */}
         <a
           href={useApi ? '/pricing/' : '/quick-start/'}

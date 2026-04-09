@@ -155,25 +155,68 @@
   transform: translateY(0);
 }
 
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .pg-layout {
-    grid-template-columns: 1fr !important;
-  }
+/* ── App shell layout ── */
+.pg-app-shell {
+  /* Full-bleed escape from Starlight splash content container */
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  /* Fill the viewport below the Starlight header */
+  min-height: calc(100dvh - var(--sl-nav-height, 60px));
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 0;
+  background: #050810;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
 
-  .pg-preview-col {
-    position: sticky !important;
-    top: 16px;
-    z-index: 5;
+@media (max-width: 1023px) and (min-width: 768px) {
+  .pg-app-shell {
+    grid-template-columns: 340px 1fr;
   }
 }
 
-/* ── Sticky preview (desktop) ── */
-@media (min-width: 769px) {
+@media (max-width: 767px) {
+  .pg-app-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    min-height: auto;
+  }
+}
+
+.pg-controls-col {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100dvh - var(--sl-nav-height, 60px));
+  padding: 16px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pg-preview-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+  max-height: calc(100dvh - var(--sl-nav-height, 60px));
+}
+
+@media (max-width: 767px) {
+  .pg-controls-col {
+    max-height: none;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    order: 2;
+  }
   .pg-preview-col {
-    position: sticky;
-    top: 20px;
-    align-self: start;
+    max-height: none;
+    order: 1;
+  }
+  .pg-preview-col .pg-canvas-wrapper {
+    max-height: 50vh;
   }
 }
 
