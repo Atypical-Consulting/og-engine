@@ -239,6 +239,7 @@ export default function Playground() {
               }}
             />
             <input
+              id="pg-custom-color-hex"
               type="text"
               value={accent}
               onChange={(e) => {
