@@ -34,7 +34,7 @@ function opts(template: string): RenderOptions {
 }
 
 describe('template registry', () => {
-  it('exports 8 templates', () => {
+  it('exports 12 templates', () => {
     expect(TEMPLATE_NAMES).toEqual([
       'default',
       'social-card',
@@ -44,6 +44,10 @@ describe('template registry', () => {
       'github-repo',
       'product-card',
       'testimonial',
+      'news-article',
+      'pricing',
+      'profile-card',
+      'announcement',
     ]);
   });
 
@@ -134,5 +138,43 @@ describe('each template renders correctly', () => {
     expect(result.titleVisibleLines).toBeGreaterThan(0);
     expect(result.descTotalLines).toBe(0);
     expect(result.descVisibleLines).toBe(0);
+  });
+
+  it('renders news-article template', async () => {
+    const result = await renderCard({
+      ...opts('news-article'),
+      variables: { source: 'TechCrunch', date: 'April 10, 2026', category: 'AI' },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
+  });
+
+  it('renders pricing template', async () => {
+    const result = await renderCard({
+      ...opts('pricing'),
+      variables: {
+        plan: 'Pro',
+        price: '€39',
+        period: '/mo',
+        features: 'Unlimited renders,Priority support,Custom templates',
+        cta: 'Start Free Trial',
+      },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
+  });
+
+  it('renders profile-card template', async () => {
+    const result = await renderCard({
+      ...opts('profile-card'),
+      variables: { name: 'Jane Doe', role: 'CTO', company: 'Acme Corp', bio: 'Building the future of tech.' },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
+  });
+
+  it('renders announcement template', async () => {
+    const result = await renderCard({
+      ...opts('announcement'),
+      variables: { subtitle: 'The fastest image API just got faster.', cta: 'Try It Free' },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
   });
 });
