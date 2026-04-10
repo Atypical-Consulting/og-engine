@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { renderRoute } from '../../src/api/render';
 import { registerFonts } from '../../src/engine/fonts';
+import { renderSchema } from '../../src/schemas/request';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = new Hono();
@@ -111,5 +112,47 @@ describe('POST /render', () => {
     });
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toBe('image/webp');
+  });
+});
+
+describe('renderSchema with variables', () => {
+  it('accepts a request with variables', () => {
+    const result = renderSchema.safeParse({
+      format: 'og',
+      title: 'My Product',
+      variables: {
+        price: '€129',
+        badge: '-20%',
+        rating: '4.8',
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.variables).toEqual({
+        price: '€129',
+        badge: '-20%',
+        rating: '4.8',
+      });
+    }
+  });
+
+  it('defaults variables to empty object when omitted', () => {
+    const result = renderSchema.safeParse({
+      format: 'og',
+      title: 'Test',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.variables).toEqual({});
+    }
+  });
+
+  it('rejects non-string variable values', () => {
+    const result = renderSchema.safeParse({
+      format: 'og',
+      title: 'Test',
+      variables: { count: 42 },
+    });
+    expect(result.success).toBe(false);
   });
 });
