@@ -199,6 +199,8 @@ async function start() {
 
 start();
 
+export { app };
+
 export default {
   port: PORT,
   fetch: app.fetch,
