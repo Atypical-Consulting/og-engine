@@ -21,6 +21,7 @@ import { dashboardRoutes } from './dashboard/routes';
 import { registerFonts } from './engine/fonts';
 import { authMiddleware, optionalAuthMiddleware, planGate, usageTracking } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
+import { openapiRoutes } from './openapi/swagger';
 
 const app = new Hono();
 
@@ -112,6 +113,9 @@ app.use('/dashboard', csrfMiddleware());
 app.use('/dashboard/*', sessionMiddleware());
 app.use('/dashboard/*', csrfMiddleware());
 app.route('/', dashboardRoutes);
+
+// ─── OpenAPI / Swagger ──────────────────────────────────────
+app.route('/', openapiRoutes);
 
 // ─── Public routes ───────────────────────────────────────────
 app.route('/', authRoutes);
