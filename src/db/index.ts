@@ -254,6 +254,25 @@ export function findUserByApiKey(apiKeyId: string): UserRecord | null {
   return findUserById(key.user_id);
 }
 
+export function listApiKeysByUserId(userId: string): ApiKeyRecord[] {
+  const d = getDb();
+  return d
+    .prepare('SELECT * FROM api_keys WHERE user_id = ? AND active = 1 ORDER BY created_at DESC')
+    .all(userId) as ApiKeyRecord[];
+}
+
+export function deactivateApiKey(id: string): void {
+  const d = getDb();
+  d.prepare('UPDATE api_keys SET active = 0 WHERE id = ?').run(id);
+}
+
+export function regenerateApiKey(id: string): ApiKeyRecord {
+  const d = getDb();
+  const newKey = generateApiKey();
+  d.prepare('UPDATE api_keys SET key = ? WHERE id = ?').run(newKey, id);
+  return d.prepare('SELECT * FROM api_keys WHERE id = ?').get(id) as ApiKeyRecord;
+}
+
 export function findUserByStripeSubscription(subscriptionId: string): UserRecord | null {
   const d = getDb();
   return (
@@ -435,6 +454,18 @@ export function deleteCustomTemplate(id: string): void {
   d.prepare('DELETE FROM custom_templates WHERE id = ?').run(id);
 }
 
+export function listCustomTemplatesByUser(userId: string): CustomTemplateRecord[] {
+  const d = getDb();
+  return d
+    .prepare(
+      `SELECT ct.* FROM custom_templates ct
+       JOIN api_keys ak ON ct.api_key_id = ak.id
+       WHERE ak.user_id = ?
+       ORDER BY ct.created_at DESC`,
+    )
+    .all(userId) as CustomTemplateRecord[];
+}
+
 // ─── Webhooks ────────────────────────────────────────────────
 
 export interface WebhookRecord {
@@ -482,6 +513,18 @@ export function listWebhooks(apiKeyId: string): WebhookRecord[] {
 export function deleteWebhook(id: string): void {
   const d = getDb();
   d.prepare('UPDATE webhooks SET active = 0 WHERE id = ?').run(id);
+}
+
+export function listWebhooksByUser(userId: string): WebhookRecord[] {
+  const d = getDb();
+  return d
+    .prepare(
+      `SELECT w.* FROM webhooks w
+       JOIN api_keys ak ON w.api_key_id = ak.id
+       WHERE ak.user_id = ? AND w.active = 1
+       ORDER BY w.created_at DESC`,
+    )
+    .all(userId) as WebhookRecord[];
 }
 
 // ─── Token Hashing ───────────────────────────────────────────
