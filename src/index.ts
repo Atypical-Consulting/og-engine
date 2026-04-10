@@ -8,6 +8,7 @@ import { billingRoute } from './api/billing';
 import { healthRoute } from './api/health';
 import { registerRoute } from './api/register';
 import { renderRoute } from './api/render';
+import { renderFromUrlRoute } from './api/render-from-url';
 import { templatesRoute } from './api/templates';
 import { triggersRoute } from './api/triggers';
 import { usageRoute } from './api/usage';
@@ -32,6 +33,7 @@ app.use(
       'X-Layout-Overflow',
       'X-Batch-Count',
       'X-Cache',
+      'X-Source-URL',
       'X-RateLimit-Limit',
       'X-RateLimit-Remaining',
       'X-RateLimit-Reset',
@@ -42,6 +44,7 @@ app.use(
 // Rate limiting on render endpoints
 app.use('/render', rateLimit());
 app.use('/render/batch', rateLimit());
+app.use('/render/from-url', rateLimit());
 app.use('/validate', rateLimit());
 
 // Auth middleware — conditionally applied based on AUTH_ENABLED env var
@@ -52,6 +55,7 @@ if (authEnabled) {
   // Protected endpoints — require API key + track usage
   app.use('/render', authMiddleware(), usageTracking('/render'));
   app.use('/render/batch', authMiddleware(), planGate('batch'), usageTracking('/render/batch'));
+  app.use('/render/from-url', authMiddleware(), usageTracking('/render/from-url'));
 
   // Optional auth for /validate (per DECISIONS.md Decision 3)
   app.use('/validate', optionalAuthMiddleware());
@@ -83,6 +87,7 @@ app.route('/', adminRoute);
 // ─── API routes ──────────────────────────────────────────────
 app.route('/', validateRoute);
 app.route('/', renderRoute);
+app.route('/', renderFromUrlRoute);
 app.route('/', batchRoute);
 app.route('/', usageRoute);
 app.route('/', templatesRoute);

@@ -144,3 +144,42 @@ describe('renderCustomTemplate', () => {
     expect(result.titleVisibleLines).toBeGreaterThan(0);
   });
 });
+
+describe('renderCustomTemplate with named images', () => {
+  it('renders image layer with source referencing a named image (graceful skip when missing)', () => {
+    // Test that the template renders without error when named images is empty
+    // and source references a missing image (should skip gracefully).
+    const canvas = createCanvas(1200, 630);
+    const ctx = canvas.getContext('2d');
+
+    const def = parseDef({
+      name: 'test-named-img',
+      layers: [
+        { type: 'fill', color: '#000000' },
+        { type: 'image', source: 'logo', x: 50, y: 50, width: 200, height: 200 },
+        {
+          type: 'text',
+          content: '{{title}}',
+          fontSize: 48,
+          x: 100,
+          y: 300,
+          width: 1000,
+          color: '#ffffff',
+        },
+      ],
+    });
+
+    const result = renderCustomTemplate(
+      def,
+      ctx,
+      1200,
+      630,
+      { title: 'Test', description: '', author: '', tag: '' },
+      { accent: '#38ef7d', fontFamily: 'Outfit' },
+      null,
+      {}, // empty named images — logo should be skipped gracefully
+    );
+
+    expect(result.overflow).toBe(false);
+  });
+});
