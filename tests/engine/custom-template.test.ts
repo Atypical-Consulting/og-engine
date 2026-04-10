@@ -75,6 +75,7 @@ describe('renderCustomTemplate', () => {
       { title: 'Hello Custom', description: '', author: '', tag: '' },
       { accent: '#38ef7d', fontFamily: 'Outfit' },
       null,
+      {},
     );
 
     expect(result.titleTotalLines).toBeGreaterThan(0);
@@ -101,6 +102,7 @@ describe('renderCustomTemplate', () => {
       { title: 'Title', description: 'Desc', author: 'Claude', tag: 'AI' },
       { accent: '#ff0000', fontFamily: 'Outfit' },
       null,
+      {},
     );
 
     expect(result).toBeDefined();
@@ -136,6 +138,7 @@ describe('renderCustomTemplate', () => {
       { title: 'Multi Layer', description: '', author: '', tag: '' },
       { accent: '#38ef7d', fontFamily: 'Outfit' },
       null,
+      {},
     );
 
     expect(result.titleVisibleLines).toBeGreaterThan(0);

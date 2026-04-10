@@ -29,6 +29,8 @@ function defaultOptions(overrides: Partial<RenderOptions> = {}): RenderOptions {
     autoFit: false,
     outputFormat: 'png',
     outputQuality: 90,
+    variables: {},
+    namedImages: {},
     ...overrides,
   };
 }
@@ -148,5 +150,43 @@ describe('renderCard with timing', () => {
   it('does not return phases when timing is false or omitted', async () => {
     const result = await renderCard(defaultOptions());
     expect(result.phases).toBeUndefined();
+  });
+});
+
+describe('renderCard with variables', () => {
+  it('renders with custom variables without error', async () => {
+    const result = await renderCard({
+      ...defaultOptions(),
+      variables: { price: '€129', badge: '-20%' },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
+  });
+
+  it('passes variables through to custom templates', async () => {
+    const result = await renderCard({
+      ...defaultOptions(),
+      variables: { headline: 'Custom Headline' },
+      customTemplateDefinition: {
+        name: 'test-vars',
+        layers: [
+          { type: 'fill', color: '#000000' },
+          {
+            type: 'text',
+            content: '{{headline}}',
+            fontSize: 48,
+            fontWeight: 'bold',
+            align: 'left',
+            lineHeight: 1.2,
+            ellipsis: false,
+            x: 100,
+            y: 100,
+            width: 1000,
+            color: '#ffffff',
+          },
+        ],
+      },
+      template: 'custom:test-vars',
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
   });
 });
