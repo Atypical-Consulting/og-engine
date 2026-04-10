@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-OG Engine currently operates as an API-only service with a separate Astro/Starlight documentation site. Users register via `POST /register`, receive an API key, and manage billing through Stripe's hosted portal. There is no user-facing dashboard, no login flow, and no OpenAPI spec.
+OG Engine currently operates as an API-only service with a separate Astro/Starlight documentation site. Users register via `POST /auth/register`, receive an API key, and manage billing through Stripe's hosted portal. There is no user-facing dashboard, no login flow, and no OpenAPI spec.
 
 This spec adds three capabilities:
 
@@ -22,32 +22,24 @@ All three live inside the existing Hono process as new route groups.
 
 ## 2. Architecture
 
-### Route Namespacing
+### Route Strategy
 
-Existing API endpoints move under `/api/*`:
+**Existing API endpoints stay where they are.** No route renaming — this avoids breaking the SDK (`sdk/index.ts` hardcodes paths like `/render`), the playground (`api-client.ts` hardcodes `/render`), and any external consumers.
 
-| Before | After |
-|---|---|
-| `POST /render` | `POST /api/render` |
-| `POST /validate` | `POST /api/validate` |
-| `POST /render/from-url` | `POST /api/render/from-url` |
-| `POST /render/batch` | `POST /api/render/batch` |
-| `GET /health` | `GET /api/health` |
-| `POST /register` | `POST /api/register` |
-| `GET /usage` | `GET /api/usage` |
-| `POST /templates` | `POST /api/templates` |
-| `GET /templates/:id` | `GET /api/templates/:id` |
-| `POST /triggers` | `POST /api/triggers` |
-| `GET /billing/portal` | `GET /api/billing/portal` |
-| `POST /webhooks/stripe` | `POST /api/webhooks/stripe` |
-| `POST /admin/reset-free-quotas` | `POST /api/admin/reset-free-quotas` |
+Existing routes (unchanged):
+
+- `POST /render`, `POST /validate`, `POST /render/from-url`, `POST /render/batch`
+- `GET /health`, `GET /usage`
+- `POST /auth/register` (existing registration endpoint — see Section 3 for changes)
+- `POST /templates`, `GET /templates/:id`, `POST /triggers`
+- `GET /billing/portal`, `POST /webhooks/stripe`, `POST /admin/reset-free-quotas`
 
 New route groups:
 
-- **`/auth/*`** — login page, magic link sending, token verification, logout
+- **`/auth/*`** — login page, magic link sending, token verification, logout (extends existing `/auth/register`)
 - **`/dashboard/*`** — all 8 dashboard sections (HTML pages / htmx partials)
 - **`/docs`** — Swagger UI
-- **`/api/openapi.json`** — raw OpenAPI 3.1 spec
+- **`/openapi.json`** — raw OpenAPI 3.1 spec
 
 ### Single Process
 
@@ -85,11 +77,21 @@ The dashboard, auth, and Swagger routes are added to the existing Hono server. N
 
 When a user verifies a magic link for the first time (no existing `users` row for that email):
 
-1. Create a `users` row
+1. Create a `users` row with quota fields (`calls_limit`, `calls_used`, `period_start`) migrated from the API key level (see Section 6)
 2. If an `api_keys` row exists with the same email, link it via `user_id` FK
 3. If no `api_keys` row exists, create a free-tier API key automatically
 
 Returning users just get a new session — no account creation.
+
+### Existing `POST /auth/register` Endpoint
+
+The current `POST /auth/register` endpoint (returns an API key immediately + sends welcome email) **remains unchanged** for programmatic key creation. It continues to work without a dashboard login — this is important for developers who just want an API key via curl.
+
+When a user later logs into the dashboard via magic link using the same email, their existing API key is linked to the new user account.
+
+### Unauthenticated Dashboard Access
+
+Any request to `/dashboard/*` without a valid session cookie redirects to `GET /auth/login` with a `302`. The `returnTo` query param preserves the original URL so the user lands on the right page after login.
 
 ---
 
@@ -155,7 +157,7 @@ The server detects htmx requests via the `HX-Request` header:
 
 - Current plan name, price, and next billing date
 - Usage meter (same as overview)
-- **"Manage Subscription" button** — regular link (not htmx) to Stripe Customer Portal via `GET /api/billing/portal`. Handles upgrade, downgrade, cancellation, and payment method updates.
+- **"Manage Subscription" button** — regular link (not htmx) to Stripe Customer Portal via `GET /billing/portal`. Handles upgrade, downgrade, cancellation, and payment method updates.
 - Recent invoices (fetched from Stripe API on page load)
 
 #### 4.5 Usage Analytics (`GET /dashboard/usage`)
@@ -182,7 +184,7 @@ The server detects htmx requests via the `HX-Request` header:
 #### 4.8 Settings (`GET /dashboard/settings`)
 
 - Email display (read-only — changing email requires a new magic link verification)
-- Notification preferences (email on quota warning, weekly usage digest)
+- Notification preferences (email on quota warning at 80% and 100%)
 - **Delete account** (`hx-delete="/dashboard/settings/account"` with `hx-confirm`) — deletes user, revokes all keys, cancels Stripe subscription
 
 ### htmx Interaction Summary
@@ -204,14 +206,16 @@ The server detects htmx requests via the `HX-Request` header:
 
 Use `@hono/zod-openapi` to define API routes with Zod schemas that auto-generate an OpenAPI 3.1 spec.
 
+**Zod v4 compatibility:** The project uses Zod v4 (`^4.3.6`). Before implementation, verify that `@hono/zod-openapi` supports Zod v4. If it does not, the fallback approach is to write the OpenAPI spec manually as a JSON file (derived from the existing Zod schemas) and serve it statically — this avoids a Zod downgrade.
+
 ### Routes
 
 - **`GET /docs`** — Swagger UI served via `@hono/swagger-ui`
-- **`GET /api/openapi.json`** — raw OpenAPI 3.1 JSON spec
+- **`GET /openapi.json`** — raw OpenAPI 3.1 JSON spec
 
 ### Scope
 
-Only `/api/*` endpoints are documented. Dashboard (`/dashboard/*`) and auth (`/auth/*`) routes are internal HTML and excluded from the API spec.
+Only the public API endpoints are documented (`/render`, `/validate`, `/health`, etc.). Dashboard (`/dashboard/*`) and auth (`/auth/*`) routes are internal HTML and excluded from the API spec.
 
 ### Migration
 
@@ -226,7 +230,7 @@ To:
 ```typescript
 const renderRoute = createRoute({
   method: 'post',
-  path: '/api/render',
+  path: '/render',
   request: { body: { content: { 'application/json': { schema: renderSchema } } } },
   responses: { 200: { description: 'Rendered image', content: { 'image/png': {} } } },
 })
@@ -237,12 +241,22 @@ Business logic in handlers remains unchanged. This is a refactor of route wiring
 
 ### New Dependencies
 
-- `@hono/zod-openapi` — route definitions with Zod schema integration
+- `@hono/zod-openapi` — route definitions with Zod schema integration (pending Zod v4 compatibility check)
 - `@hono/swagger-ui` — Swagger UI middleware
 
 ---
 
 ## 6. Database Schema Changes
+
+### Quota Model Change
+
+**Quotas move from per-key to per-user.** Currently each `api_keys` row has its own `calls_limit` / `calls_used` counters. With multiple keys per user, this would let users bypass quotas by creating extra keys. The new model stores quota fields on the `users` table, and all API keys for a user share a single quota.
+
+The `calls_limit`, `calls_used`, and `period_start` columns are removed from `api_keys` and added to `users`. The auth middleware now looks up the user (via `api_keys.user_id`) and checks `users.calls_used` instead of `api_keys.calls_used`.
+
+### Consolidating `usage_log` into `render_history`
+
+The existing `usage_log` table tracks `api_key_id`, `endpoint`, `render_time_ms`, `format`, `created_at`. The new `render_history` table tracks the same fields plus `request_payload` and `user_id`. Rather than maintaining two overlapping tables, **`usage_log` is replaced by `render_history`**. All existing usage queries are updated to read from `render_history`.
 
 ### New Tables
 
@@ -250,6 +264,12 @@ Business logic in handlers remains unchanged. This is a refactor of route wiring
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
+  plan TEXT NOT NULL DEFAULT 'free',
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  calls_limit INTEGER NOT NULL DEFAULT 500,
+  calls_used INTEGER NOT NULL DEFAULT 0,
+  period_start TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   active INTEGER NOT NULL DEFAULT 1
 );
@@ -276,6 +296,7 @@ CREATE TABLE render_history (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   api_key_id TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
+  endpoint TEXT NOT NULL,
   request_payload TEXT NOT NULL,
   format TEXT NOT NULL,
   template TEXT,
@@ -287,7 +308,17 @@ CREATE TABLE render_history (
 ### Modified Tables
 
 ```sql
+-- Link keys to users
 ALTER TABLE api_keys ADD COLUMN user_id TEXT REFERENCES users(id);
+
+-- Remove quota fields from api_keys (now on users table)
+-- Note: SQLite doesn't support DROP COLUMN before 3.35.0.
+-- Implementation should recreate the table without these columns.
+-- Columns to remove: plan, stripe_customer_id, stripe_subscription_id,
+--                     calls_limit, calls_used, period_start
+
+-- Drop usage_log (replaced by render_history)
+DROP TABLE IF EXISTS usage_log;
 ```
 
 ### Indexes
@@ -304,12 +335,20 @@ CREATE INDEX idx_api_keys_user_id ON api_keys(user_id);
 
 ### Data Migration
 
-For each existing `api_keys` row:
-
-1. Create a `users` row with the same email (deduplicate by email)
+1. For each existing `api_keys` row, create a `users` row with the same email (deduplicate by email), copying `plan`, `stripe_customer_id`, `stripe_subscription_id`, `calls_limit`, `calls_used`, and `period_start`
 2. Set `api_keys.user_id` to the new user's ID
+3. Migrate existing `usage_log` rows into `render_history` (with `request_payload` set to `'{}'` for historical entries)
+4. Drop `usage_log` table
+5. Recreate `api_keys` table without the migrated quota/plan columns
 
-Existing API key auth continues working unchanged.
+Existing API key auth continues working — the auth middleware is updated to look up `users` via the key's `user_id` for quota checks.
+
+### Session & Magic Link Cleanup
+
+Expired sessions and used/expired magic links accumulate over time. A cleanup function runs on a schedule:
+
+- **Trigger:** The existing `POST /admin/reset-free-quotas` monthly cron is extended to also purge expired sessions (older than 30 days) and magic links (older than 1 hour)
+- **Opportunistic cleanup:** The session middleware deletes the current session if it's expired (on-read pruning), so active traffic self-cleans
 
 ---
 
@@ -411,9 +450,11 @@ No template engine dependency. Fully type-safe via function signatures.
 
 | Package | Purpose |
 |---|---|
-| `@hono/zod-openapi` | Route definitions with OpenAPI spec generation |
+| `@hono/zod-openapi` | Route definitions with OpenAPI spec generation (pending Zod v4 check) |
 | `@hono/swagger-ui` | Swagger UI middleware |
-| `htmx.org` | Vendored static file (no npm runtime dependency) |
+
+**Vendored (no npm dependency):**
+- `htmx.min.js` — downloaded from htmx.org and committed to `src/static/`. No build step.
 
 ---
 
