@@ -93,7 +93,13 @@ authRoutes.post('/auth/send-link', async (c) => {
     if (returnTo) verifyParams.set('returnTo', returnTo);
     const verifyUrl = `${BASE_URL}/auth/verify?${verifyParams.toString()}`;
 
-    await sendMagicLinkEmail(email, verifyUrl);
+    try {
+      await sendMagicLinkEmail(email, verifyUrl);
+    } catch (emailErr) {
+      // Email delivery failure is non-fatal — the token is already in the DB.
+      // Log the error but still show the "check your email" page.
+      console.error('[auth] Failed to send magic link email:', emailErr);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'An error occurred.';
     if (message.includes('Too many login requests')) {
