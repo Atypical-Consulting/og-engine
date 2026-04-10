@@ -15,7 +15,9 @@ import { triggersRoute } from './api/triggers';
 import { usageRoute } from './api/usage';
 import { validateRoute } from './api/validate';
 import { webhooksRoute } from './api/webhooks';
+import { csrfMiddleware, sessionMiddleware } from './auth/middleware';
 import { authRoutes } from './auth/routes';
+import { dashboardRoutes } from './dashboard/routes';
 import { registerFonts } from './engine/fonts';
 import { authMiddleware, optionalAuthMiddleware, planGate, usageTracking } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
@@ -103,6 +105,13 @@ app.get('/static/:file', (c) => {
   c.header('Cache-Control', 'public, immutable, max-age=31536000');
   return c.body(content);
 });
+
+// ─── Dashboard (session-protected) ──────────────────────────
+app.use('/dashboard', sessionMiddleware());
+app.use('/dashboard', csrfMiddleware());
+app.use('/dashboard/*', sessionMiddleware());
+app.use('/dashboard/*', csrfMiddleware());
+app.route('/', dashboardRoutes);
 
 // ─── Public routes ───────────────────────────────────────────
 app.route('/', authRoutes);
