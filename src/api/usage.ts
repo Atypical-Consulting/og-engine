@@ -7,7 +7,7 @@ usageRoute.get('/usage', async (c) => {
   const record = c.get('apiKey' as never) as ApiKeyRecord | undefined;
   const user = c.get('user' as never) as UserRecord | undefined;
 
-  if (!record) {
+  if (!record || !user) {
     return c.json(
       {
         error: 'unauthorized',
@@ -18,15 +18,15 @@ usageRoute.get('/usage', async (c) => {
     );
   }
 
-  const stats = getUsageStats(record.id);
+  const stats = getUsageStats(user.id);
 
   return c.json({
-    plan: user?.plan ?? 'free',
+    plan: user.plan,
     quota: {
-      limit: user?.calls_limit ?? 500,
-      used: user?.calls_used ?? 0,
-      remaining: Math.max(0, (user?.calls_limit ?? 500) - (user?.calls_used ?? 0)),
-      periodStart: user?.period_start ?? null,
+      limit: user.calls_limit,
+      used: user.calls_used,
+      remaining: Math.max(0, user.calls_limit - user.calls_used),
+      periodStart: user.period_start,
     },
     usage: stats,
   });

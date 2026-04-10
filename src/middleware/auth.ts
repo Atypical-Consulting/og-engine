@@ -4,7 +4,7 @@ import {
   findApiKeyByKey,
   findUserById,
   incrementUsage,
-  logUsage,
+  logRender,
   type Plan,
   type UserRecord,
 } from '../db';
@@ -150,12 +150,28 @@ export function usageTracking(endpoint: string) {
     await next();
 
     // Only track on successful responses
-    if (record && c.res.status >= 200 && c.res.status < 300) {
-      if (user) {
-        incrementUsage(user.id);
-      }
+    if (record && user && c.res.status >= 200 && c.res.status < 300) {
+      incrementUsage(user.id);
       const renderTimeMs = c.res.headers.get('X-Render-Time-Ms');
-      logUsage(record.id, endpoint, renderTimeMs ? parseFloat(renderTimeMs) : undefined);
+      let requestPayload: object = {};
+      try {
+        const cloned = c.req.raw.clone();
+        const text = await cloned.text();
+        if (text) requestPayload = JSON.parse(text) as object;
+      } catch {
+        // ignore parse errors — payload stays {}
+      }
+      const format = (requestPayload as Record<string, unknown>)['format'] as string | undefined;
+      const template = (requestPayload as Record<string, unknown>)['template'] as string | undefined;
+      logRender({
+        userId: user.id,
+        apiKeyId: record.id,
+        endpoint,
+        requestPayload,
+        format: format ?? 'og',
+        template,
+        renderTimeMs: renderTimeMs ? parseFloat(renderTimeMs) : undefined,
+      });
     }
   };
 }

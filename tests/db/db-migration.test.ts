@@ -12,8 +12,12 @@ import {
   findUserByApiKey,
   findUserByEmail,
   findUserById,
+  getDailyUsage,
   getDb,
+  getRenderHistory,
+  getUsageStats,
   incrementUsage,
+  logRender,
   markMagicLinkUsed,
   purgeExpiredMagicLinks,
   purgeExpiredSessions,
@@ -267,5 +271,82 @@ describe('magic_links', () => {
     const kept = findMagicLinkByToken('purge-ml-3');
     expect(kept).not.toBeNull();
     void link2;
+  });
+});
+
+describe('render_history', () => {
+  it('logs a render and retrieves history', () => {
+    const user = createUser('history@example.com');
+    const key = createApiKey(user.id);
+
+    logRender({
+      userId: user.id,
+      apiKeyId: key.id,
+      endpoint: '/render',
+      requestPayload: { format: 'og', template: 'default', title: 'Hello' },
+      format: 'og',
+      template: 'default',
+      renderTimeMs: 22.5,
+    });
+
+    const history = getRenderHistory(user.id, { limit: 10, offset: 0 });
+    expect(history).toHaveLength(1);
+    const record = history[0];
+    expect(record.user_id).toBe(user.id);
+    expect(record.api_key_id).toBe(key.id);
+    expect(record.endpoint).toBe('/render');
+    expect(record.format).toBe('og');
+    expect(record.template).toBe('default');
+    expect(record.render_time_ms).toBe(22.5);
+    expect(JSON.parse(record.request_payload)).toMatchObject({ title: 'Hello' });
+    expect(record.id).toBeTruthy();
+    expect(record.created_at).toBeTruthy();
+  });
+
+  it('returns usage stats from render_history', () => {
+    const user = createUser('stats@example.com');
+    const key = createApiKey(user.id);
+
+    logRender({ userId: user.id, apiKeyId: key.id, endpoint: '/render', requestPayload: {}, format: 'og' });
+    logRender({ userId: user.id, apiKeyId: key.id, endpoint: '/render', requestPayload: {}, format: 'og' });
+    logRender({ userId: user.id, apiKeyId: key.id, endpoint: '/render/batch', requestPayload: {}, format: 'png' });
+
+    const stats = getUsageStats(user.id);
+    expect(stats.total).toBe(3);
+    expect(stats.byEndpoint['/render']).toBe(2);
+    expect(stats.byEndpoint['/render/batch']).toBe(1);
+    expect(stats.byFormat['og']).toBe(2);
+    expect(stats.byFormat['png']).toBe(1);
+  });
+
+  it('getDailyUsage returns daily counts', () => {
+    const user = createUser('daily@example.com');
+    const key = createApiKey(user.id);
+
+    logRender({ userId: user.id, apiKeyId: key.id, endpoint: '/render', requestPayload: {}, format: 'og' });
+    logRender({ userId: user.id, apiKeyId: key.id, endpoint: '/render', requestPayload: {}, format: 'og' });
+
+    const daily = getDailyUsage(user.id, 7);
+    expect(daily.length).toBeGreaterThanOrEqual(1);
+    const todayEntry = daily[daily.length - 1];
+    expect(todayEntry.count).toBe(2);
+    expect(todayEntry.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('isolates render_history by user', () => {
+    const user1 = createUser('iso1@example.com');
+    const user2 = createUser('iso2@example.com');
+    const key1 = createApiKey(user1.id);
+    const key2 = createApiKey(user2.id);
+
+    logRender({ userId: user1.id, apiKeyId: key1.id, endpoint: '/render', requestPayload: {}, format: 'og' });
+    logRender({ userId: user2.id, apiKeyId: key2.id, endpoint: '/render', requestPayload: {}, format: 'png' });
+
+    const h1 = getRenderHistory(user1.id, { limit: 10, offset: 0 });
+    const h2 = getRenderHistory(user2.id, { limit: 10, offset: 0 });
+    expect(h1).toHaveLength(1);
+    expect(h2).toHaveLength(1);
+    expect(h1[0].format).toBe('og');
+    expect(h2[0].format).toBe('png');
   });
 });

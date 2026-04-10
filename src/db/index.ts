@@ -51,12 +51,15 @@ export interface MagicLinkRecord {
   created_at: string;
 }
 
-export interface UsageLogRecord {
-  id: number;
-  api_key_id: string;
+export interface RenderHistoryRecord {
+  id: string;
+  user_id: string;
+  api_key_id: string | null;
   endpoint: string;
+  request_payload: string;
+  format: string;
+  template: string | null;
   render_time_ms: number | null;
-  format: string | null;
   created_at: string;
 }
 
@@ -99,18 +102,22 @@ function migrate(d: SqliteDatabase): void {
 
     CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
 
-    CREATE TABLE IF NOT EXISTS usage_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      api_key_id TEXT NOT NULL,
+    CREATE TABLE IF NOT EXISTS render_history (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      api_key_id TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
       endpoint TEXT NOT NULL,
+      request_payload TEXT NOT NULL DEFAULT '{}',
+      format TEXT NOT NULL,
+      template TEXT,
       render_time_ms REAL,
-      format TEXT,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);
     CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(email);
-    CREATE INDEX IF NOT EXISTS idx_usage_log_api_key ON usage_log(api_key_id);
+    CREATE INDEX IF NOT EXISTS idx_render_history_user_id ON render_history(user_id);
+    CREATE INDEX IF NOT EXISTS idx_render_history_created_at ON render_history(created_at);
 
     CREATE TABLE IF NOT EXISTS custom_templates (
       id TEXT PRIMARY KEY,
@@ -282,17 +289,35 @@ export function updateStripeInfo(userId: string, customerId: string, subscriptio
   );
 }
 
-// ─── Usage Log ───────────────────────────────────────────────
+// ─── Render History ──────────────────────────────────────────
 
-export function logUsage(apiKeyId: string, endpoint: string, renderTimeMs?: number, format?: string): void {
+export function logRender(opts: {
+  userId: string;
+  apiKeyId: string;
+  endpoint: string;
+  requestPayload: object;
+  format: string;
+  template?: string;
+  renderTimeMs?: number;
+}): void {
   const d = getDb();
   d.prepare(`
-    INSERT INTO usage_log (api_key_id, endpoint, render_time_ms, format, created_at)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(apiKeyId, endpoint, renderTimeMs ?? null, format ?? null, new Date().toISOString());
+    INSERT INTO render_history (id, user_id, api_key_id, endpoint, request_payload, format, template, render_time_ms, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    crypto.randomUUID(),
+    opts.userId,
+    opts.apiKeyId,
+    opts.endpoint,
+    JSON.stringify(opts.requestPayload),
+    opts.format,
+    opts.template ?? null,
+    opts.renderTimeMs ?? null,
+    toSqliteDateTime(new Date()),
+  );
 }
 
-export function getUsageStats(apiKeyId: string): {
+export function getUsageStats(userId: string): {
   total: number;
   byEndpoint: Record<string, number>;
   byFormat: Record<string, number>;
@@ -300,24 +325,47 @@ export function getUsageStats(apiKeyId: string): {
   const d = getDb();
 
   const total = (
-    d.prepare('SELECT COUNT(*) as count FROM usage_log WHERE api_key_id = ?').get(apiKeyId) as { count: number }
+    d.prepare('SELECT COUNT(*) as count FROM render_history WHERE user_id = ?').get(userId) as { count: number }
   ).count;
 
   const byEndpoint = d
-    .prepare('SELECT endpoint, COUNT(*) as count FROM usage_log WHERE api_key_id = ? GROUP BY endpoint')
-    .all(apiKeyId) as { endpoint: string; count: number }[];
+    .prepare('SELECT endpoint, COUNT(*) as count FROM render_history WHERE user_id = ? GROUP BY endpoint')
+    .all(userId) as { endpoint: string; count: number }[];
 
   const byFormat = d
-    .prepare(
-      'SELECT format, COUNT(*) as count FROM usage_log WHERE api_key_id = ? AND format IS NOT NULL GROUP BY format',
-    )
-    .all(apiKeyId) as { format: string; count: number }[];
+    .prepare('SELECT format, COUNT(*) as count FROM render_history WHERE user_id = ? GROUP BY format')
+    .all(userId) as { format: string; count: number }[];
 
   return {
     total,
     byEndpoint: Object.fromEntries(byEndpoint.map((r) => [r.endpoint, r.count])),
     byFormat: Object.fromEntries(byFormat.map((r) => [r.format, r.count])),
   };
+}
+
+export function getRenderHistory(userId: string, opts: { limit: number; offset: number }): RenderHistoryRecord[] {
+  const d = getDb();
+  return d
+    .prepare('SELECT * FROM render_history WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?')
+    .all(userId, opts.limit, opts.offset) as RenderHistoryRecord[];
+}
+
+export function getRenderHistoryById(id: string): RenderHistoryRecord | null {
+  const d = getDb();
+  return (d.prepare('SELECT * FROM render_history WHERE id = ?').get(id) as RenderHistoryRecord) ?? null;
+}
+
+export function getDailyUsage(userId: string, days = 30): { date: string; count: number }[] {
+  const d = getDb();
+  return d
+    .prepare(
+      `SELECT date(created_at) as date, COUNT(*) as count
+       FROM render_history
+       WHERE user_id = ? AND created_at >= date('now', ? || ' days')
+       GROUP BY date(created_at)
+       ORDER BY date ASC`,
+    )
+    .all(userId, `-${days}`) as { date: string; count: number }[];
 }
 
 // ─── Custom Templates ────────────────────────────────────────
