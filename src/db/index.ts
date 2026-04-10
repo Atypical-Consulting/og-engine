@@ -241,6 +241,12 @@ export function findApiKeyByEmail(email: string): ApiKeyRecord | null {
   return (d.prepare('SELECT * FROM api_keys WHERE email = ? AND active = 1').get(email) as ApiKeyRecord) ?? null;
 }
 
+export function linkApiKeysToUser(email: string, userId: string): number {
+  const d = getDb();
+  const result = d.prepare('UPDATE api_keys SET user_id = ? WHERE email = ? AND user_id IS NULL').run(userId, email);
+  return result.changes;
+}
+
 export function findUserByApiKey(apiKeyId: string): UserRecord | null {
   const d = getDb();
   const key = d.prepare('SELECT * FROM api_keys WHERE id = ?').get(apiKeyId) as ApiKeyRecord | null;
@@ -486,7 +492,7 @@ function hashToken(token: string): string {
 
 // ─── Sessions ────────────────────────────────────────────────
 
-function toSqliteDateTime(date: Date): string {
+export function toSqliteDateTime(date: Date): string {
   return date
     .toISOString()
     .replace('T', ' ')
