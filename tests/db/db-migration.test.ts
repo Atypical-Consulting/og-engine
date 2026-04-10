@@ -315,8 +315,8 @@ describe('render_history', () => {
     expect(stats.total).toBe(3);
     expect(stats.byEndpoint['/render']).toBe(2);
     expect(stats.byEndpoint['/render/batch']).toBe(1);
-    expect(stats.byFormat['og']).toBe(2);
-    expect(stats.byFormat['png']).toBe(1);
+    expect(stats.byFormat.og).toBe(2);
+    expect(stats.byFormat.png).toBe(1);
   });
 
   it('getDailyUsage returns daily counts', () => {

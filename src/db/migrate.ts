@@ -55,7 +55,7 @@ export function migrateToUserModel(): MigrationResult {
       db.prepare(`
         INSERT INTO users (id, email, plan, stripe_customer_id, stripe_subscription_id, calls_limit, calls_used, period_start, created_at, active)
         VALUES (?, ?, ?, NULL, NULL, ?, 0, ?, ?, 1)
-      `).run(userId, email, 'free', PLAN_LIMITS['free'], now, now);
+      `).run(userId, email, 'free', PLAN_LIMITS.free, now, now);
 
       emailToUserId.set(email, userId);
       usersCreated++;
