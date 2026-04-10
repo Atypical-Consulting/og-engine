@@ -1,5 +1,7 @@
+import { Hono } from 'hono';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { createMagicLinkToken } from '../../src/auth/magic-link';
+import { authRoutes } from '../../src/auth/routes';
 import { verifyMagicLink } from '../../src/auth/session';
 import { closeDb, createApiKey, createUser, findMagicLinkByToken, findSessionByToken } from '../../src/db';
 import { escapeHtml } from '../../src/utils/html';
@@ -138,5 +140,124 @@ describe('verifyMagicLink', () => {
 
   it('throws on invalid token', () => {
     expect(() => verifyMagicLink('not-a-real-token')).toThrow('Invalid or expired magic link');
+  });
+});
+
+// ─── Auth Routes Tests ──────────────────────────────────────
+
+describe('auth routes', () => {
+  let app: Hono;
+
+  beforeEach(() => {
+    closeDb();
+    process.env.DATABASE_URL = 'file::memory:';
+    app = new Hono();
+    app.route('/', authRoutes);
+  });
+
+  afterAll(() => {
+    closeDb();
+    delete process.env.DATABASE_URL;
+  });
+
+  it('GET /auth/login returns HTML login page', async () => {
+    const res = await app.request('/auth/login');
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('OG Engine');
+    expect(html).toContain('type="email"');
+    expect(html).toContain('Send magic link');
+  });
+
+  it('GET /auth/login includes returnTo in form', async () => {
+    const res = await app.request('/auth/login?returnTo=/dashboard/keys');
+    const html = await res.text();
+    expect(html).toContain('value="/dashboard/keys"');
+  });
+
+  it('GET /auth/login shows error message when provided', async () => {
+    const res = await app.request('/auth/login?error=Some%20error');
+    const html = await res.text();
+    expect(html).toContain('Some error');
+  });
+
+  it('POST /auth/send-link with JSON returns success', async () => {
+    const res = await app.request('/auth/send-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@example.com' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.message).toContain('Check your email');
+  });
+
+  it('POST /auth/send-link with invalid email returns 400', async () => {
+    const res = await app.request('/auth/send-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'not-an-email' }),
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe('validation_error');
+  });
+
+  it('POST /auth/send-link rate-limits after 3 requests', async () => {
+    for (let i = 0; i < 3; i++) {
+      await app.request('/auth/send-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'rl@example.com' }),
+      });
+    }
+    const res = await app.request('/auth/send-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'rl@example.com' }),
+    });
+    expect(res.status).toBe(429);
+  });
+
+  it('GET /auth/verify with valid token redirects to /dashboard', async () => {
+    const { token } = createMagicLinkToken('verify@example.com');
+    const res = await app.request(`/auth/verify?token=${token}`);
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toBe('/dashboard');
+    expect(res.headers.get('Set-Cookie')).toContain('oge_session=');
+  });
+
+  it('GET /auth/verify with invalid token redirects to login with error', async () => {
+    const res = await app.request('/auth/verify?token=bad-token');
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toContain('/auth/login?error=');
+  });
+
+  it('GET /auth/verify with returnTo redirects correctly', async () => {
+    const { token } = createMagicLinkToken('redir@example.com');
+    const res = await app.request(`/auth/verify?token=${token}&returnTo=/dashboard/keys`);
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toBe('/dashboard/keys');
+  });
+
+  it('GET /auth/verify rejects returnTo not starting with /dashboard', async () => {
+    const { token } = createMagicLinkToken('evil@example.com');
+    const res = await app.request(`/auth/verify?token=${token}&returnTo=https://evil.com`);
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toBe('/dashboard');
+  });
+
+  it('GET /auth/verify without token redirects to login', async () => {
+    const res = await app.request('/auth/verify');
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toContain('/auth/login');
+  });
+
+  it('POST /auth/logout clears cookie and redirects to login', async () => {
+    const res = await app.request('/auth/logout', { method: 'POST' });
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toBe('/auth/login');
+    expect(res.headers.get('Set-Cookie')).toContain('Max-Age=0');
   });
 });
