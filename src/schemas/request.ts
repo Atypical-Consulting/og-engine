@@ -21,6 +21,8 @@ export const renderSchema = z.object({
   description: z.string().default(''),
   author: z.string().default(''),
   tag: z.string().default(''),
+  variables: z.record(z.string(), z.string()).default({}),
+  images: z.record(z.string(), z.string().url('Each image value must be a valid URL.')).default({}),
   style: z
     .object({
       accent: z

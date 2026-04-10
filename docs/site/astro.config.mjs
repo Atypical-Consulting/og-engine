@@ -153,6 +153,7 @@ export default defineConfig({
           items: [
             { label: 'Overview', link: '/api-reference/overview/' },
             { label: 'POST /render', link: '/api-reference/render/' },
+            { label: 'POST /render/from-url', link: '/api-reference/render-from-url/' },
             { label: 'POST /validate', link: '/api-reference/validate/' },
             { label: 'POST /render/batch', link: '/api-reference/batch/' },
             { label: 'GET /health', link: '/api-reference/health/' },

@@ -59,6 +59,7 @@ Rate limiting headers are present on every authenticated response. See the [Erro
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | `POST` | `/render` | Required | Generate a single image |
+| `POST` | `/render/from-url` | Required | Fetch a URL, extract OG/meta tags, and render an image |
 | `POST` | `/validate` | Optional | Check if text fits a layout (free, unlimited) |
 | `POST` | `/render/batch` | Required | Generate multiple images (Pro+) |
 | `GET` | `/health` | Not required | Service status and capabilities |

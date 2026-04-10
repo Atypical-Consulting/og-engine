@@ -51,9 +51,18 @@ curl -X POST https://og-engine.com/render \
     "accent": "#38ef7d",
     "font": "Outfit",
     "layout": "left"
+  },
+  "variables": {
+    "author_name": "Jane Smith",
+    "read_time": "5 min read"
+  },
+  "images": {
+    "avatar": "https://example.com/avatar.png"
   }
 }
 ```
+
+`variables` and `images` let you inject dynamic content into templates that support them — useful for author names, custom labels, or per-post artwork.
 
 Try editing the title below — the image updates instantly:
 
@@ -94,8 +103,30 @@ const image = await og.render({
 await Bun.write('hello.png', image)
 ```
 
+## Step 6 — Zero-Config: Render From a URL (Optional)
+
+Skip the JSON entirely — point OG Engine at any URL and it scrapes the page's OG tags automatically:
+
+```bash
+curl -X POST https://og-engine.com/render/from-url \
+  -H "Authorization: Bearer oge_sk_a1b2c3..." \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://myblog.com/posts/my-article", "format": "og"}' \
+  --output article-card.png
+```
+
+Or with the SDK:
+
+```typescript
+const image = await og.renderFromUrl({
+  url: 'https://myblog.com/posts/my-article',
+  format: 'og',
+  style: { gradient: 'deep-sea' },
+})
+```
+
 ## Next Steps
 
-- Explore the [Templates Gallery](/templates/gallery/) to see all available designs
+- Explore the [Templates Gallery](/templates/gallery/) to see all 12 available designs
 - Learn about [Formats & Templates](/guides/formats-and-templates/) for different platforms
 - Dive into the [API Reference](/api-reference/overview/) for full endpoint details

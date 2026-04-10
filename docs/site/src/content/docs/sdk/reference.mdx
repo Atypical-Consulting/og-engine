@@ -16,13 +16,29 @@ og.render(request: RenderRequest): Promise<Buffer>
 ### RenderRequest type
 
 ```typescript
+type TemplateName =
+  | 'default'
+  | 'social-card'
+  | 'blog-hero'
+  | 'email-banner'
+  | 'product-card'
+  | 'event'
+  | 'testimonial'
+  | 'github-repo'
+  | 'news-article'
+  | 'pricing'
+  | 'profile-card'
+  | 'announcement'
+
 interface RenderRequest {
   format: 'og' | 'twitter' | 'square' | 'linkedin' | 'story'
-  template?: 'default' | 'social-card' | 'blog-hero' | 'email-banner'
+  template?: TemplateName
   title: string
   description?: string
   author?: string
   tag?: string
+  variables?: Record<string, string>
+  images?: Record<string, string>
   style?: {
     accent?: string
     font?: string
@@ -146,6 +162,49 @@ await Bun.write('images.zip', zipBuffer)
 ```
 
 The ZIP contents follow the same structure as the REST API: `0.png`, `1.png`, ... with an optional `errors.json` for partial failures.
+
+---
+
+## og.renderFromUrl()
+
+Generates an image by fetching metadata from a URL — the zero-config approach. OG Engine fetches Open Graph tags (`og:title`, `og:description`, `og:image`, etc.) from the target URL and uses them to populate the card automatically.
+
+```typescript
+og.renderFromUrl(request: RenderFromUrlRequest): Promise<Buffer>
+```
+
+### RenderFromUrlRequest type
+
+```typescript
+interface RenderFromUrlRequest {
+  url: string
+  format?: 'og' | 'twitter' | 'square' | 'linkedin' | 'story'
+  template?: TemplateName
+  style?: RenderRequest['style']
+  output?: RenderRequest['output']
+  overrides?: Partial<Pick<RenderRequest, 'title' | 'description' | 'author' | 'tag'>>
+}
+```
+
+### Example
+
+```typescript
+// Zero-config — title and description pulled from the page's OG tags
+const imageBuffer = await og.renderFromUrl({
+  url: 'https://myblog.com/posts/my-latest-article',
+  format: 'og',
+  style: { gradient: 'deep-sea', font: 'Outfit' },
+})
+
+await Bun.write('article-card.png', imageBuffer)
+
+// With overrides — override just the tag while keeping scraped title/description
+const imageBuffer2 = await og.renderFromUrl({
+  url: 'https://myblog.com/posts/my-latest-article',
+  format: 'twitter',
+  overrides: { tag: 'New Post' },
+})
+```
 
 ---
 

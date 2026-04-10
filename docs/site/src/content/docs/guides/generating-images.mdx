@@ -62,6 +62,59 @@ A fully specified request gives you control over every visual parameter:
 
 Any field you omit falls back to its default. You never need to send the full object.
 
+## Using `variables` and `images`
+
+Templates beyond the original four accept extra data through two top-level fields:
+
+- **`variables`** — arbitrary key-value pairs that the template maps to specific visual slots (price badge, speaker name, plan features, etc.)
+- **`images`** — named image inputs that the template composites onto the canvas (avatars, product shots, background images)
+
+### `variables` example — product card
+
+The `product-card` template uses `variables.price`, `variables.badge`, and `variables.brand` to render structured product information that doesn't fit the generic `title`/`description`/`author`/`tag` model:
+
+```json
+{
+  "format": "og",
+  "template": "product-card",
+  "title": "Minimal Leather Wallet",
+  "description": "Hand-stitched full-grain leather. Made to last.",
+  "variables": {
+    "price": "$79",
+    "badge": "New Arrival",
+    "brand": "Nomad"
+  },
+  "style": { "accent": "#f59e0b" }
+}
+```
+
+Unknown `variables` keys are silently ignored, so you can safely pass a superset of fields.
+
+### `images` example — profile card with avatar
+
+The `profile-card` template composites a circular avatar from `images.avatar`:
+
+```json
+{
+  "format": "twitter",
+  "template": "profile-card",
+  "title": "Philippe Matray",
+  "variables": {
+    "role": "Founder",
+    "company": "Atypical Consulting",
+    "bio": "Building OG Engine — server-side image generation without a browser."
+  },
+  "images": {
+    "avatar": "https://example.com/avatar.jpg"
+  },
+  "style": { "accent": "#38ef7d" }
+}
+```
+
+Each value in `images` is a publicly accessible URL. OG Engine fetches, decodes, and composites the image at render time. For privacy-sensitive or non-public images, use multipart form upload instead — see [Background Images](/guides/background-images/) for upload details.
+
+Each template documents its accepted `variables` keys and `images` slots in the [Templates Gallery](/templates/gallery/).
+
 ## Reading Response Headers
 
 Every successful `/render` response includes diagnostic headers alongside the image bytes:
@@ -134,6 +187,6 @@ Edit the title and description below to see how rendering works in real time:
 
 ## Next Steps
 
-- Read [Formats & Templates](/guides/formats-and-templates/) to understand the 5 format presets and 4 templates
+- Read [Formats & Templates](/guides/formats-and-templates/) to understand the 5 format presets and 12 templates
 - Learn how to [Customize Styles](/guides/customizing-styles/) with fonts, colors, and gradients
 - Explore the [POST /render API Reference](/api-reference/render/) for the complete field reference

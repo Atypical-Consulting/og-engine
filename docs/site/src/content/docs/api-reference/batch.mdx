@@ -28,6 +28,13 @@ POST https://og-engine.com/render/batch
       "template": "social-card",
       "title": "OG Engine 1.0 Released",
       "style": { "accent": "#f59e0b" }
+    },
+    {
+      "format": "og",
+      "template": "profile-card",
+      "title": "{{name}}",
+      "variables": { "name": "Jane Smith", "handle": "@janesmith" },
+      "images": { "avatar": "https://example.com/avatars/jane.jpg" }
     }
   ]
 }
@@ -37,7 +44,7 @@ POST https://og-engine.com/render/batch
 |---|---|---|---|---|
 | `items` | array | Yes | 1–100 items | Array of render request objects |
 
-Each item in `items` is a full render request body. See [POST /render](/api-reference/render/) for the complete field reference. Items can have different formats, templates, and styles.
+Each item in `items` is a full render request body. See [POST /render](/api-reference/render/) for the complete field reference. Items can have different formats, templates, and styles. Each item may also include `variables` and `images` fields to supply template interpolation data or named server-fetched images for that specific render.
 
 **Maximum items per request:** 100
 
