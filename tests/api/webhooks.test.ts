@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { closeDb, createApiKey, findApiKeyByEmail, updateStripeInfo } from '../../src/db';
+import { closeDb, createApiKey, createUser, findApiKeyByEmail, findUserByEmail, updateStripeInfo } from '../../src/db';
 
 // Mock stripe
 vi.mock('stripe', () => {
@@ -90,15 +90,19 @@ describe('POST /webhooks/stripe', () => {
       },
     });
     expect(res.status).toBe(200);
-    const record = findApiKeyByEmail('newpaid@example.com');
-    expect(record).not.toBeNull();
-    expect(record!.plan).toBe('pro');
-    expect(record!.stripe_customer_id).toBe('cus_123');
-    expect(record!.stripe_subscription_id).toBe('sub_123');
+    const user = findUserByEmail('newpaid@example.com');
+    expect(user).not.toBeNull();
+    expect(user!.plan).toBe('pro');
+    expect(user!.stripe_customer_id).toBe('cus_123');
+    expect(user!.stripe_subscription_id).toBe('sub_123');
+    // API key should also be created
+    const apiKey = findApiKeyByEmail('newpaid@example.com');
+    expect(apiKey).not.toBeNull();
   });
 
   it('upgrades existing free user on checkout', async () => {
-    createApiKey('existing@example.com', 'free');
+    const user = createUser('existing@example.com', 'free');
+    createApiKey(user.id);
     const app = await importWebhooksRoute();
     const res = await postWebhook(app, {
       type: 'checkout.session.completed',
@@ -111,29 +115,31 @@ describe('POST /webhooks/stripe', () => {
       },
     });
     expect(res.status).toBe(200);
-    const record = findApiKeyByEmail('existing@example.com');
-    expect(record!.plan).toBe('pro');
-    expect(record!.stripe_customer_id).toBe('cus_456');
+    const updated = findUserByEmail('existing@example.com');
+    expect(updated!.plan).toBe('pro');
+    expect(updated!.stripe_customer_id).toBe('cus_456');
   });
 
   it('handles customer.subscription.deleted — downgrades to free', async () => {
-    const record = createApiKey('cancel@example.com', 'pro');
-    updateStripeInfo(record.id, 'cus_789', 'sub_789');
+    const user = createUser('cancel@example.com', 'pro');
+    createApiKey(user.id);
+    updateStripeInfo(user.id, 'cus_789', 'sub_789');
     const app = await importWebhooksRoute();
     const res = await postWebhook(app, {
       type: 'customer.subscription.deleted',
       data: { object: { id: 'sub_789' } },
     });
     expect(res.status).toBe(200);
-    const updated = findApiKeyByEmail('cancel@example.com');
+    const updated = findUserByEmail('cancel@example.com');
     expect(updated!.plan).toBe('free');
   });
 
   it('handles invoice.paid — resets usage', async () => {
-    const record = createApiKey('invoice@example.com', 'pro');
-    updateStripeInfo(record.id, 'cus_inv', 'sub_inv');
+    const user = createUser('invoice@example.com', 'pro');
+    createApiKey(user.id);
+    updateStripeInfo(user.id, 'cus_inv', 'sub_inv');
     const { getDb } = await import('../../src/db');
-    getDb().prepare('UPDATE api_keys SET calls_used = 100 WHERE id = ?').run(record.id);
+    getDb().prepare('UPDATE users SET calls_used = 100 WHERE id = ?').run(user.id);
 
     const app = await importWebhooksRoute();
     const res = await postWebhook(app, {
@@ -147,7 +153,7 @@ describe('POST /webhooks/stripe', () => {
       },
     });
     expect(res.status).toBe(200);
-    const updated = findApiKeyByEmail('invoice@example.com');
+    const updated = findUserByEmail('invoice@example.com');
     expect(updated!.calls_used).toBe(0);
   });
 

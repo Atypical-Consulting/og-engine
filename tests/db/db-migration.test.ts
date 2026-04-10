@@ -1,5 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { closeDb, createUser, findUserByEmail, findUserById, getDb } from '../../src/db';
+import {
+  closeDb,
+  createApiKey,
+  createUser,
+  findUserByApiKey,
+  findUserByEmail,
+  findUserById,
+  getDb,
+  incrementUsage,
+} from '../../src/db';
 
 // Use in-memory database for tests
 beforeEach(() => {
@@ -86,5 +95,42 @@ describe('findUserById', () => {
   it('returns null for unknown id', () => {
     const found = findUserById('00000000-0000-0000-0000-000000000000');
     expect(found).toBeNull();
+  });
+});
+
+describe('API key linked to user', () => {
+  it('creates API key linked to user', () => {
+    const user = createUser('linked@example.com');
+    const key = createApiKey(user.id);
+    expect(key.user_id).toBe(user.id);
+    expect(key.email).toBe('linked@example.com');
+  });
+
+  it('finds user by API key id', () => {
+    const user = createUser('findbykey@example.com');
+    const key = createApiKey(user.id);
+    const found = findUserByApiKey(key.id);
+    expect(found).not.toBeNull();
+    expect(found!.id).toBe(user.id);
+    expect(found!.email).toBe('findbykey@example.com');
+  });
+
+  it('incrementUsage works on user level', () => {
+    const user = createUser('increment@example.com');
+    createApiKey(user.id);
+    incrementUsage(user.id);
+    incrementUsage(user.id);
+    incrementUsage(user.id);
+    const updated = findUserById(user.id);
+    expect(updated!.calls_used).toBe(3);
+  });
+
+  it('api_keys table has user_id index', () => {
+    const db = getDb();
+    const indexes = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='api_keys'").all() as {
+      name: string;
+    }[];
+    const indexNames = indexes.map((i) => i.name);
+    expect(indexNames).toContain('idx_api_keys_user_id');
   });
 });

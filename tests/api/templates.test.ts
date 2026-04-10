@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { templatesRoute } from '../../src/api/templates';
-import { closeDb, createApiKey } from '../../src/db';
+import { closeDb, createApiKey, createUser } from '../../src/db';
 import { authMiddleware } from '../../src/middleware/auth';
 
 beforeEach(() => {
@@ -24,7 +24,8 @@ function createApp() {
 
 describe('POST /templates', () => {
   it('creates a custom template', async () => {
-    const record = createApiKey('tmpl@example.com');
+    const user = createUser('tmpl@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
 
     const res = await app.request('/templates', {
@@ -49,7 +50,8 @@ describe('POST /templates', () => {
   });
 
   it('updates existing template on duplicate name', async () => {
-    const record = createApiKey('tmpl2@example.com');
+    const user = createUser('tmpl2@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${record.key}` };
 
@@ -88,7 +90,8 @@ describe('POST /templates', () => {
   });
 
   it('returns 400 for invalid layer type', async () => {
-    const record = createApiKey('bad@example.com');
+    const user = createUser('bad@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
 
     const res = await app.request('/templates', {
@@ -102,7 +105,8 @@ describe('POST /templates', () => {
 
 describe('GET /templates', () => {
   it('lists created templates', async () => {
-    const record = createApiKey('list@example.com');
+    const user = createUser('list@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${record.key}` };
 

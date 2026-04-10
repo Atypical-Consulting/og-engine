@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { type ApiKeyRecord, closeDb, createApiKey, updatePlan } from '../../src/db';
+import { type ApiKeyRecord, closeDb, createApiKey, createUser, updatePlan } from '../../src/db';
 import { authMiddleware, canAccessFeature, optionalAuthMiddleware, planGate } from '../../src/middleware/auth';
 
 beforeEach(() => {
@@ -41,7 +41,8 @@ describe('authMiddleware', () => {
   });
 
   it('accepts request with valid key', async () => {
-    const record = createApiKey('auth@example.com');
+    const user = createUser('auth@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
     const res = await app.request('/protected', {
       headers: { Authorization: `Bearer ${record.key}` },
@@ -52,10 +53,11 @@ describe('authMiddleware', () => {
   });
 
   it('rejects when quota exceeded', async () => {
-    const record = createApiKey('quota@example.com');
-    // Exhaust quota by setting calls_used = calls_limit directly
+    const user = createUser('quota@example.com');
+    const record = createApiKey(user.id);
+    // Exhaust quota by setting calls_used = calls_limit on the user
     const { getDb } = await import('../../src/db');
-    getDb().prepare('UPDATE api_keys SET calls_used = calls_limit WHERE id = ?').run(record.id);
+    getDb().prepare('UPDATE users SET calls_used = calls_limit WHERE id = ?').run(user.id);
 
     const app = createApp();
     const res = await app.request('/protected', {
@@ -87,7 +89,8 @@ describe('optionalAuthMiddleware', () => {
   });
 
   it('attaches key when provided', async () => {
-    const record = createApiKey('opt@example.com');
+    const user = createUser('opt@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
     const res = await app.request('/optional', {
       headers: { Authorization: `Bearer ${record.key}` },
@@ -100,7 +103,8 @@ describe('optionalAuthMiddleware', () => {
 
 describe('planGate', () => {
   it('returns 402 when plan insufficient', async () => {
-    const record = createApiKey('gate@example.com'); // free plan
+    const user = createUser('gate@example.com'); // free plan
+    const record = createApiKey(user.id);
     const app = new Hono();
     app.use('/gated', authMiddleware(), planGate('batch'));
     app.get('/gated', (c) => c.text('ok'));
@@ -114,8 +118,9 @@ describe('planGate', () => {
   });
 
   it('allows when plan is sufficient', async () => {
-    const record = createApiKey('pro@example.com');
-    updatePlan(record.id, 'pro');
+    const user = createUser('pro@example.com');
+    const record = createApiKey(user.id);
+    updatePlan(user.id, 'pro');
     const app = new Hono();
     app.use('/gated', authMiddleware(), planGate('batch'));
     app.get('/gated', (c) => c.text('ok'));

@@ -14,12 +14,7 @@ export interface ApiKeyRecord {
   id: string;
   key: string;
   email: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  plan: Plan;
-  calls_limit: number;
-  calls_used: number;
-  period_start: string;
+  user_id: string | null;
   created_at: string;
   active: number;
 }
@@ -78,15 +73,12 @@ function migrate(d: SqliteDatabase): void {
       id TEXT PRIMARY KEY,
       key TEXT UNIQUE NOT NULL,
       email TEXT NOT NULL,
-      stripe_customer_id TEXT,
-      stripe_subscription_id TEXT,
-      plan TEXT NOT NULL DEFAULT 'free',
-      calls_limit INTEGER NOT NULL DEFAULT 500,
-      calls_used INTEGER NOT NULL DEFAULT 0,
-      period_start TEXT NOT NULL,
+      user_id TEXT REFERENCES users(id),
       created_at TEXT NOT NULL,
       active INTEGER NOT NULL DEFAULT 1
     );
+
+    CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
 
     CREATE TABLE IF NOT EXISTS usage_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,7 +91,6 @@ function migrate(d: SqliteDatabase): void {
 
     CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);
     CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(email);
-    CREATE INDEX IF NOT EXISTS idx_api_keys_stripe_sub ON api_keys(stripe_subscription_id);
     CREATE INDEX IF NOT EXISTS idx_usage_log_api_key ON usage_log(api_key_id);
 
     CREATE TABLE IF NOT EXISTS custom_templates (
@@ -169,25 +160,24 @@ export function generateApiKey(): string {
   return `oge_sk_${crypto.randomUUID().replace(/-/g, '')}`;
 }
 
-export function createApiKey(email: string, plan: Plan = 'free'): ApiKeyRecord {
+export function createApiKey(userId: string): ApiKeyRecord {
   const d = getDb();
+  const user = findUserById(userId);
+  if (!user) {
+    throw new Error(`User not found: ${userId}`);
+  }
   const record: ApiKeyRecord = {
     id: crypto.randomUUID(),
     key: generateApiKey(),
-    email,
-    stripe_customer_id: null,
-    stripe_subscription_id: null,
-    plan,
-    calls_limit: PLAN_LIMITS[plan],
-    calls_used: 0,
-    period_start: new Date().toISOString(),
+    email: user.email,
+    user_id: userId,
     created_at: new Date().toISOString(),
     active: 1,
   };
 
   d.prepare(`
-    INSERT INTO api_keys (id, key, email, stripe_customer_id, stripe_subscription_id, plan, calls_limit, calls_used, period_start, created_at, active)
-    VALUES ($id, $key, $email, $stripe_customer_id, $stripe_subscription_id, $plan, $calls_limit, $calls_used, $period_start, $created_at, $active)
+    INSERT INTO api_keys (id, key, email, user_id, created_at, active)
+    VALUES ($id, $key, $email, $user_id, $created_at, $active)
   `).run(record);
 
   return record;
@@ -203,44 +193,51 @@ export function findApiKeyByEmail(email: string): ApiKeyRecord | null {
   return (d.prepare('SELECT * FROM api_keys WHERE email = ? AND active = 1').get(email) as ApiKeyRecord) ?? null;
 }
 
-export function findApiKeyByStripeSubscription(subscriptionId: string): ApiKeyRecord | null {
+export function findUserByApiKey(apiKeyId: string): UserRecord | null {
+  const d = getDb();
+  const key = d.prepare('SELECT * FROM api_keys WHERE id = ?').get(apiKeyId) as ApiKeyRecord | null;
+  if (!key?.user_id) return null;
+  return findUserById(key.user_id);
+}
+
+export function findUserByStripeSubscription(subscriptionId: string): UserRecord | null {
   const d = getDb();
   return (
     (d
-      .prepare('SELECT * FROM api_keys WHERE stripe_subscription_id = ? AND active = 1')
-      .get(subscriptionId) as ApiKeyRecord) ?? null
+      .prepare('SELECT * FROM users WHERE stripe_subscription_id = ? AND active = 1')
+      .get(subscriptionId) as UserRecord) ?? null
   );
 }
 
-export function incrementUsage(id: string): void {
+export function incrementUsage(userId: string): void {
   const d = getDb();
-  d.prepare('UPDATE api_keys SET calls_used = calls_used + 1 WHERE id = ?').run(id);
+  d.prepare('UPDATE users SET calls_used = calls_used + 1 WHERE id = ?').run(userId);
 }
 
-export function updatePlan(id: string, plan: Plan): void {
+export function updatePlan(userId: string, plan: Plan): void {
   const d = getDb();
-  d.prepare('UPDATE api_keys SET plan = ?, calls_limit = ? WHERE id = ?').run(plan, PLAN_LIMITS[plan], id);
+  d.prepare('UPDATE users SET plan = ?, calls_limit = ? WHERE id = ?').run(plan, PLAN_LIMITS[plan], userId);
 }
 
-export function resetUsage(id: string): void {
+export function resetUsage(userId: string): void {
   const d = getDb();
-  d.prepare('UPDATE api_keys SET calls_used = 0, period_start = ? WHERE id = ?').run(new Date().toISOString(), id);
+  d.prepare('UPDATE users SET calls_used = 0, period_start = ? WHERE id = ?').run(new Date().toISOString(), userId);
 }
 
 export function resetFreeQuotas(): number {
   const d = getDb();
   const result = d
-    .prepare('UPDATE api_keys SET calls_used = 0, period_start = ? WHERE plan = ? AND active = 1')
+    .prepare('UPDATE users SET calls_used = 0, period_start = ? WHERE plan = ? AND active = 1')
     .run(new Date().toISOString(), 'free');
   return result.changes;
 }
 
-export function updateStripeInfo(id: string, customerId: string, subscriptionId: string): void {
+export function updateStripeInfo(userId: string, customerId: string, subscriptionId: string): void {
   const d = getDb();
-  d.prepare('UPDATE api_keys SET stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?').run(
+  d.prepare('UPDATE users SET stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?').run(
     customerId,
     subscriptionId,
-    id,
+    userId,
   );
 }
 

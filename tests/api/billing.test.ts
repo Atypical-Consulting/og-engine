@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { closeDb, createApiKey, updateStripeInfo } from '../../src/db';
+import { closeDb, createApiKey, createUser, updateStripeInfo } from '../../src/db';
 import { authMiddleware } from '../../src/middleware/auth';
 
 // Mock stripe — must use function() not arrow for new Stripe() to work
@@ -43,8 +43,9 @@ async function createApp() {
 
 describe('GET /billing/portal', () => {
   it('returns portal URL for paid user with stripe_customer_id', async () => {
-    const record = createApiKey('paid@example.com', 'pro');
-    updateStripeInfo(record.id, 'cus_test_123', 'sub_test_123');
+    const user = createUser('paid@example.com', 'pro');
+    const record = createApiKey(user.id);
+    updateStripeInfo(user.id, 'cus_test_123', 'sub_test_123');
     const app = await createApp();
     const res = await app.request('/billing/portal', {
       headers: { Authorization: `Bearer ${record.key}` },
@@ -55,7 +56,8 @@ describe('GET /billing/portal', () => {
   });
 
   it('returns 400 for free user without stripe_customer_id', async () => {
-    const record = createApiKey('free@example.com', 'free');
+    const user = createUser('free@example.com', 'free');
+    const record = createApiKey(user.id);
     const app = await createApp();
     const res = await app.request('/billing/portal', {
       headers: { Authorization: `Bearer ${record.key}` },
@@ -73,8 +75,9 @@ describe('GET /billing/portal', () => {
 
   it('returns 500 when Stripe is not configured', async () => {
     delete process.env.STRIPE_SECRET_KEY;
-    const record = createApiKey('nostripe@example.com', 'pro');
-    updateStripeInfo(record.id, 'cus_ns', 'sub_ns');
+    const user = createUser('nostripe@example.com', 'pro');
+    const record = createApiKey(user.id);
+    updateStripeInfo(user.id, 'cus_ns', 'sub_ns');
     vi.resetModules();
     const app = await createApp();
     const res = await app.request('/billing/portal', {

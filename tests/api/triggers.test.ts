@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { triggersRoute } from '../../src/api/triggers';
-import { closeDb, createApiKey } from '../../src/db';
+import { closeDb, createApiKey, createUser } from '../../src/db';
 import { registerFonts } from '../../src/engine/fonts';
 import { authMiddleware } from '../../src/middleware/auth';
 
@@ -33,7 +33,8 @@ function createApp() {
 
 describe('POST /triggers', () => {
   it('creates a webhook trigger', async () => {
-    const record = createApiKey('trigger@example.com');
+    const user = createUser('trigger@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
 
     const res = await app.request('/triggers', {
@@ -63,7 +64,8 @@ describe('POST /triggers', () => {
   });
 
   it('returns 400 for invalid URL', async () => {
-    const record = createApiKey('bad@example.com');
+    const user = createUser('bad@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
 
     const res = await app.request('/triggers', {
@@ -80,7 +82,8 @@ describe('POST /triggers', () => {
 
 describe('GET /triggers', () => {
   it('lists webhook triggers', async () => {
-    const record = createApiKey('list@example.com');
+    const user = createUser('list@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${record.key}` };
 
@@ -99,7 +102,8 @@ describe('GET /triggers', () => {
 
 describe('DELETE /triggers/:id', () => {
   it('deletes a trigger', async () => {
-    const record = createApiKey('del@example.com');
+    const user = createUser('del@example.com');
+    const record = createApiKey(user.id);
     const app = createApp();
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${record.key}` };
 
