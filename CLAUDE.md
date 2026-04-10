@@ -378,11 +378,20 @@ Every time a release tag is pushed, append a row to
 This is required so that the FSL Change Date for each release is
 discoverable. Without it, the license conversion clause is legally vague.
 
-Example for a release cut today (2026-04-10):
+### When cutting v0.1.0 (the first release)
+
+Update the existing `0.1.0` row **in place** — do not add a new row. Replace
+both `TBD` cells with the real release date and `release date + 2 years`.
+After this update, the table should have exactly one row.
+
+### When cutting any subsequent release (v0.2.0, v0.3.0, ...)
+
+Append a new row below the existing ones. Example for a release cut on
+2026-06-01:
 
 ```
-| 0.2.0   | 2026-04-10  | 2028-04-10 |
+| 0.2.0   | 2026-06-01   | 2028-06-01                |
 ```
 
-Then update the placeholder row for `0.1.0` when it ships (currently `TBD |
-TBD`).
+Never modify an already-published release's row — the Change Date is a
+legal commitment tied to the release date and must not move.
