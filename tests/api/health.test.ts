@@ -36,6 +36,10 @@ describe('GET /health', () => {
       'github-repo',
       'product-card',
       'testimonial',
+      'news-article',
+      'pricing',
+      'profile-card',
+      'announcement',
     ]);
     expect(body.version).toBe('0.1.0');
   });
