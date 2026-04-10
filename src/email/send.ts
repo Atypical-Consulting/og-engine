@@ -64,6 +64,33 @@ export async function sendUpgradeEmail(email: string, plan: Plan): Promise<void>
   });
 }
 
+export async function sendMagicLinkEmail(email: string, verifyUrl: string): Promise<void> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn('[email] RESEND_API_KEY not set — skipping magic link email');
+    console.info(`[email] Magic link verify URL: ${verifyUrl}`);
+    return;
+  }
+
+  await resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: 'Log in to OG Engine',
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+        <h2 style="color:#111;">Log in to OG Engine</h2>
+        <p style="color:#555;">Click the button below to log in to your dashboard. This link expires in 15 minutes.</p>
+        <a href="${verifyUrl}"
+           style="display:inline-block;background:#38ef7d;color:#111;font-weight:bold;text-decoration:none;padding:12px 24px;border-radius:6px;margin:16px 0;">
+          Log in to Dashboard
+        </a>
+        <p style="color:#888;font-size:13px;">If you didn't request this email, you can safely ignore it.</p>
+        <p style="color:#888;font-size:13px;">Or copy this link: ${verifyUrl}</p>
+      </div>
+    `,
+  });
+}
+
 export async function sendDowngradeEmail(email: string): Promise<void> {
   const resend = getResend();
   if (!resend) {
