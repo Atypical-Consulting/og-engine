@@ -39,6 +39,36 @@ curl -X POST https://og-engine.com/render \
 
 Note that when uploading an image, `Content-Type` is set automatically by curl. Do not manually set it to `application/json`.
 
+## Providing Images via URL (JSON)
+
+As an alternative to multipart upload, images can be supplied as publicly accessible URLs using the `images` field in a standard JSON request. This is convenient when the image is already hosted (e.g. a CDN, S3 bucket, or third-party URL):
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "blog-hero",
+    "title": "Why Server-Side Rendering Still Matters",
+    "description": "A deep dive into modern SSR patterns.",
+    "tag": "Architecture",
+    "images": {
+      "background": "https://images.unsplash.com/photo-1519389950473-47ba0277781c"
+    },
+    "style": { "overlayOpacity": 0.6 }
+  }' --output card.png
+```
+
+OG Engine fetches and decodes the URL at render time, then applies the same resize, crop, and overlay pipeline as a file upload. The `images` field is also how templates like `product-card`, `testimonial`, `github-repo`, and `profile-card` receive their avatar or product images.
+
+**When to use each approach:**
+
+| Approach | Best for |
+|---|---|
+| Multipart upload (`-F image=@file`) | Private or local images, files not yet on a CDN |
+| `images` URL field | Public images already hosted, server-to-server pipelines |
+
 ## SDK Example
 
 ```typescript

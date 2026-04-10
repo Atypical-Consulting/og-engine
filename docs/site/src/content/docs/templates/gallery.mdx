@@ -1,11 +1,11 @@
 ---
 title: Templates Gallery
-description: Visual guide to all four built-in templates — default, social-card, blog-hero, and email-banner.
+description: Visual guide to all twelve built-in templates — default, social-card, blog-hero, email-banner, product-card, event, testimonial, github-repo, news-article, pricing, profile-card, and announcement.
 ---
 
 import PlaygroundContextual from '../../../components/PlaygroundContextual';
 
-OG Engine ships with four built-in templates. Each template defines the visual structure, typography placement, and decorative elements. You choose the template once per request; it combines with your format, content, and style settings to produce the final image.
+OG Engine ships with twelve built-in templates. Each template defines the visual structure, typography placement, and decorative elements. You choose the template once per request; it combines with your format, content, and style settings to produce the final image.
 
 ## default
 
@@ -120,6 +120,302 @@ A horizontal, CTA-oriented layout designed for email headers and newsletter bann
   "tag": "Read Now",
   "author": "The Pragmatic Engineer"
 }
+```
+
+---
+
+## product-card
+
+An e-commerce-focused template for showcasing products with price, badge, and brand identity. Designed to work with a product image supplied via the `images` field.
+
+**Layout elements:**
+- Product image on the right half of the canvas
+- Brand name and product title on the left
+- Price displayed prominently in the accent color
+- Optional badge (e.g. "New", "Sale") rendered as a pill in the top-left
+- Dark gradient overlay on the image side for visual separation
+
+**Best for:** E-commerce product shares, catalogue cards, promotional social posts.
+
+**Works best with:** `og`, `twitter` formats.
+
+**Variables used:** `price`, `badge`, `brand`
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "product-card",
+    "title": "Minimal Leather Wallet",
+    "description": "Hand-stitched full-grain leather. Made to last.",
+    "variables": {
+      "price": "$79",
+      "badge": "New Arrival",
+      "brand": "Nomad"
+    },
+    "style": { "accent": "#f59e0b" }
+  }' --output product.png
+```
+
+---
+
+## event
+
+A conference and event template surfacing date, location, and speaker information alongside the event title.
+
+**Layout elements:**
+- Large event title at the top
+- Date and location rendered as structured metadata below the title
+- Speaker name and role in a dedicated block
+- Accent-colored vertical bar on the left edge
+- Clean dark background that works with or without a background image
+
+**Best for:** Conferences, meetups, webinars, workshop announcements.
+
+**Works best with:** `og`, `linkedin` formats.
+
+**Variables used:** `date`, `location`, `speaker`, `speakerRole`
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "event",
+    "title": "TypeScript Conf 2026",
+    "description": "The premier TypeScript developer conference.",
+    "variables": {
+      "date": "October 3–4, 2026",
+      "location": "Seattle, WA",
+      "speaker": "Anders Hejlsberg",
+      "speakerRole": "Creator of TypeScript"
+    },
+    "style": { "accent": "#3b82f6" }
+  }' --output event.png
+```
+
+---
+
+## testimonial
+
+A quote-focused template for social proof cards. Renders the quote prominently, with attribution (name, role, company) and an optional avatar image.
+
+**Layout elements:**
+- Large typographic opening quotation mark in the accent color
+- Quote text at a readable but prominent size
+- Attribution block at the bottom: name, role, company
+- Avatar image (if provided via `images.avatar`) rendered as a circle on the left of the attribution line
+- Subtle gradient background
+
+**Best for:** Review cards, customer testimonials, pull-quote social posts.
+
+**Works best with:** `square`, `twitter` formats.
+
+**Variables used:** `name`, `role`, `company`
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "square",
+    "template": "testimonial",
+    "title": "OG Engine cut our image generation time from 660ms to 22ms. It was a drop-in replacement.",
+    "variables": {
+      "name": "Sarah Chen",
+      "role": "Head of Engineering",
+      "company": "Vercel"
+    },
+    "style": { "accent": "#8b5cf6" }
+  }' --output testimonial.png
+```
+
+---
+
+## github-repo
+
+A developer-tool template modelled after GitHub repository cards. Displays owner, star count, primary language, and an optional avatar/logo image.
+
+**Layout elements:**
+- Repository name (from `title`) as the headline
+- Description text below
+- Owner name, star count, and language rendered as a metadata row with icons
+- Avatar image (if provided via `images.avatar`) in the top-left
+- Dark theme with monospace-style accent on the language badge
+
+**Best for:** Open source project announcements, developer portfolio cards, "star this repo" social posts.
+
+**Works best with:** `og`, `twitter` formats.
+
+**Variables used:** `owner`, `stars`, `language`
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "github-repo",
+    "title": "og-engine",
+    "description": "Server-side image generation at ~22ms. No browser dependencies.",
+    "variables": {
+      "owner": "atypical-consulting",
+      "stars": "4.2k",
+      "language": "TypeScript"
+    },
+    "style": { "accent": "#38ef7d" }
+  }' --output repo.png
+```
+
+---
+
+## news-article
+
+A media-oriented template styled after editorial news cards. Supports a category badge, publication date, and source name alongside a background image.
+
+**Layout elements:**
+- Background image fills the canvas with a strong dark overlay for legibility
+- Category badge rendered in the accent color at the top
+- Headline in a large, bold serif-adjacent weight
+- Source and date as a small metadata line beneath the headline
+- Bottom-anchored text layout so the image headline area is visible
+
+**Best for:** News articles, editorial content, media publications, press release cards.
+
+**Works best with:** `og`, `twitter` formats.
+
+**Variables used:** `source`, `date`, `category`
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "news-article",
+    "title": "EU Passes Open-Source AI Transparency Act",
+    "description": "New regulation mandates disclosure of training data sources for AI systems deployed in Europe.",
+    "variables": {
+      "source": "The Register",
+      "date": "April 10, 2026",
+      "category": "Policy"
+    },
+    "style": { "accent": "#ef4444", "overlayOpacity": 0.7 }
+  }' --output news.png
+```
+
+---
+
+## pricing
+
+A SaaS pricing-card template designed to communicate plan value at a glance. Features a plan name, price, billing period, feature list, and a CTA label.
+
+**Layout elements:**
+- Plan name rendered as a pill badge at the top
+- Price displayed in a very large size, with the billing period beside it in muted text
+- Feature list (newline-separated string) rendered as checkmark bullet points
+- CTA label in an accent-colored button at the bottom
+- Clean light or dark background depending on `style.gradient`
+
+**Best for:** Pricing page social shares, upgrade prompts, plan comparison cards.
+
+**Works best with:** `og`, `square` formats.
+
+**Variables used:** `plan`, `price`, `period`, `features`, `cta`
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "pricing",
+    "title": "Everything you need to ship faster.",
+    "variables": {
+      "plan": "Pro",
+      "price": "€39",
+      "period": "/ month",
+      "features": "50,000 renders/mo\nWebP output\nBatch API\nPriority support",
+      "cta": "Start free trial"
+    },
+    "style": { "accent": "#38ef7d", "gradient": "void" }
+  }' --output pricing.png
+```
+
+---
+
+## profile-card
+
+A personal or professional profile template. Combines name, role, company, and a short bio with an optional avatar image.
+
+**Layout elements:**
+- Avatar image (if provided via `images.avatar`) as a large circle on the left
+- Name as the primary headline on the right
+- Role and company rendered as a secondary line in the accent color
+- Bio text below in a readable size
+- Subtle gradient background with a soft decorative element
+
+**Best for:** Speaker cards, author bios, team member spotlights, LinkedIn profile shares.
+
+**Works best with:** `twitter`, `square` formats.
+
+**Variables used:** `role`, `company`, `bio`
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "twitter",
+    "template": "profile-card",
+    "title": "Philippe Matray",
+    "variables": {
+      "role": "Founder",
+      "company": "Atypical Consulting",
+      "bio": "Building OG Engine — server-side image generation without a browser."
+    },
+    "style": { "accent": "#38ef7d" }
+  }' --output profile.png
+```
+
+---
+
+## announcement
+
+A launch-oriented template for product releases, feature announcements, and milestones. Pairs a bold headline with a subtitle and optional CTA.
+
+**Layout elements:**
+- Full-canvas background image or gradient (when `images.background` is provided)
+- Dark overlay to ensure text legibility over background images
+- Large centered headline
+- Subtitle in a lighter weight below
+- CTA label rendered in an accent-colored button at the bottom-center
+- "Announcement" label or custom tag in the top-center
+
+**Best for:** Product launches, feature releases, milestone announcements, waitlist pages.
+
+**Works best with:** `og`, `twitter`, `story` formats.
+
+**Variables used:** `subtitle`, `cta`
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "announcement",
+    "title": "OG Engine 1.0 is live",
+    "tag": "Launch",
+    "variables": {
+      "subtitle": "Generate social images in ~22ms. No headless browser required.",
+      "cta": "Read the announcement"
+    },
+    "style": { "accent": "#38ef7d", "gradient": "aurora" }
+  }' --output announcement.png
 ```
 
 ---
