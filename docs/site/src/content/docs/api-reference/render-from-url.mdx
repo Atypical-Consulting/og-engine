@@ -1,0 +1,121 @@
+---
+title: POST /render/from-url
+description: Fetch a URL, extract OG and meta tags, and render an image automatically. No need to pass title or description manually.
+---
+
+Fetches a URL, extracts its Open Graph and HTML meta tags, and renders an image using the extracted content. Useful for generating social cards from existing web pages without manually copying titles and descriptions.
+
+```
+POST https://og-engine.com/render/from-url
+```
+
+**Authentication:** Required (`Authorization: Bearer oge_sk_...`)
+
+## How It Works
+
+1. OG Engine fetches the `url` you provide.
+2. It extracts `og:title`, `og:description`, `og:image`, `twitter:title`, `twitter:description`, and standard `<title>` / `<meta name="description">` tags.
+3. The extracted values are used as the render payload. Any explicitly provided `template`, `style`, and `output` fields are applied on top.
+4. The rendered image is returned as binary, exactly like `POST /render`.
+
+## Request Body
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `url` | string | Yes | — | The URL to fetch. Must be publicly accessible over HTTPS. |
+| `format` | string | No | `"og"` | Output image format preset: `og`, `twitter`, `square`, `linkedin`, `story` |
+| `template` | string | No | `"default"` | Template to use. Supports all 12 built-in templates and `custom:<name>` (Scale plan). |
+| `style` | object | No | — | Style overrides applied after content extraction. Same fields as [POST /render](/api-reference/render/) `style`. |
+| `output.format` | string | No | `"png"` | `png`, `webp` (Starter+) |
+| `output.quality` | number | No | `90` | 1–100 (WebP only) |
+
+## Example Request
+
+```bash
+curl -X POST https://og-engine.com/render/from-url \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/blog/my-post",
+    "format": "og",
+    "template": "blog-hero",
+    "style": {
+      "accent": "#6366f1",
+      "font": "Inter"
+    },
+    "output": {
+      "format": "png"
+    }
+  }' \
+  --output card.png
+```
+
+## Extracted Fields
+
+OG Engine looks for the following tags in priority order:
+
+| Content field | Priority order |
+|---|---|
+| Title | `og:title` → `twitter:title` → `<title>` |
+| Description | `og:description` → `twitter:description` → `<meta name="description">` |
+| Background image | `og:image` → `twitter:image` (used as background when the template supports it) |
+
+If none of the title sources are found, the request returns a `422` error with code `no_content`.
+
+## Response
+
+On success, the response body is the raw binary image. HTTP status: `200`. Response headers are identical to [POST /render](/api-reference/render/#response-headers), with the addition of:
+
+| Header | Example | Description |
+|---|---|---|
+| `X-Source-Url` | `https://example.com/blog/my-post` | The URL that was fetched |
+| `X-Extracted-Title` | `My Post Title` | The title extracted from the page |
+
+## Error Responses
+
+| Status | Code | Cause |
+|---|---|---|
+| 400 | `missing_field` | `url` not provided |
+| 400 | `invalid_url` | `url` is not a valid HTTPS URL |
+| 401 | `unauthorized` | Missing or invalid API key |
+| 402 | `plan_required` | WebP output requested on Free plan |
+| 422 | `fetch_failed` | OG Engine could not fetch the URL (network error, timeout, or non-2xx HTTP response) |
+| 422 | `no_content` | Page was fetched but no usable title could be extracted |
+| 429 | `rate_limited` | Monthly quota exceeded |
+| 500 | `server_error` | Internal error |
+
+### `fetch_failed` Details
+
+The error body includes a `details.status` field with the HTTP status code returned by the target URL, when available:
+
+```json
+{
+  "error": "fetch_failed",
+  "message": "The URL returned HTTP 404.",
+  "details": { "url": "https://example.com/blog/missing", "status": 404 },
+  "docs": "https://og-engine.com/api-reference/errors#fetch_failed"
+}
+```
+
+## SDK Example
+
+```typescript
+import { OGEngine } from '@atypical-consulting/og-engine-sdk'
+
+const og = new OGEngine(process.env.OG_ENGINE_KEY!)
+
+const image = await og.renderFromUrl({
+  url: 'https://example.com/blog/my-post',
+  format: 'og',
+  template: 'blog-hero',
+  style: { accent: '#6366f1' },
+})
+
+await Bun.write('card.png', image)
+```
+
+## Next Steps
+
+- [POST /render](/api-reference/render/) — render from a JSON payload directly
+- [POST /render/batch](/api-reference/batch/) — render multiple images in one request
+- [Error Reference](/api-reference/errors/) — complete error code documentation
