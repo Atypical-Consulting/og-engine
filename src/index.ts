@@ -14,6 +14,7 @@ import { triggersRoute } from './api/triggers';
 import { usageRoute } from './api/usage';
 import { validateRoute } from './api/validate';
 import { webhooksRoute } from './api/webhooks';
+import { authRoutes } from './auth/routes';
 import { registerFonts } from './engine/fonts';
 import { authMiddleware, optionalAuthMiddleware, planGate, usageTracking } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
@@ -79,6 +80,7 @@ if (authEnabled) {
 }
 
 // ─── Public routes ───────────────────────────────────────────
+app.route('/', authRoutes);
 app.route('/', healthRoute);
 app.route('/', registerRoute);
 app.route('/', webhooksRoute);
