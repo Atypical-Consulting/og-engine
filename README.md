@@ -88,6 +88,13 @@ Generate an image from text + configuration.
   "description": "Pure JS text measurement replaces Puppeteer.",
   "author": "OG Engine",
   "tag": "Open Source",
+  "variables": {
+    "read_time": "4 min read",
+    "category": "Engineering"
+  },
+  "images": {
+    "avatar": "https://example.com/author.png"
+  },
   "style": {
     "accent": "#38ef7d",
     "layout": "left",
@@ -138,6 +145,20 @@ Check if text fits without generating an image. Ultra-fast.
 }
 ```
 
+### `POST /render/from-url`
+
+Zero-config image generation — OG Engine fetches the page at `url`, extracts its Open Graph tags, and renders a card automatically.
+
+```json
+{
+  "url": "https://myblog.com/posts/my-article",
+  "format": "og",
+  "style": { "gradient": "deep-sea" }
+}
+```
+
+Optional `overrides` lets you override specific fields (e.g. `tag`) while keeping the scraped title and description.
+
 ### `GET /health`
 
 ```json
@@ -145,7 +166,7 @@ Check if text fits without generating an image. Ultra-fast.
   "status": "ok",
   "fonts": ["Outfit", "Inter", "Playfair Display", "Sora", "Space Grotesk", "JetBrains Mono", "Noto Sans JP", "Noto Sans AR"],
   "formats": ["og", "twitter", "square", "linkedin", "story"],
-  "templates": ["default", "social-card", "blog-hero", "email-banner"],
+  "templates": ["default", "social-card", "blog-hero", "email-banner", "product-card", "event", "testimonial", "github-repo", "news-article", "pricing", "profile-card", "announcement"],
   "version": "0.1.0"
 }
 ```
@@ -191,6 +212,14 @@ Check if text fits without generating an image. Ultra-fast.
 | `social-card` | Large centered title, minimal and clean |
 | `blog-hero` | Background image focused with text overlay |
 | `email-banner` | Horizontal CTA-style for email campaigns |
+| `product-card` | Product name, price, and image highlight |
+| `event` | Date, venue, and event title prominent |
+| `testimonial` | Quote, author, and avatar layout |
+| `github-repo` | Repo name, description, and stats |
+| `news-article` | Publication, headline, and category badge |
+| `pricing` | Plan name, price, and key features |
+| `profile-card` | Avatar, name, title, and social handles |
+| `announcement` | Large headline with accent, ideal for launches |
 
 ## Integration Examples
 
@@ -357,7 +386,9 @@ og-engine/
   - Benchmark suite with statistical analysis
 
 - [ ] **Phase 2 — Production Features**
-  - All 4 templates (social-card, blog-hero, email-banner)
+  - All 12 templates (social-card, blog-hero, email-banner, product-card, event, testimonial, github-repo, news-article, pricing, profile-card, announcement)
+  - `variables` and `images` fields for template-level dynamic content
+  - `POST /render/from-url` — zero-config rendering from a URL's OG tags
   - Background image upload (multipart)
   - WebP output
   - LRU text cache, batch endpoint, rate limiting

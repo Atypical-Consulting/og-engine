@@ -126,6 +126,13 @@ Generate an image from text + configuration.
   "description": "Pure JS text measurement replaces Puppeteer.",
   "author": "Pretext Engine",
   "tag": "Open Source",
+  "variables": {
+    "read_time": "4 min read",
+    "category": "Engineering"
+  },
+  "images": {
+    "avatar": "https://example.com/author.png"
+  },
   "style": {
     "accent": "#38ef7d",
     "layout": "left",
@@ -180,6 +187,22 @@ Check if text fits a given layout WITHOUT generating an image. Ultra-fast.
 }
 ```
 
+### `POST /render/from-url`
+
+Zero-config image generation — fetches OG tags from a URL and renders a card automatically.
+
+**Request:**
+```json
+{
+  "url": "https://myblog.com/posts/my-article",
+  "format": "og",
+  "style": { "gradient": "deep-sea" },
+  "overrides": { "tag": "New Post" }
+}
+```
+
+**Response:** Binary image (PNG/WebP), same headers as `POST /render`.
+
 ### `POST /render/batch`
 
 Render multiple images in one request (for bulk generation).
@@ -203,7 +226,7 @@ Render multiple images in one request (for bulk generation).
   "status": "ok",
   "fonts": ["Outfit", "Playfair Display", "Sora", ...],
   "formats": ["og", "twitter", "square", "linkedin", "story"],
-  "templates": ["default", "social-card", "blog-hero", "email-banner"],
+  "templates": ["default", "social-card", "blog-hero", "email-banner", "product-card", "event", "testimonial", "github-repo", "news-article", "pricing", "profile-card", "announcement"],
   "version": "0.1.0"
 }
 ```
@@ -277,11 +300,19 @@ interface TemplateInput {
 type Template = (input: TemplateInput) => RenderResult
 ```
 
-Start with 4 templates:
+12 templates are available:
 1. **default** — accent bar, grid background, tag pill (from POC)
 2. **social-card** — large centered title, minimal
 3. **blog-hero** — background image focused, text overlay at bottom
 4. **email-banner** — horizontal, CTA-style
+5. **product-card** — product name, price, and image highlight
+6. **event** — date, venue, and event title prominent
+7. **testimonial** — quote, author, and avatar layout
+8. **github-repo** — repo name, description, and stats
+9. **news-article** — publication, headline, and category badge
+10. **pricing** — plan name, price, and key features
+11. **profile-card** — avatar, name, title, and social handles
+12. **announcement** — large headline with accent, ideal for launches
 
 ---
 
@@ -299,7 +330,9 @@ Start with 4 templates:
 - [ ] Dockerfile
 
 ### Phase 2 — Production Features (week 2)
-- [ ] All 4 templates
+- [ ] All 12 templates
+- [ ] `variables` and `images` fields for template-level dynamic content
+- [ ] `POST /render/from-url` endpoint
 - [ ] Background image upload support (multipart form)
 - [ ] WebP output option
 - [ ] LRU cache for prepared text
