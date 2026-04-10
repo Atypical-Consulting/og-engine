@@ -10,7 +10,7 @@ import {
   getDb,
   getUsageStats,
   incrementUsage,
-  logUsage,
+  logRender,
   PLAN_LIMITS,
   resetUsage,
   updatePlan,
@@ -34,7 +34,7 @@ describe('database', () => {
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[];
     const names = tables.map((t) => t.name);
     expect(names).toContain('api_keys');
-    expect(names).toContain('usage_log');
+    expect(names).toContain('render_history');
   });
 });
 
@@ -102,11 +102,32 @@ describe('usage logging', () => {
   it('logs and retrieves usage stats', () => {
     const user = createUser('log@example.com');
     const record = createApiKey(user.id);
-    logUsage(record.id, '/render', 12.5, 'og');
-    logUsage(record.id, '/render', 8.3, 'twitter');
-    logUsage(record.id, '/render/batch', 45.0, 'og');
+    logRender({
+      userId: user.id,
+      apiKeyId: record.id,
+      endpoint: '/render',
+      requestPayload: {},
+      format: 'og',
+      renderTimeMs: 12.5,
+    });
+    logRender({
+      userId: user.id,
+      apiKeyId: record.id,
+      endpoint: '/render',
+      requestPayload: {},
+      format: 'twitter',
+      renderTimeMs: 8.3,
+    });
+    logRender({
+      userId: user.id,
+      apiKeyId: record.id,
+      endpoint: '/render/batch',
+      requestPayload: {},
+      format: 'og',
+      renderTimeMs: 45.0,
+    });
 
-    const stats = getUsageStats(record.id);
+    const stats = getUsageStats(user.id);
     expect(stats.total).toBe(3);
     expect(stats.byEndpoint['/render']).toBe(2);
     expect(stats.byEndpoint['/render/batch']).toBe(1);
