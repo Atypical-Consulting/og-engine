@@ -161,8 +161,8 @@ export function usageTracking(endpoint: string) {
       } catch {
         // ignore parse errors — payload stays {}
       }
-      const format = (requestPayload as Record<string, unknown>)['format'] as string | undefined;
-      const template = (requestPayload as Record<string, unknown>)['template'] as string | undefined;
+      const format = (requestPayload as Record<string, unknown>).format as string | undefined;
+      const template = (requestPayload as Record<string, unknown>).template as string | undefined;
       logRender({
         userId: user.id,
         apiKeyId: record.id,
