@@ -156,3 +156,43 @@ describe('renderSchema with variables', () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe('renderSchema with images', () => {
+  it('accepts a request with named image URLs', () => {
+    const result = renderSchema.safeParse({
+      format: 'og',
+      title: 'Product',
+      images: {
+        logo: 'https://example.com/logo.png',
+        avatar: 'https://example.com/avatar.jpg',
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.images).toEqual({
+        logo: 'https://example.com/logo.png',
+        avatar: 'https://example.com/avatar.jpg',
+      });
+    }
+  });
+
+  it('defaults images to empty object when omitted', () => {
+    const result = renderSchema.safeParse({
+      format: 'og',
+      title: 'Test',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.images).toEqual({});
+    }
+  });
+
+  it('rejects non-URL image values', () => {
+    const result = renderSchema.safeParse({
+      format: 'og',
+      title: 'Test',
+      images: { logo: 'not-a-url' },
+    });
+    expect(result.success).toBe(false);
+  });
+});
