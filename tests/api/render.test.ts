@@ -115,6 +115,18 @@ describe('POST /render', () => {
   });
 });
 
+describe('POST /render with variables', () => {
+  it('accepts variables alongside legacy fields', async () => {
+    const res = await post({
+      format: 'og',
+      title: 'Product Name',
+      variables: { price: '€129', badge: '-20%' },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('image/png');
+  });
+});
+
 describe('renderSchema with variables', () => {
   it('accepts a request with variables', () => {
     const result = renderSchema.safeParse({
