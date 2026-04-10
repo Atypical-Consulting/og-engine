@@ -34,8 +34,17 @@ function opts(template: string): RenderOptions {
 }
 
 describe('template registry', () => {
-  it('exports 4 templates', () => {
-    expect(TEMPLATE_NAMES).toEqual(['default', 'social-card', 'blog-hero', 'email-banner']);
+  it('exports 8 templates', () => {
+    expect(TEMPLATE_NAMES).toEqual([
+      'default',
+      'social-card',
+      'blog-hero',
+      'email-banner',
+      'event',
+      'github-repo',
+      'product-card',
+      'testimonial',
+    ]);
   });
 
   it('getTemplate returns default for unknown name', () => {
@@ -69,5 +78,61 @@ describe('each template renders correctly', () => {
         'This is a very long title for an email banner that should be limited to two lines maximum for a clean horizontal layout',
     });
     expect(result.titleVisibleLines).toBeLessThanOrEqual(2);
+  });
+
+  it('renders event template', async () => {
+    const result = await renderCard({
+      ...opts('event'),
+      variables: { date: 'June 15, 2026', location: 'Amsterdam', speaker: 'Dan Abramov' },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
+    expect(result.buffer[0]).toBe(0x89); // PNG magic byte
+    expect(result.width).toBe(1200);
+    expect(result.height).toBe(630);
+    expect(result.titleVisibleLines).toBeGreaterThan(0);
+    expect(result.descTotalLines).toBe(0);
+    expect(result.overflow).toBe(false);
+  });
+
+  it('renders github-repo template', async () => {
+    const result = await renderCard({
+      ...opts('github-repo'),
+      title: 'vercel/next.js',
+      variables: { owner: 'vercel', stars: '12.4k', language: 'TypeScript' },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
+    expect(result.buffer[0]).toBe(0x89); // PNG magic byte
+    expect(result.width).toBe(1200);
+    expect(result.height).toBe(630);
+    expect(result.titleVisibleLines).toBeGreaterThan(0);
+  });
+
+  it('renders product-card template', async () => {
+    const result = await renderCard({
+      ...opts('product-card'),
+      title: 'Air Max 270',
+      variables: { price: '€129', badge: '-20%', brand: 'Nike' },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
+    expect(result.buffer[0]).toBe(0x89); // PNG magic byte
+    expect(result.width).toBe(1200);
+    expect(result.height).toBe(630);
+    expect(result.titleVisibleLines).toBeGreaterThan(0);
+    expect(result.descTotalLines).toBe(0);
+    expect(result.descVisibleLines).toBe(0);
+  });
+
+  it('renders testimonial template', async () => {
+    const result = await renderCard({
+      ...opts('testimonial'),
+      variables: { quote: 'This changed our workflow.', name: 'Jane Doe', company: 'Acme Corp', role: 'CTO' },
+    });
+    expect(result.buffer.length).toBeGreaterThan(0);
+    expect(result.buffer[0]).toBe(0x89); // PNG magic byte
+    expect(result.width).toBe(1200);
+    expect(result.height).toBe(630);
+    expect(result.titleVisibleLines).toBeGreaterThan(0);
+    expect(result.descTotalLines).toBe(0);
+    expect(result.descVisibleLines).toBe(0);
   });
 });

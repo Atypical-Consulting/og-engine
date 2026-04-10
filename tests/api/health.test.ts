@@ -27,7 +27,16 @@ describe('GET /health', () => {
     expect(body.fonts).toBeInstanceOf(Array);
     expect(body.fonts.length).toBeGreaterThan(0);
     expect(body.formats).toEqual(['og', 'twitter', 'square', 'linkedin', 'story']);
-    expect(body.templates).toEqual(['default', 'social-card', 'blog-hero', 'email-banner']);
+    expect(body.templates).toEqual([
+      'default',
+      'social-card',
+      'blog-hero',
+      'email-banner',
+      'event',
+      'github-repo',
+      'product-card',
+      'testimonial',
+    ]);
     expect(body.version).toBe('0.1.0');
   });
 });
