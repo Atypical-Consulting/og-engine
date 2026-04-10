@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
@@ -78,6 +79,30 @@ if (authEnabled) {
   // Billing portal — requires auth
   app.use('/billing/*', authMiddleware());
 }
+
+// ─── Static files (htmx, dashboard CSS) ─────────────────────
+const STATIC_DIR = join(import.meta.dir, 'static');
+const MIME_TYPES: Record<string, string> = {
+  js: 'application/javascript',
+  css: 'text/css',
+  png: 'image/png',
+  svg: 'image/svg+xml',
+  json: 'application/json',
+};
+
+app.get('/static/:file', (c) => {
+  const file = c.req.param('file');
+  const filePath = join(STATIC_DIR, file);
+  if (!existsSync(filePath)) {
+    return c.json({ error: 'not_found', message: 'Static file not found' }, 404);
+  }
+  const ext = file.split('.').pop() ?? '';
+  const contentType = MIME_TYPES[ext] ?? 'application/octet-stream';
+  const content = readFileSync(filePath);
+  c.header('Content-Type', contentType);
+  c.header('Cache-Control', 'public, immutable, max-age=31536000');
+  return c.body(content);
+});
 
 // ─── Public routes ───────────────────────────────────────────
 app.route('/', authRoutes);
