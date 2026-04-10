@@ -49,12 +49,27 @@ export interface RenderRequest {
   description?: string;
   author?: string;
   tag?: string;
+  /** Arbitrary key-value pairs for template interpolation. */
+  variables?: Record<string, string>;
+  /** Named image URLs to fetch server-side. */
+  images?: Record<string, string>;
   style?: RenderStyle;
   output?: {
     format?: OutputFormat;
     quality?: number;
   };
   backgroundImage?: Buffer | Uint8Array;
+}
+
+export interface RenderFromUrlRequest {
+  url: string;
+  format?: ImageFormat;
+  template?: TemplateName | `custom:${string}`;
+  style?: RenderStyle;
+  output?: {
+    format?: OutputFormat;
+    quality?: number;
+  };
 }
 
 export interface RenderMeta {
@@ -267,6 +282,36 @@ export class OGEngine {
     const { writeFile } = await import('node:fs/promises');
     await writeFile(filePath, result);
     return result;
+  }
+
+  /**
+   * Fetch a URL, extract OG meta tags, and render an image.
+   * The server extracts title, description, author, and og:image automatically.
+   */
+  async renderFromUrl(request: RenderFromUrlRequest): Promise<BufferWithMeta> {
+    const res = await this.fetchWithRetry(`${this.baseUrl}/render/from-url`, {
+      method: 'POST',
+      headers: this.headers(),
+      body: JSON.stringify(request),
+    });
+
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({
+        message: `HTTP ${res.status}`,
+      }))) as Record<string, unknown>;
+      throw new OGEngineError(res.status, err as { message: string });
+    }
+
+    const arrayBuf = await res.arrayBuffer();
+    const buf = Buffer.from(arrayBuf);
+
+    return attachMeta(buf, {
+      renderTimeMs: Number.parseFloat(res.headers.get('X-Render-Time-Ms') ?? '0'),
+      titleLines: Number(res.headers.get('X-Title-Lines') ?? 0),
+      descLines: Number(res.headers.get('X-Desc-Lines') ?? 0),
+      layoutOverflow: res.headers.get('X-Layout-Overflow') === 'true',
+      cached: res.headers.get('X-Cache') === 'hit',
+    });
   }
 
   /**
