@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
@@ -14,9 +15,13 @@ import { triggersRoute } from './api/triggers';
 import { usageRoute } from './api/usage';
 import { validateRoute } from './api/validate';
 import { webhooksRoute } from './api/webhooks';
+import { csrfMiddleware, sessionMiddleware } from './auth/middleware';
+import { authRoutes } from './auth/routes';
+import { dashboardRoutes } from './dashboard/routes';
 import { registerFonts } from './engine/fonts';
 import { authMiddleware, optionalAuthMiddleware, planGate, usageTracking } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
+import { openapiRoutes } from './openapi/swagger';
 
 const app = new Hono();
 
@@ -78,7 +83,42 @@ if (authEnabled) {
   app.use('/billing/*', authMiddleware());
 }
 
+// ─── Static files (htmx, dashboard CSS) ─────────────────────
+const STATIC_DIR = join(import.meta.dir, 'static');
+const MIME_TYPES: Record<string, string> = {
+  js: 'application/javascript',
+  css: 'text/css',
+  png: 'image/png',
+  svg: 'image/svg+xml',
+  json: 'application/json',
+};
+
+app.get('/static/:file', (c) => {
+  const file = c.req.param('file');
+  const filePath = join(STATIC_DIR, file);
+  if (!existsSync(filePath)) {
+    return c.json({ error: 'not_found', message: 'Static file not found' }, 404);
+  }
+  const ext = file.split('.').pop() ?? '';
+  const contentType = MIME_TYPES[ext] ?? 'application/octet-stream';
+  const content = readFileSync(filePath);
+  c.header('Content-Type', contentType);
+  c.header('Cache-Control', 'public, immutable, max-age=31536000');
+  return c.body(content);
+});
+
+// ─── Dashboard (session-protected) ──────────────────────────
+app.use('/dashboard', sessionMiddleware());
+app.use('/dashboard', csrfMiddleware());
+app.use('/dashboard/*', sessionMiddleware());
+app.use('/dashboard/*', csrfMiddleware());
+app.route('/', dashboardRoutes);
+
+// ─── OpenAPI / Swagger ──────────────────────────────────────
+app.route('/', openapiRoutes);
+
 // ─── Public routes ───────────────────────────────────────────
+app.route('/', authRoutes);
 app.route('/', healthRoute);
 app.route('/', registerRoute);
 app.route('/', webhooksRoute);
@@ -158,6 +198,8 @@ async function start() {
 }
 
 start();
+
+export { app };
 
 export default {
   port: PORT,

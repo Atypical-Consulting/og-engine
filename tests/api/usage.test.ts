@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { usageRoute } from '../../src/api/usage';
-import { closeDb, createApiKey, incrementUsage, logUsage } from '../../src/db';
+import { closeDb, createApiKey, createUser, incrementUsage, logRender } from '../../src/db';
 import { authMiddleware } from '../../src/middleware/auth';
 
 beforeEach(() => {
@@ -29,9 +29,17 @@ describe('GET /usage', () => {
   });
 
   it('returns usage stats with valid auth', async () => {
-    const record = createApiKey('usage@example.com');
-    incrementUsage(record.id);
-    logUsage(record.id, '/render', 10.0, 'og');
+    const user = createUser('usage@example.com');
+    const record = createApiKey(user.id);
+    incrementUsage(user.id);
+    logRender({
+      userId: user.id,
+      apiKeyId: record.id,
+      endpoint: '/render',
+      requestPayload: {},
+      format: 'og',
+      renderTimeMs: 10.0,
+    });
 
     const app = createApp();
     const res = await app.request('/usage', {

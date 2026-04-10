@@ -1,5 +1,13 @@
 import type { Context, Next } from 'hono';
-import { type ApiKeyRecord, findApiKeyByKey, incrementUsage, logUsage, type Plan } from '../db';
+import {
+  type ApiKeyRecord,
+  findApiKeyByKey,
+  findUserById,
+  incrementUsage,
+  logRender,
+  type Plan,
+  type UserRecord,
+} from '../db';
 
 // Plan feature access per DECISIONS.md
 const FEATURE_GATES: Record<string, Plan[]> = {
@@ -17,7 +25,7 @@ export function canAccessFeature(plan: Plan, feature: string): boolean {
 
 /**
  * Required auth middleware — rejects unauthenticated requests.
- * Checks quota and increments usage.
+ * Checks user-level quota and increments usage.
  */
 export function authMiddleware() {
   return async (c: Context, next: Next) => {
@@ -47,16 +55,18 @@ export function authMiddleware() {
       );
     }
 
-    if (record.calls_used >= record.calls_limit) {
+    const user = record.user_id ? findUserById(record.user_id) : null;
+
+    if (user && user.calls_used >= user.calls_limit) {
       return c.json(
         {
           error: 'quota_exceeded',
           message: 'Monthly render quota exceeded. Upgrade your plan or wait for reset.',
           details: {
-            limit: record.calls_limit,
-            used: record.calls_used,
-            plan: record.plan,
-            periodStart: record.period_start,
+            limit: user.calls_limit,
+            used: user.calls_used,
+            plan: user.plan,
+            periodStart: user.period_start,
             upgradeUrl: 'https://og-engine.com/pricing',
           },
           docs: 'https://og-engine.com/api-reference/errors#quota_exceeded',
@@ -66,6 +76,7 @@ export function authMiddleware() {
     }
 
     c.set('apiKey', record);
+    if (user) c.set('user', user);
     await next();
   };
 }
@@ -82,6 +93,8 @@ export function optionalAuthMiddleware() {
       const record = findApiKeyByKey(key);
       if (record?.active) {
         c.set('apiKey', record);
+        const user = record.user_id ? findUserById(record.user_id) : null;
+        if (user) c.set('user', user);
       } else if (record) {
         return c.json(
           {
@@ -104,15 +117,15 @@ export function optionalAuthMiddleware() {
  */
 export function planGate(feature: string) {
   return async (c: Context, next: Next) => {
-    const record = c.get('apiKey' as never) as ApiKeyRecord | undefined;
-    if (record && !canAccessFeature(record.plan as Plan, feature)) {
+    const user = c.get('user' as never) as UserRecord | undefined;
+    if (user && !canAccessFeature(user.plan as Plan, feature)) {
       return c.json(
         {
           error: 'plan_required',
-          message: `This feature requires a higher plan. Your plan: ${record.plan}.`,
+          message: `This feature requires a higher plan. Your plan: ${user.plan}.`,
           details: {
             feature,
-            currentPlan: record.plan,
+            currentPlan: user.plan,
             requiredPlans: FEATURE_GATES[feature],
             upgradeUrl: 'https://og-engine.com/pricing',
           },
@@ -132,14 +145,33 @@ export function planGate(feature: string) {
 export function usageTracking(endpoint: string) {
   return async (c: Context, next: Next) => {
     const record = c.get('apiKey' as never) as ApiKeyRecord | undefined;
+    const user = c.get('user' as never) as UserRecord | undefined;
 
     await next();
 
     // Only track on successful responses
-    if (record && c.res.status >= 200 && c.res.status < 300) {
-      incrementUsage(record.id);
+    if (record && user && c.res.status >= 200 && c.res.status < 300) {
+      incrementUsage(user.id);
       const renderTimeMs = c.res.headers.get('X-Render-Time-Ms');
-      logUsage(record.id, endpoint, renderTimeMs ? parseFloat(renderTimeMs) : undefined);
+      let requestPayload: object = {};
+      try {
+        const cloned = c.req.raw.clone();
+        const text = await cloned.text();
+        if (text) requestPayload = JSON.parse(text) as object;
+      } catch {
+        // ignore parse errors — payload stays {}
+      }
+      const format = (requestPayload as Record<string, unknown>).format as string | undefined;
+      const template = (requestPayload as Record<string, unknown>).template as string | undefined;
+      logRender({
+        userId: user.id,
+        apiKeyId: record.id,
+        endpoint,
+        requestPayload,
+        format: format ?? 'og',
+        template,
+        renderTimeMs: renderTimeMs ? parseFloat(renderTimeMs) : undefined,
+      });
     }
   };
 }

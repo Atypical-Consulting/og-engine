@@ -2,13 +2,15 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   closeDb,
   createApiKey,
+  createUser,
   findApiKeyByEmail,
   findApiKeyByKey,
+  findUserById,
   generateApiKey,
   getDb,
   getUsageStats,
   incrementUsage,
-  logUsage,
+  logRender,
   PLAN_LIMITS,
   resetUsage,
   updatePlan,
@@ -32,7 +34,7 @@ describe('database', () => {
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[];
     const names = tables.map((t) => t.name);
     expect(names).toContain('api_keys');
-    expect(names).toContain('usage_log');
+    expect(names).toContain('render_history');
   });
 });
 
@@ -45,11 +47,10 @@ describe('generateApiKey', () => {
 });
 
 describe('API key CRUD', () => {
-  it('creates and retrieves a free tier key', () => {
-    const record = createApiKey('test@example.com');
-    expect(record.plan).toBe('free');
-    expect(record.calls_limit).toBe(500);
-    expect(record.calls_used).toBe(0);
+  it('creates and retrieves a key linked to a user', () => {
+    const user = createUser('test@example.com');
+    const record = createApiKey(user.id);
+    expect(record.user_id).toBe(user.id);
     expect(record.key.startsWith('oge_sk_')).toBe(true);
 
     const found = findApiKeyByKey(record.key);
@@ -58,7 +59,8 @@ describe('API key CRUD', () => {
   });
 
   it('finds by email', () => {
-    createApiKey('lookup@example.com');
+    const user = createUser('lookup@example.com');
+    createApiKey(user.id);
     const found = findApiKeyByEmail('lookup@example.com');
     expect(found).not.toBeNull();
   });
@@ -67,40 +69,65 @@ describe('API key CRUD', () => {
     expect(findApiKeyByKey('oge_sk_nonexistent')).toBeNull();
   });
 
-  it('increments usage', () => {
-    const record = createApiKey('inc@example.com');
-    incrementUsage(record.id);
-    incrementUsage(record.id);
-    const updated = findApiKeyByKey(record.key);
+  it('increments usage on user level', () => {
+    const user = createUser('inc@example.com');
+    createApiKey(user.id);
+    incrementUsage(user.id);
+    incrementUsage(user.id);
+    const updated = findUserById(user.id);
     expect(updated!.calls_used).toBe(2);
   });
 
-  it('updates plan and limits', () => {
-    const record = createApiKey('upgrade@example.com');
-    updatePlan(record.id, 'pro');
-    const updated = findApiKeyByKey(record.key);
+  it('updates plan and limits on user level', () => {
+    const user = createUser('upgrade@example.com');
+    createApiKey(user.id);
+    updatePlan(user.id, 'pro');
+    const updated = findUserById(user.id);
     expect(updated!.plan).toBe('pro');
     expect(updated!.calls_limit).toBe(PLAN_LIMITS.pro);
   });
 
-  it('resets usage', () => {
-    const record = createApiKey('reset@example.com');
-    incrementUsage(record.id);
-    incrementUsage(record.id);
-    resetUsage(record.id);
-    const updated = findApiKeyByKey(record.key);
+  it('resets usage on user level', () => {
+    const user = createUser('reset@example.com');
+    createApiKey(user.id);
+    incrementUsage(user.id);
+    incrementUsage(user.id);
+    resetUsage(user.id);
+    const updated = findUserById(user.id);
     expect(updated!.calls_used).toBe(0);
   });
 });
 
 describe('usage logging', () => {
   it('logs and retrieves usage stats', () => {
-    const record = createApiKey('log@example.com');
-    logUsage(record.id, '/render', 12.5, 'og');
-    logUsage(record.id, '/render', 8.3, 'twitter');
-    logUsage(record.id, '/render/batch', 45.0, 'og');
+    const user = createUser('log@example.com');
+    const record = createApiKey(user.id);
+    logRender({
+      userId: user.id,
+      apiKeyId: record.id,
+      endpoint: '/render',
+      requestPayload: {},
+      format: 'og',
+      renderTimeMs: 12.5,
+    });
+    logRender({
+      userId: user.id,
+      apiKeyId: record.id,
+      endpoint: '/render',
+      requestPayload: {},
+      format: 'twitter',
+      renderTimeMs: 8.3,
+    });
+    logRender({
+      userId: user.id,
+      apiKeyId: record.id,
+      endpoint: '/render/batch',
+      requestPayload: {},
+      format: 'og',
+      renderTimeMs: 45.0,
+    });
 
-    const stats = getUsageStats(record.id);
+    const stats = getUsageStats(user.id);
     expect(stats.total).toBe(3);
     expect(stats.byEndpoint['/render']).toBe(2);
     expect(stats.byEndpoint['/render/batch']).toBe(1);

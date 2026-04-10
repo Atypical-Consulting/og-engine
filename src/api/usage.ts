@@ -1,12 +1,13 @@
 import { Hono } from 'hono';
-import { type ApiKeyRecord, getUsageStats } from '../db';
+import { type ApiKeyRecord, getUsageStats, type UserRecord } from '../db';
 
 export const usageRoute = new Hono();
 
 usageRoute.get('/usage', async (c) => {
   const record = c.get('apiKey' as never) as ApiKeyRecord | undefined;
+  const user = c.get('user' as never) as UserRecord | undefined;
 
-  if (!record) {
+  if (!record || !user) {
     return c.json(
       {
         error: 'unauthorized',
@@ -17,15 +18,15 @@ usageRoute.get('/usage', async (c) => {
     );
   }
 
-  const stats = getUsageStats(record.id);
+  const stats = getUsageStats(user.id);
 
   return c.json({
-    plan: record.plan,
+    plan: user.plan,
     quota: {
-      limit: record.calls_limit,
-      used: record.calls_used,
-      remaining: Math.max(0, record.calls_limit - record.calls_used),
-      periodStart: record.period_start,
+      limit: user.calls_limit,
+      used: user.calls_used,
+      remaining: Math.max(0, user.calls_limit - user.calls_used),
+      periodStart: user.period_start,
     },
     usage: stats,
   });

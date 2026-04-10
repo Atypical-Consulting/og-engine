@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { resetFreeQuotas } from '../db';
+import { purgeExpiredMagicLinks, purgeExpiredSessions, resetFreeQuotas } from '../db';
 
 export const adminRoute = new Hono();
 
@@ -14,10 +14,14 @@ adminRoute.post('/admin/reset-free-quotas', async (c) => {
     return c.json({ error: 'unauthorized', message: 'Invalid admin secret.' }, 401);
   }
 
-  const count = resetFreeQuotas();
+  const reset = resetFreeQuotas();
+  const sessionsPurged = purgeExpiredSessions();
+  const magicLinksPurged = purgeExpiredMagicLinks();
 
   return c.json({
-    reset: count,
+    reset,
+    sessionsPurged,
+    magicLinksPurged,
     timestamp: new Date().toISOString(),
   });
 });

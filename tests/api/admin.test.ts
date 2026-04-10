@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { closeDb, createApiKey, findApiKeyByEmail, getDb } from '../../src/db';
+import { closeDb, createApiKey, createUser, findUserByEmail, getDb } from '../../src/db';
 
 beforeEach(() => {
   closeDb();
@@ -29,14 +29,17 @@ function postReset(app: Hono, secret?: string) {
 
 describe('POST /admin/reset-free-quotas', () => {
   it('resets usage for all free users', async () => {
-    const free1 = createApiKey('free1@example.com', 'free');
-    const free2 = createApiKey('free2@example.com', 'free');
-    const paid = createApiKey('paid@example.com', 'pro');
+    const free1User = createUser('free1@example.com', 'free');
+    createApiKey(free1User.id);
+    const free2User = createUser('free2@example.com', 'free');
+    createApiKey(free2User.id);
+    const paidUser = createUser('paid@example.com', 'pro');
+    createApiKey(paidUser.id);
 
     const db = getDb();
-    db.prepare('UPDATE api_keys SET calls_used = 100 WHERE id = ?').run(free1.id);
-    db.prepare('UPDATE api_keys SET calls_used = 200 WHERE id = ?').run(free2.id);
-    db.prepare('UPDATE api_keys SET calls_used = 300 WHERE id = ?').run(paid.id);
+    db.prepare('UPDATE users SET calls_used = 100 WHERE id = ?').run(free1User.id);
+    db.prepare('UPDATE users SET calls_used = 200 WHERE id = ?').run(free2User.id);
+    db.prepare('UPDATE users SET calls_used = 300 WHERE id = ?').run(paidUser.id);
 
     const app = await createApp();
     const res = await postReset(app, 'test_admin_secret');
@@ -44,9 +47,9 @@ describe('POST /admin/reset-free-quotas', () => {
     const body = await res.json();
     expect(body.reset).toBe(2);
 
-    expect(findApiKeyByEmail('free1@example.com')!.calls_used).toBe(0);
-    expect(findApiKeyByEmail('free2@example.com')!.calls_used).toBe(0);
-    expect(findApiKeyByEmail('paid@example.com')!.calls_used).toBe(300);
+    expect(findUserByEmail('free1@example.com')!.calls_used).toBe(0);
+    expect(findUserByEmail('free2@example.com')!.calls_used).toBe(0);
+    expect(findUserByEmail('paid@example.com')!.calls_used).toBe(300);
   });
 
   it('returns 401 without admin secret', async () => {

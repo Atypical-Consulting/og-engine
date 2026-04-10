@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createApiKey, findApiKeyByEmail } from '../db';
+import { createApiKey, createUser, findApiKeyByEmail, findUserByEmail } from '../db';
 import { sendWelcomeEmail } from '../email/send';
 
 export const registerRoute = new Hono();
@@ -44,23 +44,25 @@ registerRoute.post('/auth/register', async (c) => {
   // Per DECISIONS.md Decision 4: duplicate registration returns existing key
   const existing = findApiKeyByEmail(email);
   if (existing) {
+    const user = findUserByEmail(email);
     return c.json({
       apiKey: existing.key,
-      plan: existing.plan,
-      limit: existing.calls_limit,
+      plan: user?.plan ?? 'free',
+      limit: user?.calls_limit ?? 500,
       message: `Existing API key returned. Also sent to ${email}.`,
     });
   }
 
-  const record = createApiKey(email, 'free');
+  const user = createUser(email, 'free');
+  const record = createApiKey(user.id);
 
-  await sendWelcomeEmail(email, record.key, record.plan);
+  await sendWelcomeEmail(email, record.key, user.plan);
 
   return c.json(
     {
       apiKey: record.key,
-      plan: record.plan,
-      limit: record.calls_limit,
+      plan: user.plan,
+      limit: user.calls_limit,
       message: `API key created. Also sent to ${email}.`,
     },
     201,
