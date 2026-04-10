@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import Stripe from 'stripe';
-import type { ApiKeyRecord } from '../db';
+import type { UserRecord } from '../db';
 
 export const billingRoute = new Hono();
 
@@ -10,9 +10,9 @@ billingRoute.get('/billing/portal', async (c) => {
     return c.json({ error: 'server_error', message: 'Stripe is not configured.' }, 500);
   }
 
-  const record = c.get('apiKey' as never) as ApiKeyRecord;
+  const user = c.get('user' as never) as UserRecord | undefined;
 
-  if (!record.stripe_customer_id) {
+  if (!user?.stripe_customer_id) {
     return c.json(
       {
         error: 'no_billing_account',
@@ -25,7 +25,7 @@ billingRoute.get('/billing/portal', async (c) => {
 
   const stripe = new Stripe(stripeSecretKey);
   const session = await stripe.billingPortal.sessions.create({
-    customer: record.stripe_customer_id,
+    customer: user.stripe_customer_id,
     return_url: 'https://og-engine.com/pricing',
   });
 

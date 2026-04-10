@@ -2,8 +2,10 @@ import { Hono } from 'hono';
 import Stripe from 'stripe';
 import {
   createApiKey,
+  createUser,
   findApiKeyByEmail,
-  findApiKeyByStripeSubscription,
+  findUserByEmail,
+  findUserByStripeSubscription,
   type Plan,
   resetUsage,
   updatePlan,
@@ -59,16 +61,21 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const plan = priceId ? getPlanFromPriceId(priceId) : null;
       if (!plan) break;
 
-      let record = findApiKeyByEmail(email);
-      if (record) {
-        updatePlan(record.id, plan);
-        updateStripeInfo(record.id, customerId, subscriptionId);
+      let user = findUserByEmail(email);
+      let apiKey = findApiKeyByEmail(email);
+      if (user) {
+        updatePlan(user.id, plan);
+        updateStripeInfo(user.id, customerId, subscriptionId);
       } else {
-        record = createApiKey(email, plan);
-        updateStripeInfo(record.id, customerId, subscriptionId);
+        user = createUser(email, plan);
+        updateStripeInfo(user.id, customerId, subscriptionId);
       }
 
-      await sendWelcomeEmail(email, record.key, plan);
+      if (!apiKey) {
+        apiKey = createApiKey(user.id);
+      }
+
+      await sendWelcomeEmail(email, apiKey.key, plan);
       break;
     }
 
@@ -82,10 +89,10 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const plan = getPlanFromPriceId(priceId);
       if (!plan) break;
 
-      const record = findApiKeyByStripeSubscription(subId);
-      if (record) {
-        updatePlan(record.id, plan);
-        await sendUpgradeEmail(record.email, plan);
+      const user = findUserByStripeSubscription(subId);
+      if (user) {
+        updatePlan(user.id, plan);
+        await sendUpgradeEmail(user.email, plan);
       }
       break;
     }
@@ -95,10 +102,10 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const subId = sub.id;
       if (!subId) break;
 
-      const record = findApiKeyByStripeSubscription(subId);
-      if (record) {
-        updatePlan(record.id, 'free');
-        await sendDowngradeEmail(record.email);
+      const user = findUserByStripeSubscription(subId);
+      if (user) {
+        updatePlan(user.id, 'free');
+        await sendDowngradeEmail(user.email);
       }
       break;
     }
@@ -108,9 +115,9 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const subId = (invoice.parent?.subscription_details?.subscription as string) ?? null;
       if (!subId) break;
 
-      const record = findApiKeyByStripeSubscription(subId);
-      if (record) {
-        resetUsage(record.id);
+      const user = findUserByStripeSubscription(subId);
+      if (user) {
+        resetUsage(user.id);
       }
       break;
     }
