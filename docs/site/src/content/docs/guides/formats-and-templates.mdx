@@ -35,7 +35,7 @@ These limits apply at the default font sizes (48px title, 22px description). Inc
 
 ## Templates
 
-Templates control the visual structure: background, typography placement, decorative elements, and how `author` and `tag` fields appear.
+Templates control the visual structure: background, typography placement, decorative elements, and how `author` and `tag` fields appear. New templates accept arbitrary extra fields through the `variables` object — see each template's section in the [Templates Gallery](/templates/gallery/) for the full list of supported keys.
 
 ### `default`
 
@@ -83,6 +83,54 @@ A horizontal, CTA-oriented layout:
 
 Best for: email headers, newsletters, transactional email banners.
 
+### `product-card`
+
+An e-commerce template for product showcases. Accepts `variables.price`, `variables.badge`, and `variables.brand`. Supports a product image via `images.product`.
+
+Best for: e-commerce product shares, catalogue cards, promotional social posts.
+
+### `event`
+
+A conference and event template. Accepts `variables.date`, `variables.location`, `variables.speaker`, and `variables.speakerRole`.
+
+Best for: conferences, meetups, webinars, workshop announcements.
+
+### `testimonial`
+
+A quote-focused template for social proof. Accepts `variables.name`, `variables.role`, and `variables.company`. Supports a circular avatar via `images.avatar`.
+
+Best for: customer testimonials, pull-quote social posts, review cards.
+
+### `github-repo`
+
+A developer-tool template modelled after GitHub repository cards. Accepts `variables.owner`, `variables.stars`, and `variables.language`. Supports a repo avatar via `images.avatar`.
+
+Best for: open source announcements, developer portfolio cards.
+
+### `news-article`
+
+An editorial news card template. Accepts `variables.source`, `variables.date`, and `variables.category`. Designed to work with a background image.
+
+Best for: news articles, editorial content, press release cards.
+
+### `pricing`
+
+A SaaS pricing-card template. Accepts `variables.plan`, `variables.price`, `variables.period`, `variables.features` (newline-separated), and `variables.cta`.
+
+Best for: pricing page social shares, upgrade prompts, plan comparison cards.
+
+### `profile-card`
+
+A personal or professional profile template. Accepts `variables.role`, `variables.company`, and `variables.bio`. Supports an avatar via `images.avatar`.
+
+Best for: speaker cards, author bios, team member spotlights.
+
+### `announcement`
+
+A launch-oriented template for product releases and milestones. Accepts `variables.subtitle` and `variables.cta`. Supports a background image via `images.background`.
+
+Best for: product launches, feature releases, milestone announcements.
+
 ## Format + Template Compatibility
 
 While all combinations are technically valid, some pairings produce noticeably better results:
@@ -93,8 +141,16 @@ While all combinations are technically valid, some pairings produce noticeably b
 | `social-card` | `twitter`, `square` | Looks great at 16:9 and 1:1 |
 | `blog-hero` | `og`, `twitter` | Background images shine in landscape |
 | `email-banner` | `og`, `linkedin` | Horizontal layout requires wide canvas |
+| `product-card` | `og`, `twitter` | Product image needs landscape space |
+| `event` | `og`, `linkedin` | Metadata row benefits from wide canvas |
+| `testimonial` | `square`, `twitter` | Quote text reads best at 1:1 and 16:9 |
+| `github-repo` | `og`, `twitter` | Metadata row designed for landscape |
+| `news-article` | `og`, `twitter` | Background images shine in landscape |
+| `pricing` | `og`, `square` | Feature list needs vertical space |
+| `profile-card` | `twitter`, `square` | Avatar + bio layout suits 16:9 and 1:1 |
+| `announcement` | `og`, `twitter`, `story` | Works across all three aspect ratios |
 
-The `story` format works best with `social-card` or `default` using a `bottom` layout, so the text sits comfortably in the lower half of the tall canvas.
+The `story` format works best with `social-card`, `announcement`, or `default` using a `bottom` layout, so the text sits comfortably in the lower half of the tall canvas.
 
 ## Specifying Format and Template
 

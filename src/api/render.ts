@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { type ApiKeyRecord, findCustomTemplate } from '../db';
 import type { CustomTemplateDefinition } from '../engine/custom-template';
 import { getCachedImage, hashRequest, setCachedImage } from '../engine/image-cache';
+import { loadRemoteImages } from '../engine/image-loader';
 import { renderCard } from '../engine/renderer';
 import { renderSchema } from '../schemas/request';
 
@@ -90,8 +91,20 @@ renderRoute.post('/render', async (c) => {
 
   const data = parsed.data;
 
-  // Check image cache (only for JSON requests without background image)
-  if (!bgImageBuffer) {
+  // Merge legacy content fields into variables
+  const variables: Record<string, string> = {
+    title: data.title,
+    description: data.description,
+    author: data.author,
+    tag: data.tag,
+    ...data.variables,
+  };
+
+  // Fetch named remote images (in parallel)
+  const namedImages = Object.keys(data.images).length > 0 ? await loadRemoteImages(data.images) : {};
+
+  // Check image cache (only for JSON requests without background image or named images)
+  if (!bgImageBuffer && Object.keys(data.images).length === 0) {
     const cacheKey = hashRequest(data);
     const cached = getCachedImage(cacheKey);
     if (cached) {
@@ -138,6 +151,8 @@ renderRoute.post('/render', async (c) => {
     description: data.description,
     author: data.author,
     tag: data.tag,
+    variables,
+    namedImages,
     format: data.format,
     template: data.template,
     accent: data.style.accent,
@@ -165,8 +180,8 @@ renderRoute.post('/render', async (c) => {
     'X-Cache': 'miss',
   };
 
-  // Cache the rendered image (only for JSON requests without background image)
-  if (!bgImageBuffer) {
+  // Cache the rendered image (only for JSON requests without background image or named images)
+  if (!bgImageBuffer && Object.keys(data.images).length === 0) {
     const cacheKey = hashRequest(data);
     setCachedImage(cacheKey, { buffer: result.buffer, contentType: result.contentType, headers });
   }

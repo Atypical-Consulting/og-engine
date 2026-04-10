@@ -24,6 +24,8 @@ export interface RenderOptions {
   autoFit: boolean;
   customTemplateDefinition?: CustomTemplateDefinition;
   outputFormat: 'png' | 'webp' | 'pdf';
+  variables?: Record<string, string>;
+  namedImages?: Record<string, import('@napi-rs/canvas').Image | null>;
   outputQuality: number;
   timing?: boolean;
 }
@@ -94,6 +96,14 @@ export async function renderCard(options: RenderOptions): Promise<RenderResult> 
 
   if (t) t.t1 = performance.now();
 
+  const variables: Record<string, string> = {
+    title,
+    description,
+    author,
+    tag,
+    ...options.variables,
+  };
+
   // Run template — custom DSL or built-in
   let result: import('./templates').TemplateResult;
   if (options.customTemplateDefinition) {
@@ -102,9 +112,10 @@ export async function renderCard(options: RenderOptions): Promise<RenderResult> 
       ctx,
       W,
       H,
-      { title, description, author, tag },
+      variables,
       { accent, fontFamily: fontEntry.family },
       bgImage,
+      options.namedImages ?? {},
     );
   } else {
     const templateFn = getTemplate(template);
@@ -125,6 +136,8 @@ export async function renderCard(options: RenderOptions): Promise<RenderResult> 
       },
       bgImage,
       overlayOpacity,
+      variables,
+      namedImages: options.namedImages ?? {},
     });
   }
 

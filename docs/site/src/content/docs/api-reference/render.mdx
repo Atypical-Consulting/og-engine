@@ -18,11 +18,13 @@ POST https://og-engine.com/render
 | Field | Type | Required | Default | Constraints |
 |---|---|---|---|---|
 | `format` | string | Yes | — | `og`, `twitter`, `square`, `linkedin`, `story` |
-| `template` | string | No | `"default"` | `default`, `social-card`, `blog-hero`, `email-banner`, or `custom:<name>` (Scale plan) |
+| `template` | string | No | `"default"` | `default`, `social-card`, `blog-hero`, `email-banner`, `product-card`, `event`, `testimonial`, `github-repo`, `news-article`, `pricing`, `profile-card`, `announcement`, or `custom:<name>` (Scale plan) |
 | `title` | string | Yes | — | Max 200 characters |
 | `description` | string | No | — | Max 500 characters |
 | `author` | string | No | — | Max 100 characters |
 | `tag` | string | No | — | Max 50 characters |
+| `variables` | object | No | `{}` | Arbitrary key-value pairs (`Record<string, string>`) for template interpolation |
+| `images` | object | No | `{}` | Named image URLs fetched server-side (`Record<string, url>`) for use in template image layers |
 | `style.accent` | string | No | `"#38ef7d"` | Valid hex color (`#rrggbb` or `#rgb`) |
 | `style.font` | string | No | `"Outfit"` | One of the 8 supported fonts |
 | `style.titleSize` | number | No | `48` | 28–72 |
@@ -61,6 +63,54 @@ curl -X POST https://og-engine.com/render \
   }' \
   --output card.png
 ```
+
+## With Variables
+
+Use `variables` to pass arbitrary template interpolation data. Templates can reference these values to personalise content dynamically:
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "profile-card",
+    "title": "{{name}}",
+    "description": "{{bio}}",
+    "variables": {
+      "name": "Jane Smith",
+      "bio": "Staff Engineer at Acme Corp",
+      "handle": "@janesmith",
+      "followers": "4,200"
+    },
+    "output": { "format": "png" }
+  }' \
+  --output profile.png
+```
+
+## With Named Images
+
+Use `images` to pass server-fetched images by name. Custom templates can reference them via `source` on image layers:
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer oge_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "template": "custom:product-showcase",
+    "title": "Wireless Noise-Cancelling Headphones",
+    "description": "Premium sound. All day comfort.",
+    "images": {
+      "hero": "https://example.com/product-hero.jpg",
+      "logo": "https://example.com/brand-logo.png"
+    },
+    "output": { "format": "png" }
+  }' \
+  --output product.png
+```
+
+Named images are fetched server-side at render time. Each URL must be publicly accessible and return a valid JPEG, PNG, or WebP image under 5MB.
 
 ## With Background Image
 
