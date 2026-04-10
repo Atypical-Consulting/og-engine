@@ -1,13 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   closeDb,
+  countRecentMagicLinks,
   createApiKey,
+  createMagicLink,
+  createSession,
   createUser,
+  deleteSession,
+  findMagicLinkByToken,
+  findSessionByToken,
   findUserByApiKey,
   findUserByEmail,
   findUserById,
   getDb,
   incrementUsage,
+  markMagicLinkUsed,
+  purgeExpiredMagicLinks,
+  purgeExpiredSessions,
 } from '../../src/db';
 
 // Use in-memory database for tests
@@ -132,5 +141,131 @@ describe('API key linked to user', () => {
     }[];
     const indexNames = indexes.map((i) => i.name);
     expect(indexNames).toContain('idx_api_keys_user_id');
+  });
+});
+
+describe('sessions', () => {
+  it('creates and retrieves a session by token', () => {
+    const user = createUser('session-user@example.com');
+    const token = 'my-secret-token-1';
+    const session = createSession(user.id, token);
+
+    expect(session.user_id).toBe(user.id);
+    expect(session.csrf_token).toBeTruthy();
+    expect(session.expires_at).toBeTruthy();
+
+    const found = findSessionByToken(token);
+    expect(found).not.toBeNull();
+    expect(found!.id).toBe(session.id);
+    expect(found!.user_id).toBe(user.id);
+    // token_hash should not be the raw token
+    expect(found!.token_hash).not.toBe(token);
+  });
+
+  it('deletes a session by token', () => {
+    const user = createUser('session-delete@example.com');
+    const token = 'delete-me-token';
+    createSession(user.id, token);
+
+    deleteSession(token);
+
+    const found = findSessionByToken(token);
+    expect(found).toBeNull();
+  });
+
+  it('returns null for expired session', () => {
+    const user = createUser('session-expired@example.com');
+    const token = 'expired-session-token';
+    // Insert a session with a past expiry directly
+    const db = getDb();
+    const session = createSession(user.id, token);
+    db.prepare('UPDATE sessions SET expires_at = ? WHERE id = ?').run('2000-01-01 00:00:00', session.id);
+
+    const found = findSessionByToken(token);
+    expect(found).toBeNull();
+  });
+
+  it('purges expired sessions and returns count', () => {
+    const user = createUser('session-purge@example.com');
+    const db = getDb();
+
+    const s1 = createSession(user.id, 'purge-token-1');
+    const s2 = createSession(user.id, 'purge-token-2');
+    createSession(user.id, 'purge-token-3'); // keep this one
+
+    db.prepare('UPDATE sessions SET expires_at = ? WHERE id IN (?, ?)').run('2000-01-01 00:00:00', s1.id, s2.id);
+
+    const count = purgeExpiredSessions();
+    expect(count).toBe(2);
+  });
+});
+
+describe('magic_links', () => {
+  it('creates and retrieves a magic link by token', () => {
+    const token = 'magic-token-1';
+    const link = createMagicLink('magic@example.com', token);
+
+    expect(link.email).toBe('magic@example.com');
+    expect(link.used).toBe(0);
+
+    const found = findMagicLinkByToken(token);
+    expect(found).not.toBeNull();
+    expect(found!.id).toBe(link.id);
+    expect(found!.email).toBe('magic@example.com');
+    expect(found!.token_hash).not.toBe(token);
+  });
+
+  it('marks a magic link as used', () => {
+    const token = 'magic-token-used';
+    createMagicLink('used@example.com', token);
+
+    markMagicLinkUsed(token);
+
+    const found = findMagicLinkByToken(token);
+    expect(found).toBeNull();
+  });
+
+  it('returns null for expired magic link', () => {
+    const token = 'magic-token-expired';
+    // negative expiresInMinutes puts expiry in the past
+    createMagicLink('expired@example.com', token, -5);
+
+    const found = findMagicLinkByToken(token);
+    expect(found).toBeNull();
+  });
+
+  it('counts recent magic links within window', () => {
+    const email = 'rate-limit@example.com';
+    createMagicLink(email, 'rl-token-1');
+    createMagicLink(email, 'rl-token-2');
+    createMagicLink(email, 'rl-token-3');
+
+    const count = countRecentMagicLinks(email);
+    expect(count).toBe(3);
+  });
+
+  it('returns 0 for magic links outside the window', () => {
+    const email = 'old-links@example.com';
+    const db = getDb();
+
+    const link = createMagicLink(email, 'old-token-1');
+    db.prepare('UPDATE magic_links SET created_at = ? WHERE id = ?').run('2000-01-01 00:00:00', link.id);
+
+    const count = countRecentMagicLinks(email, 10);
+    expect(count).toBe(0);
+  });
+
+  it('purges expired and used magic links and returns count', () => {
+    createMagicLink('purge1@example.com', 'purge-ml-1', -5); // expired
+    const link2 = createMagicLink('purge2@example.com', 'purge-ml-2');
+    markMagicLinkUsed('purge-ml-2'); // used
+    createMagicLink('purge3@example.com', 'purge-ml-3'); // keep this one
+
+    const count = purgeExpiredMagicLinks();
+    expect(count).toBeGreaterThanOrEqual(2);
+
+    const kept = findMagicLinkByToken('purge-ml-3');
+    expect(kept).not.toBeNull();
+    void link2;
   });
 });

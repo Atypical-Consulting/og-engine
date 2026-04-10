@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { openDatabase, type SqliteDatabase } from './sqlite';
 
@@ -30,6 +31,24 @@ export interface UserRecord {
   period_start: string;
   created_at: string;
   active: number;
+}
+
+export interface SessionRecord {
+  id: string;
+  user_id: string;
+  token_hash: string;
+  csrf_token: string;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface MagicLinkRecord {
+  id: string;
+  email: string;
+  token_hash: string;
+  expires_at: string;
+  used: number;
+  created_at: string;
 }
 
 export interface UsageLogRecord {
@@ -116,6 +135,28 @@ function migrate(d: SqliteDatabase): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_webhooks_api_key ON webhooks(api_key_id);
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL,
+      csrf_token TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
+    CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+
+    CREATE TABLE IF NOT EXISTS magic_links (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      token_hash TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_magic_links_token_hash ON magic_links(token_hash);
+    CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email);
   `);
 }
 
@@ -387,6 +428,123 @@ export function listWebhooks(apiKeyId: string): WebhookRecord[] {
 export function deleteWebhook(id: string): void {
   const d = getDb();
   d.prepare('UPDATE webhooks SET active = 0 WHERE id = ?').run(id);
+}
+
+// ─── Token Hashing ───────────────────────────────────────────
+
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+// ─── Sessions ────────────────────────────────────────────────
+
+function toSqliteDateTime(date: Date): string {
+  return date
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/\.\d{3}Z$/, '');
+}
+
+export function createSession(userId: string, token: string): SessionRecord {
+  const d = getDb();
+  const expiresAt = toSqliteDateTime(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+  const record: SessionRecord = {
+    id: crypto.randomUUID(),
+    user_id: userId,
+    token_hash: hashToken(token),
+    csrf_token: crypto.randomUUID(),
+    expires_at: expiresAt,
+    created_at: toSqliteDateTime(new Date()),
+  };
+
+  d.prepare(`
+    INSERT INTO sessions (id, user_id, token_hash, csrf_token, expires_at, created_at)
+    VALUES ($id, $user_id, $token_hash, $csrf_token, $expires_at, $created_at)
+  `).run(record);
+
+  return record;
+}
+
+export function findSessionByToken(token: string): SessionRecord | null {
+  const d = getDb();
+  return (
+    (d
+      .prepare(`SELECT * FROM sessions WHERE token_hash = ? AND expires_at > datetime('now')`)
+      .get(hashToken(token)) as SessionRecord) ?? null
+  );
+}
+
+export function refreshSession(sessionId: string): void {
+  const d = getDb();
+  const expiresAt = toSqliteDateTime(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+  d.prepare('UPDATE sessions SET expires_at = ? WHERE id = ?').run(expiresAt, sessionId);
+}
+
+export function deleteSession(token: string): void {
+  const d = getDb();
+  d.prepare('DELETE FROM sessions WHERE token_hash = ?').run(hashToken(token));
+}
+
+export function deleteSessionById(sessionId: string): void {
+  const d = getDb();
+  d.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
+}
+
+export function purgeExpiredSessions(): number {
+  const d = getDb();
+  const result = d.prepare(`DELETE FROM sessions WHERE expires_at <= datetime('now')`).run();
+  return result.changes;
+}
+
+// ─── Magic Links ─────────────────────────────────────────────
+
+export function createMagicLink(email: string, token: string, expiresInMinutes = 15): MagicLinkRecord {
+  const d = getDb();
+  const expiresAt = toSqliteDateTime(new Date(Date.now() + expiresInMinutes * 60 * 1000));
+  const record: MagicLinkRecord = {
+    id: crypto.randomUUID(),
+    email,
+    token_hash: hashToken(token),
+    expires_at: expiresAt,
+    used: 0,
+    created_at: toSqliteDateTime(new Date()),
+  };
+
+  d.prepare(`
+    INSERT INTO magic_links (id, email, token_hash, expires_at, used, created_at)
+    VALUES ($id, $email, $token_hash, $expires_at, $used, $created_at)
+  `).run(record);
+
+  return record;
+}
+
+export function findMagicLinkByToken(token: string): MagicLinkRecord | null {
+  const d = getDb();
+  return (
+    (d
+      .prepare(`SELECT * FROM magic_links WHERE token_hash = ? AND expires_at > datetime('now') AND used = 0`)
+      .get(hashToken(token)) as MagicLinkRecord) ?? null
+  );
+}
+
+export function markMagicLinkUsed(token: string): void {
+  const d = getDb();
+  d.prepare('UPDATE magic_links SET used = 1 WHERE token_hash = ?').run(hashToken(token));
+}
+
+export function countRecentMagicLinks(email: string, windowMinutes = 10): number {
+  const d = getDb();
+  const since = toSqliteDateTime(new Date(Date.now() - windowMinutes * 60 * 1000));
+  const row = d
+    .prepare('SELECT COUNT(*) as count FROM magic_links WHERE email = ? AND created_at >= ?')
+    .get(email, since) as { count: number };
+  return row.count;
+}
+
+export function purgeExpiredMagicLinks(): number {
+  const d = getDb();
+  const result = d.prepare(`DELETE FROM magic_links WHERE expires_at <= datetime('now') OR used = 1`).run();
+  return result.changes;
 }
 
 // ─── Cleanup (for tests) ────────────────────────────────────
