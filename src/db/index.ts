@@ -24,6 +24,19 @@ export interface ApiKeyRecord {
   active: number;
 }
 
+export interface UserRecord {
+  id: string;
+  email: string;
+  plan: Plan;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  calls_limit: number;
+  calls_used: number;
+  period_start: string;
+  created_at: string;
+  active: number;
+}
+
 export interface UsageLogRecord {
   id: number;
   api_key_id: string;
@@ -46,6 +59,21 @@ export function getDb(): SqliteDatabase {
 
 function migrate(d: SqliteDatabase): void {
   d.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      plan TEXT NOT NULL DEFAULT 'free',
+      stripe_customer_id TEXT,
+      stripe_subscription_id TEXT,
+      calls_limit INTEGER NOT NULL DEFAULT 500,
+      calls_used INTEGER NOT NULL DEFAULT 0,
+      period_start TEXT NOT NULL DEFAULT (datetime('now')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      active INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
     CREATE TABLE IF NOT EXISTS api_keys (
       id TEXT PRIMARY KEY,
       key TEXT UNIQUE NOT NULL,
@@ -98,6 +126,41 @@ function migrate(d: SqliteDatabase): void {
 
     CREATE INDEX IF NOT EXISTS idx_webhooks_api_key ON webhooks(api_key_id);
   `);
+}
+
+// ─── User CRUD ───────────────────────────────────────────────
+
+export function createUser(email: string, plan: Plan = 'free'): UserRecord {
+  const d = getDb();
+  const record: UserRecord = {
+    id: crypto.randomUUID(),
+    email,
+    plan,
+    stripe_customer_id: null,
+    stripe_subscription_id: null,
+    calls_limit: PLAN_LIMITS[plan],
+    calls_used: 0,
+    period_start: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    active: 1,
+  };
+
+  d.prepare(`
+    INSERT INTO users (id, email, plan, stripe_customer_id, stripe_subscription_id, calls_limit, calls_used, period_start, created_at, active)
+    VALUES ($id, $email, $plan, $stripe_customer_id, $stripe_subscription_id, $calls_limit, $calls_used, $period_start, $created_at, $active)
+  `).run(record);
+
+  return record;
+}
+
+export function findUserByEmail(email: string): UserRecord | null {
+  const d = getDb();
+  return (d.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRecord) ?? null;
+}
+
+export function findUserById(id: string): UserRecord | null {
+  const d = getDb();
+  return (d.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRecord) ?? null;
 }
 
 // ─── API Key CRUD ────────────────────────────────────────────
