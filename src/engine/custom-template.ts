@@ -58,6 +58,7 @@ const textLayer = layerBase.extend({
 
 const imageLayer = layerBase.extend({
   type: z.literal('image'),
+  source: z.string().optional(), // named image key, e.g. "logo", "avatar"
   fit: z.enum(['cover', 'contain', 'fill']).default('cover'),
 });
 
@@ -96,6 +97,7 @@ interface RenderContext {
   vars: Record<string, string>;
   fontFamily: string;
   bgImage: Image | null;
+  namedImages: Record<string, Image | null>;
 }
 
 function interpolate(str: string, vars: Record<string, string>): string {
@@ -133,20 +135,18 @@ export function renderCustomTemplate(
   ctx: SKRSContext2D,
   W: number,
   H: number,
-  content: { title: string; description: string; author: string; tag: string },
+  variables: Record<string, string>,
   style: { accent: string; fontFamily: string },
   bgImage: Image | null,
+  namedImages: Record<string, Image | null> = {},
 ): TemplateResult {
   const s = Math.max(W, H) / 1200;
   const vars: Record<string, string> = {
-    title: content.title,
-    description: content.description,
-    author: content.author,
-    tag: content.tag,
+    ...variables,
     accent: style.accent,
   };
 
-  const rc: RenderContext = { ctx, W, H, s, vars, fontFamily: style.fontFamily, bgImage };
+  const rc: RenderContext = { ctx, W, H, s, vars, fontFamily: style.fontFamily, bgImage, namedImages };
 
   let titleLines = 0;
   let titleVisible = 0;
@@ -239,32 +239,33 @@ export function renderCustomTemplate(
       }
 
       case 'image': {
-        if (!rc.bgImage) break;
+        const sourceImg = layer.source ? (rc.namedImages[layer.source] ?? null) : rc.bgImage;
+        if (!sourceImg) break;
         const w = resolveDim(layer.width, W);
         const h = resolveDim(layer.height, H);
         const x = resolveX(layer.x, W, w);
         const y = resolveY(layer.y, H, h);
 
         if (layer.fit === 'cover') {
-          const imgW = rc.bgImage.width;
-          const imgH = rc.bgImage.height;
+          const imgW = sourceImg.width;
+          const imgH = sourceImg.height;
           const scale = Math.max(w / imgW, h / imgH);
           const dw = imgW * scale;
           const dh = imgH * scale;
           const dx = x + (w - dw) / 2;
           const dy = y + (h - dh) / 2;
-          ctx.drawImage(rc.bgImage, dx, dy, dw, dh);
+          ctx.drawImage(sourceImg, dx, dy, dw, dh);
         } else if (layer.fit === 'contain') {
-          const imgW = rc.bgImage.width;
-          const imgH = rc.bgImage.height;
+          const imgW = sourceImg.width;
+          const imgH = sourceImg.height;
           const scale = Math.min(w / imgW, h / imgH);
           const dw = imgW * scale;
           const dh = imgH * scale;
           const dx = x + (w - dw) / 2;
           const dy = y + (h - dh) / 2;
-          ctx.drawImage(rc.bgImage, dx, dy, dw, dh);
+          ctx.drawImage(sourceImg, dx, dy, dw, dh);
         } else {
-          ctx.drawImage(rc.bgImage, x, y, w, h);
+          ctx.drawImage(sourceImg, x, y, w, h);
         }
         break;
       }

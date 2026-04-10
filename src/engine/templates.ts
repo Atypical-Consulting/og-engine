@@ -25,6 +25,8 @@ export interface TemplateInput {
   };
   bgImage: Image | null;
   overlayOpacity: number;
+  variables: Record<string, string>;
+  namedImages: Record<string, Image | null>;
 }
 
 export interface TemplateResult {
