@@ -29,3 +29,8 @@ benchmarks/results/*.json
 data/*.db
 data/*.db-wal
 data/*.db-shm
+
+# Internal strategy docs — never commit to public repo
+docs/analysis/MONETIZATION.md
+docs/analysis/GO-TO-MARKET.md
+docs/analysis/DECISIONS.md
