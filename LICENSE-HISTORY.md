@@ -7,7 +7,7 @@ date**. This table records the converted-on date for each release.
 
 | Version | Release Date | Converts to Apache-2.0 on |
 |---------|--------------|---------------------------|
-| 0.1.0   | TBD          | TBD (release date + 2 years) |
+| 0.1.0   | 2026-04-16   | 2028-04-16                   |
 
 ## How this gets updated
 
