@@ -10,13 +10,19 @@ const measureCanvas = createCanvas(1, 1);
 const measureCtx = measureCanvas.getContext('2d');
 
 const lineCache = new LRUCache<string, MeasuredLine[]>(2000);
+let cacheHits = 0;
+let cacheMisses = 0;
 
 export function measureLines(text: string, font: string, maxWidth: number): MeasuredLine[] {
   if (!text || maxWidth <= 0) return [];
 
   const cacheKey = `${text}\0${font}\0${maxWidth}`;
   const cached = lineCache.get(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    cacheHits++;
+    return cached;
+  }
+  cacheMisses++;
 
   measureCtx.font = font;
   const lines: MeasuredLine[] = [];
@@ -54,10 +60,22 @@ export function measureLines(text: string, font: string, maxWidth: number): Meas
 
 export function clearMeasureCache(): void {
   lineCache.clear();
+  cacheHits = 0;
+  cacheMisses = 0;
 }
 
 export function getMeasureCacheSize(): number {
   return lineCache.size;
+}
+
+export function getMeasureCacheStats(): { hits: number; misses: number; size: number; hitRate: number } {
+  const total = cacheHits + cacheMisses;
+  return {
+    hits: cacheHits,
+    misses: cacheMisses,
+    size: lineCache.size,
+    hitRate: total === 0 ? 0 : Math.round((cacheHits / total) * 10000) / 100,
+  };
 }
 
 export function measureTextWidth(text: string, font: string): number {

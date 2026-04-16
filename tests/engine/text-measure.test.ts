@@ -1,13 +1,17 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { registerFonts } from '../../src/engine/fonts';
-import { measureLines, measureTextWidth } from '../../src/engine/text-measure';
+import { clearMeasureCache, getMeasureCacheStats, measureLines, measureTextWidth } from '../../src/engine/text-measure';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 beforeAll(async () => {
   await registerFonts(join(__dirname, '..', '..', 'fonts'));
+});
+
+beforeEach(() => {
+  clearMeasureCache();
 });
 
 describe('measureLines', () => {
@@ -47,5 +51,41 @@ describe('measureTextWidth', () => {
   it('returns 0 for empty text', () => {
     const w = measureTextWidth('', '400 48px Outfit');
     expect(w).toBe(0);
+  });
+});
+
+describe('LRU cache hit rate', () => {
+  it('reports zero hits on first call', () => {
+    measureLines('Hello world', '400 48px Outfit', 800);
+    const stats = getMeasureCacheStats();
+    expect(stats.hits).toBe(0);
+    expect(stats.misses).toBe(1);
+    expect(stats.hitRate).toBe(0);
+  });
+
+  it('reports 100% hit rate on repeated identical call', () => {
+    measureLines('Hello world', '400 48px Outfit', 800);
+    measureLines('Hello world', '400 48px Outfit', 800);
+    const stats = getMeasureCacheStats();
+    expect(stats.hits).toBe(1);
+    expect(stats.misses).toBe(1);
+    expect(stats.hitRate).toBe(50);
+  });
+
+  it('cache is faster on repeated calls', () => {
+    const text = 'Benchmarking LRU cache performance for repeated text measurement calls';
+    const font = '700 48px Outfit';
+    const maxWidth = 1000;
+    const iterations = 500;
+
+    const t0 = performance.now();
+    for (let i = 0; i < iterations; i++) measureLines(text, font, maxWidth);
+    const elapsed = performance.now() - t0;
+
+    const stats = getMeasureCacheStats();
+    // After first call all subsequent are cache hits — hit rate should be > 99%
+    expect(stats.hitRate).toBeGreaterThan(99);
+    // 500 cached lookups should complete well under 100ms
+    expect(elapsed).toBeLessThan(100);
   });
 });
