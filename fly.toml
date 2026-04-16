@@ -1,13 +1,19 @@
 # Fly.io deployment config for OG Engine
 # Deploy: fly deploy
 # Secrets (set via fly secrets set):
-#   STRIPE_SECRET_KEY       - Stripe API secret key
-#   STRIPE_WEBHOOK_SECRET   - Stripe webhook signing secret
-#   STRIPE_PRICE_STARTER    - Stripe Price ID for Starter plan
-#   STRIPE_PRICE_PRO        - Stripe Price ID for Pro plan
-#   STRIPE_PRICE_SCALE      - Stripe Price ID for Scale plan
-#   RESEND_API_KEY           - Resend transactional email API key
-#   ADMIN_CRON_SECRET        - Shared secret for GitHub Action cron
+#   STRIPE_SECRET_KEY         - Stripe API secret key
+#   STRIPE_WEBHOOK_SECRET     - Stripe webhook signing secret
+#   STRIPE_PRICE_STARTER      - Stripe Price ID for Starter plan
+#   STRIPE_PRICE_PRO          - Stripe Price ID for Pro plan
+#   STRIPE_PRICE_SCALE        - Stripe Price ID for Scale plan
+#   RESEND_API_KEY            - Resend transactional email API key
+#   ADMIN_CRON_SECRET         - Shared secret for GitHub Action cron (backup + quota reset)
+#   ADMIN_EMAIL               - Admin email address for backup failure alerts
+#   TIGRIS_ACCESS_KEY_ID      - Tigris / S3-compatible access key (from: fly storage create)
+#   TIGRIS_SECRET_ACCESS_KEY  - Tigris / S3-compatible secret key
+#   TIGRIS_BUCKET_NAME        - Tigris bucket name for DB backups
+#   TIGRIS_ENDPOINT_URL       - (optional) defaults to https://fly.storage.tigris.dev
+#   TIGRIS_REGION             - (optional) defaults to auto
 
 app = "og-engine"
 primary_region = "cdg"

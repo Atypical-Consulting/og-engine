@@ -91,6 +91,30 @@ export async function sendMagicLinkEmail(email: string, verifyUrl: string): Prom
   });
 }
 
+export async function sendBackupAlertEmail(email: string, errorMessage: string): Promise<void> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn('[email] RESEND_API_KEY not set — skipping backup alert email');
+    return;
+  }
+
+  await resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: '[ALERT] OG Engine daily DB backup failed',
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+        <h2 style="color:#e53e3e;">⚠️ Database Backup Failed</h2>
+        <p>The daily SQLite backup job for <strong>OG Engine</strong> failed at <strong>${new Date().toUTCString()}</strong>.</p>
+        <p><strong>Error:</strong></p>
+        <pre style="background:#fff5f5;border:1px solid #fed7d7;border-radius:4px;padding:12px;overflow-x:auto;color:#e53e3e;">${errorMessage}</pre>
+        <p>Please check the GitHub Actions run log and Fly.io machine health.</p>
+        <p style="color:#888;font-size:13px;">This alert was sent by OG Engine admin backup cron.</p>
+      </div>
+    `,
+  });
+}
+
 export async function sendDowngradeEmail(email: string): Promise<void> {
   const resend = getResend();
   if (!resend) {
