@@ -7,6 +7,7 @@ import { loadRemoteImages } from '../engine/image-loader';
 import { extractMeta } from '../engine/meta-extract';
 import { renderCard } from '../engine/renderer';
 import { TEMPLATE_NAMES } from '../engine/templates';
+import { assertNotPrivateHost, SsrfBlockedError } from '../utils/ssrf';
 
 const fontNames = FONTS.map((f) => f.name);
 const gradientSlugs = GRADIENTS.map((g) => g.slug);
@@ -97,6 +98,25 @@ renderFromUrlRoute.post('/render/from-url', async (c) => {
   }
 
   const data = parsed.data;
+
+  // SSRF protection: block private/reserved IPs before fetching
+  try {
+    const { hostname } = new URL(data.url);
+    await assertNotPrivateHost(hostname);
+  } catch (err) {
+    if (err instanceof SsrfBlockedError) {
+      return c.json(
+        {
+          error: 'ssrf_blocked',
+          message: err.message,
+          docs: 'https://og-engine.com/api-reference/errors#ssrf_blocked',
+        },
+        400,
+      );
+    }
+    // URL parse failure is already caught by schema validation; rethrow unexpected errors
+    throw err;
+  }
 
   // Fetch the URL
   let html: string;
