@@ -1,9 +1,11 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { renderRoute } from '../../src/api/render';
+import { closeDb, createApiKey, updatePlan } from '../../src/db';
 import { registerFonts } from '../../src/engine/fonts';
+import { authMiddleware } from '../../src/middleware/auth';
 import { renderSchema } from '../../src/schemas/request';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -166,6 +168,70 @@ describe('renderSchema with variables', () => {
       variables: { count: 42 },
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('POST /render WebP plan gating', () => {
+  beforeEach(() => {
+    closeDb();
+    process.env.DATABASE_URL = 'file::memory:';
+  });
+
+  afterAll(() => {
+    closeDb();
+    delete process.env.DATABASE_URL;
+  });
+
+  function createAuthApp() {
+    const app = new Hono();
+    app.use('/render', authMiddleware());
+    app.route('/', renderRoute);
+    return app;
+  }
+
+  it('returns 402 for free-tier users requesting WebP', async () => {
+    const record = createApiKey('free@example.com'); // free plan by default
+    const app = createAuthApp();
+    const res = await app.request('/render', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${record.key}`,
+      },
+      body: JSON.stringify({ format: 'og', title: 'WebP Test', output: { format: 'webp' } }),
+    });
+    expect(res.status).toBe(402);
+    const body = await res.json();
+    expect(body.error).toBe('plan_required');
+    expect(body.details.feature).toBe('webp');
+  });
+
+  it('returns 200 for starter-plan users requesting WebP', async () => {
+    const record = createApiKey('starter@example.com');
+    updatePlan(record.id, 'starter');
+    const app = createAuthApp();
+    const res = await app.request('/render', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${record.key}`,
+      },
+      body: JSON.stringify({ format: 'og', title: 'WebP Test', output: { format: 'webp' } }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('image/webp');
+  });
+
+  it('allows unauthenticated WebP requests (auth disabled context)', async () => {
+    const app = new Hono();
+    app.route('/', renderRoute);
+    const res = await app.request('/render', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format: 'og', title: 'WebP Test', output: { format: 'webp' } }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('image/webp');
   });
 });
 

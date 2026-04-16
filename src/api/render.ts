@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
-import { type ApiKeyRecord, findCustomTemplate } from '../db';
+import { type ApiKeyRecord, findCustomTemplate, type Plan } from '../db';
 import type { CustomTemplateDefinition } from '../engine/custom-template';
 import { getCachedImage, hashRequest, setCachedImage } from '../engine/image-cache';
 import { loadRemoteImages } from '../engine/image-loader';
 import { renderCard } from '../engine/renderer';
+import { canAccessFeature } from '../middleware/auth';
 import { renderSchema } from '../schemas/request';
 
 export const renderRoute = new Hono();
@@ -90,6 +91,27 @@ renderRoute.post('/render', async (c) => {
   }
 
   const data = parsed.data;
+
+  // Plan gate: WebP requires Starter+ plan
+  if (data.output.format === 'webp') {
+    const apiKeyRecord = c.get('apiKey' as never) as ApiKeyRecord | undefined;
+    if (apiKeyRecord && !canAccessFeature(apiKeyRecord.plan as Plan, 'webp')) {
+      return c.json(
+        {
+          error: 'plan_required',
+          message: `This feature requires a higher plan. Your plan: ${apiKeyRecord.plan}.`,
+          details: {
+            feature: 'webp',
+            currentPlan: apiKeyRecord.plan,
+            requiredPlans: ['starter', 'pro', 'scale'],
+            upgradeUrl: 'https://og-engine.com/pricing',
+          },
+          docs: 'https://og-engine.com/api-reference/errors#plan_required',
+        },
+        402,
+      );
+    }
+  }
 
   // Merge legacy content fields into variables
   const variables: Record<string, string> = {
