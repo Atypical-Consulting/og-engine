@@ -71,12 +71,32 @@ On success, the response body is the raw binary image. HTTP status: `200`. Respo
 | `X-Source-Url` | `https://example.com/blog/my-post` | The URL that was fetched |
 | `X-Extracted-Title` | `My Post Title` | The title extracted from the page |
 
+## Security — SSRF Protection
+
+Before fetching the supplied URL, OG Engine resolves the target hostname via DNS and checks every returned address against a blocklist of private, loopback, and link-local ranges. Requests that resolve to any of the following are rejected with `400 ssrf_blocked`:
+
+| Range | Description |
+|---|---|
+| `10.0.0.0/8` | RFC 1918 private |
+| `172.16.0.0/12` | RFC 1918 private |
+| `192.168.0.0/16` | RFC 1918 private |
+| `127.0.0.0/8` | Loopback |
+| `169.254.0.0/16` | Link-local (AWS / Fly.io metadata endpoint) |
+| `100.64.0.0/10` | Shared address space (RFC 6598) |
+| `::1` | IPv6 loopback |
+| `fc00::/7` | IPv6 unique local |
+| `fe80::/10` | IPv6 link-local |
+| `::ffff:0:0/96` | IPv4-mapped IPv6 |
+
+This check applies to both literal IP addresses in the URL and to hostnames that resolve to a private address.
+
 ## Error Responses
 
 | Status | Code | Cause |
 |---|---|---|
 | 400 | `missing_field` | `url` not provided |
 | 400 | `invalid_url` | `url` is not a valid HTTPS URL |
+| 400 | `ssrf_blocked` | `url` resolves to a private or reserved IP address |
 | 401 | `unauthorized` | Missing or invalid API key |
 | 402 | `plan_required` | WebP output requested on Free plan |
 | 422 | `fetch_failed` | OG Engine could not fetch the URL (network error, timeout, or non-2xx HTTP response) |
