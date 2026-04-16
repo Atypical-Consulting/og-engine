@@ -1,0 +1,58 @@
+# Fly.io deployment config for OG Engine — STAGING
+# Deploy: fly deploy --config fly.staging.toml
+# Secrets (set via fly secrets set -a og-engine-staging):
+#   Same secret names as production — use test/sandbox values for Stripe etc.
+#   ADMIN_CRON_SECRET         - Shared secret for GitHub Action cron
+#   ADMIN_EMAIL               - Admin email address for backup failure alerts
+#   TIGRIS_ACCESS_KEY_ID      - Tigris / S3-compatible access key
+#   TIGRIS_SECRET_ACCESS_KEY  - Tigris / S3-compatible secret key
+#   TIGRIS_BUCKET_NAME        - Separate staging bucket name
+#   STRIPE_SECRET_KEY         - Stripe test-mode API key (sk_test_...)
+#   STRIPE_WEBHOOK_SECRET     - Stripe test-mode webhook signing secret
+#   STRIPE_PRICE_STARTER      - Stripe test-mode Price ID for Starter plan
+#   STRIPE_PRICE_PRO          - Stripe test-mode Price ID for Pro plan
+#   STRIPE_PRICE_SCALE        - Stripe test-mode Price ID for Scale plan
+#   RESEND_API_KEY            - Resend API key (can reuse same key)
+
+app = "og-engine-staging"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3000"
+  NODE_ENV = "production"
+  DATABASE_URL = "file:/data/og-engine-staging.db"
+  IMAGE_CACHE_MAX = "500"
+  RATE_LIMIT_MAX = "200"
+  RATE_LIMIT_WINDOW_MS = "60000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 100
+    soft_limit = 80
+
+[[http_service.checks]]
+  grace_period = "5s"
+  interval = "30s"
+  method = "GET"
+  path = "/health"
+  timeout = "5s"
+
+[mounts]
+  source = "og_engine_staging_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpus = 1
