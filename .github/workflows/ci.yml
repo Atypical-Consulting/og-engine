@@ -87,6 +87,53 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  scan:
+    name: Security Scan (Trivy + SARIF)
+    runs-on: ubuntu-latest
+    needs: check
+    permissions:
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build Docker image for scanning
+        run: docker build -t og-engine:scan .
+
+      - name: Scan image for vulnerabilities (table)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: og-engine:scan
+          format: table
+          exit-code: '1'
+          severity: CRITICAL,HIGH
+          output: vuln-report.txt
+        continue-on-error: true
+
+      - name: Generate SARIF report
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: og-engine:scan
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+
+      - name: Upload scan report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-report
+          path: vuln-report.txt
+          retention-days: 30
+
   deploy:
     name: Deploy to Fly.io
     runs-on: ubuntu-latest
