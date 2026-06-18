@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -48,7 +48,7 @@ jobs:
         working-directory: sdk
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -95,7 +95,7 @@ jobs:
       security-events: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build Docker image for scanning
         run: docker build -t og-engine:scan .
@@ -141,7 +141,7 @@ jobs:
     if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
