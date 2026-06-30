@@ -20,7 +20,7 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "@napi-rs/canvas": "^0.1.97",
+    "@napi-rs/canvas": "^1.0.0",
     "better-sqlite3": "^12.8.0",
     "cheerio": "^1.2.0",
     "hono": "^4.12.10",
