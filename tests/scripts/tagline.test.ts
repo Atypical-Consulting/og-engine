@@ -95,8 +95,8 @@ describe('extractTagline', () => {
     expect(extractTagline('![a](x) ![b](y) Real text')).toBe('Real text');
   });
 
-  it('skips underscore-spaced line (becomes empty after stripping)', () => {
-    expect(extractTagline('# T\n\n_ _\n\nReal prose.')).toBe('Real prose.');
+  it('skips underscore-spaced horizontal rule (3+ underscores with spaces)', () => {
+    expect(extractTagline('# T\n\n_ _ _\n\nReal prose.')).toBe('Real prose.');
   });
 
   // Regression tests: preserve angle brackets in prose (not HTML tags)
@@ -112,9 +112,15 @@ describe('extractTagline', () => {
     expect(extractTagline('Iterate over List<T> with ease.')).toBe('Iterate over List<T> with ease.');
   });
 
-  it('preserves angle bracket placeholders (underscore removed for markdown)', () => {
-    // Note: underscores are stripped as Markdown emphasis markers, so <API_KEY> → <APIKEY>
-    expect(extractTagline('Set your <API_KEY> variable.')).toBe('Set your <APIKEY> variable.');
+  it('preserves angle bracket placeholders with underscores', () => {
+    // HTML tag wrapper is stripped, but <API_KEY> underscore is preserved (not markdown emphasis)
+    expect(extractTagline('# T\n\n<p align="center">Set your <API_KEY> variable.</p>')).toBe(
+      'Set your <API_KEY> variable.',
+    );
+  });
+
+  it('preserves snake_case identifiers', () => {
+    expect(extractTagline('Configure API_KEY and DB_HOST here.')).toBe('Configure API_KEY and DB_HOST here.');
   });
 
   it('preserves mathematical/logical expressions', () => {

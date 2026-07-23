@@ -38,8 +38,9 @@ export function extractTagline(markdown: string): string | null {
     // Skip bare link lines
     if (/^\[[^\]]*\]\([^)]*\)$/.test(line)) continue;
 
-    // Skip horizontal rules
-    if (/^[-*=_]{3,}$/.test(line)) continue;
+    // Skip horizontal rules (including spaced variants like * * * or _ _ _)
+    const lineWithoutSpaces = line.replace(/\s/g, '');
+    if (/^[-*=_]{3,}$/.test(lineWithoutSpaces)) continue;
 
     // Skip lone HTML tags
     if (/^<[^>]+>$/.test(line)) continue;
@@ -67,7 +68,10 @@ function stripInlineMd(s: string): string {
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // inline images
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links -> text
     .replace(HTML_TAG, '') // HTML tags (whitelist only, preserve <T>, <API_KEY>, etc.)
-    .replace(/[*_`]/g, '') // emphasis / code ticks
+    .replace(/`/g, '') // backticks only
+    .replace(/\*\*(.+?)\*\*/g, '$1') // **bold**
+    .replace(/\*(.+?)\*/g, '$1') // *italic*
+    // PRESERVE underscores for snake_case identifiers (API_KEY, DB_HOST, etc.)
     .replace(/\s+/g, ' ')
     .trim();
 }
