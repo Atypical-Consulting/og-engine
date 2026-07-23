@@ -25,13 +25,15 @@ export async function commitBanner(args: {
   pngPath: string;
   workdir: string;
   dryRun: boolean;
-}): Promise<{ repo: string; action: 'pr-opened' | 'skipped' | 'dry-run' }> {
-  const { owner, name, pngPath, workdir, dryRun } = args;
+  noPr?: boolean;
+}): Promise<{ repo: string; action: 'pr-opened' | 'pushed' | 'skipped' | 'dry-run' }> {
+  const { owner, name, pngPath, workdir, dryRun, noPr = false } = args;
   const repo = `${owner}/${name}`;
   const dir = join(workdir, name);
 
   if (dryRun) {
-    console.log(`[dry-run] would open PR on ${repo} with .github/banner.png`);
+    const how = noPr ? 'commit directly to the default branch of' : 'open PR on';
+    console.log(`[dry-run] would ${how} ${repo} with .github/banner.png`);
     return { repo, action: 'dry-run' };
   }
 
@@ -52,7 +54,9 @@ export async function commitBanner(args: {
   const { content, changed } = ensureBannerInReadme(readme, name);
   if (changed) await writeFile(readmePath, content);
 
-  await run(['git', '-C', dir, 'checkout', '-b', 'chore/readme-banner']);
+  // --no-pr commits straight onto the cloned default branch; the PR flow needs
+  // its own branch.
+  if (!noPr) await run(['git', '-C', dir, 'checkout', '-b', 'chore/readme-banner']);
   await run(['git', '-C', dir, 'add', '.github/banner.png', 'README.md']);
 
   if (!(await hasStagedChanges(dir))) {
@@ -63,6 +67,13 @@ export async function commitBanner(args: {
   }
 
   await run(['git', '-C', dir, 'commit', '-m', 'chore: add branded README banner']);
+
+  if (noPr) {
+    // Push the commit straight to the repo's default branch — no PR.
+    await run(['git', '-C', dir, 'push', 'origin', 'HEAD']);
+    return { repo, action: 'pushed' };
+  }
+
   await run(['git', '-C', dir, 'push', '-u', 'origin', 'chore/readme-banner']);
   await run([
     'gh', 'pr', 'create', '-R', repo, '--head', 'chore/readme-banner',
