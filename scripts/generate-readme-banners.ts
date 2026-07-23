@@ -16,6 +16,7 @@ interface Flags {
   skipArchived: boolean;
   dryRun: boolean;
   commit: boolean;
+  noPr: boolean;
   limit?: number;
   batch?: number;
 }
@@ -51,6 +52,7 @@ function parseFlags(argv: string[]): Flags {
     skipArchived: !has('include-archived'),
     dryRun: has('dry-run'),
     commit: has('commit'),
+    noPr: has('no-pr'),
     limit: parsePositiveInt('limit', get('limit')),
     batch: parsePositiveInt('batch', get('batch')),
   };
@@ -139,7 +141,8 @@ async function main() {
     const workdir = join(process.cwd(), 'out', 'clones');
     await mkdir(workdir, { recursive: true });
 
-    const results: Array<{ repo: string; action: 'pr-opened' | 'skipped' | 'dry-run' }> = [];
+    const results: Array<{ repo: string; action: 'pr-opened' | 'pushed' | 'skipped' | 'dry-run' }> =
+      [];
     const failures: Array<{ repo: string; error: unknown }> = [];
 
     const runOne = async (repo: RepoDescriptor): Promise<void> => {
@@ -147,7 +150,8 @@ async function main() {
       const png = join(outDir, `${repo.owner}__${repo.name}.png`);
       try {
         const r = await commitBanner({
-          owner: repo.owner, name: repo.name, pngPath: png, workdir, dryRun: flags.dryRun,
+          owner: repo.owner, name: repo.name, pngPath: png, workdir,
+          dryRun: flags.dryRun, noPr: flags.noPr,
         });
         console.log(`  ${r.action}: ${r.repo}`);
         results.push(r);
@@ -200,7 +204,9 @@ async function main() {
         `\nWould commit: ${wouldCommitCount}, Skipped: ${skippedCount}, Failed: ${failures.length}`,
       );
     } else {
-      const committedCount = results.filter((r) => r.action === 'pr-opened').length;
+      const committedCount = results.filter(
+        (r) => r.action === 'pr-opened' || r.action === 'pushed',
+      ).length;
       console.log(
         `\nCommitted: ${committedCount}, Skipped: ${skippedCount}, Failed: ${failures.length}`,
       );

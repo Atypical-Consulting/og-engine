@@ -311,7 +311,9 @@ to target specific repos, `--limit <n>` to cap how many of the *selected*
 repos (after `--only`/fork/archive filters) get processed, `--include-forks`
 / `--include-archived` to opt back in (both are skipped by default),
 `--dry-run` to log what a commit would do without touching anything, `--commit`
-to actually clone, add the banner, and open a PR via `gh`, and `--batch <n>`
+to actually clone, add the banner, and open a PR via `gh`, `--no-pr` to instead
+commit and push straight to each repo's default branch (no PR — handy for
+bulk-applying to your own repos), and `--batch <n>`
 to commit in waves of `n` repos, pausing for Enter between waves when run
 from a TTY. Without `--dry-run` or `--commit`, the script only renders to
 `out/banners/` and leaves repos untouched. `--commit` refuses to run against
