@@ -7,7 +7,8 @@
 ## Goal
 
 Generate a consistent, branded banner image for every repository across two GitHub
-accounts (`phmatray`, `Atypical-Consulting`) and commit it into each repo's README.
+accounts (`phmatray`, `Atypical-Consulting`) and commit it (`.github/banner.png`) into
+each repo's README.
 This closes the biggest gap surfaced by the portfolio README audit: only **6 %** of
 READMEs currently have a logo/banner. og-engine already renders GitHub-style repo
 cards; this feature adds a purpose-built template plus a batch CLI that turns the
@@ -28,7 +29,7 @@ The same 1280×640 asset doubles as the repo's GitHub **social preview** image.
 
 | Axis | Decision |
 |---|---|
-| Delivery | Static PNG committed into each repo (`docs/banner.png`), referenced at top of README. CLI batch. |
+| Delivery | Static PNG committed into each repo (`.github/banner.png`), referenced at top of README. CLI batch. |
 | Content source | Hybrid: GitHub metadata by default; tagline from README's first meaningful line (fallback: GitHub description); optional `.og/banner.json` override. |
 | Visual identity | One template `readme-banner`; **accent = primary language color** (GitHub linguist palette) for per-repo variety on a common layout. |
 | Wordmark | Per owner: `Philippe Matray` on `phmatray` repos, `Atypical Consulting` on `Atypical-Consulting` repos. Common layout otherwise. |
@@ -53,6 +54,9 @@ The same 1280×640 asset doubles as the repo's GitHub **social preview** image.
   mesh for legibility regardless of accent lightness.
 - **Typography:** repo name + wordmark in a bold sans already loaded by the engine
   (`Outfit`); the `github.com/owner/repo` line in `Geist Mono` (present in `fonts/`).
+- **Brand mark:** a small `◆` diamond glyph drawn directly on the canvas in the accent
+  color, immediately left of the wordmark. No external SVG asset (the repo's `logo.svg`
+  is og-engine's own logo, not the portfolio brand). Self-contained and accent-tinted.
 - **Background:** reuse `paintBackgroundMesh(ctx, W, H, 'void', accent)` — the existing
   void preset tinted by the language accent. No new gradient asset required.
 
@@ -107,8 +111,8 @@ to `out/<owner>__<name>.png`.
 with repo name + owner, for visual QA and design iteration. (Mirrors the audit dashboard.)
 
 **Phase D — commit** (opt-in, `--commit`): for each selected repo, using a shallow
-clone or existing local checkout: copy PNG to `docs/banner.png`, insert
-`![<repo> banner](docs/banner.png)` as the first line of `README.md` if not already
+clone or existing local checkout: copy PNG to `.github/banner.png`, insert
+`![<repo> banner](.github/banner.png)` as the first line of `README.md` if not already
 present, commit on branch `chore/readme-banner`, push, open PR via `gh pr create`.
 
 **Flags:** `--account <phmatray|Atypical-Consulting|all>`, `--only <repo,...>`,
@@ -121,7 +125,7 @@ present, commit on branch `chore/readme-banner`, push, open PR via `gh pr create
 gh (repos + README 1st line) ─┐
 .og/banner.json (optional) ───┼─► build input ─► renderCard() ─► PNG ─► out/ ─► contact sheet
                               │                                              │
-                              └──────────────────────────────────────────────┴─► (--commit) docs/banner.png + README + PR
+                              └──────────────────────────────────────────────┴─► (--commit) .github/banner.png + README + PR
 ```
 
 ## Override schema — `.og/banner.json`
@@ -167,10 +171,13 @@ per-owner default; `emoji` is prepended to the repo name if set.
 - **Slim `1280×384` variant** — deferred until the 640 format is validated.
 - **Full README parsing** for features/bullets — rejected as fragile across 296 uneven READMEs.
 
-## Open questions for spec review
+## Resolved decisions (were open questions)
 
-- Banner file location: `docs/banner.png` (proposed) vs `.github/banner.png` vs
-  `assets/banner.png` — pick one convention for all repos.
-- Exact wordmark treatment: plain text vs the existing `logo.svg` mark alongside the text.
-- Whether to also write the tagline back as the GitHub repo `description` when it was
-  sourced from the README (portfolio-wide description cleanup) — likely a separate task.
+- **Banner file location → `.github/banner.png`** for all repos. It is a presentation/meta
+  asset, so `.github/` (unobtrusive, conventional) is preferred over polluting `docs/` or
+  adding a top-level `assets/` folder. Referenced as `![<repo> banner](.github/banner.png)`.
+- **Wordmark → text + canvas-drawn `◆` mark**, no external SVG. The repo's `logo.svg` is
+  og-engine's own logo, not the portfolio brand, so it is deliberately not used.
+- **GitHub `description` rewrite → out of scope.** Sourcing the tagline from the README for
+  the banner does not mutate the repo's GitHub description. A portfolio-wide description
+  cleanup is a separate task, not coupled to banner generation.
