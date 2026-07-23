@@ -1,3 +1,5 @@
+![og-engine banner](.github/banner.png)
+
 <p align="center">
   <img src="https://img.shields.io/badge/render_time-~22ms-00d084?style=for-the-badge" alt="Render Time ~22ms" />
   <img src="https://img.shields.io/badge/memory-10MB_per_render-blue?style=for-the-badge" alt="Memory 10MB" />
