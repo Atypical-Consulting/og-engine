@@ -70,9 +70,11 @@ async function fetchOverride(owner: string, name: string): Promise<BannerOverrid
 
 export async function collectRepos(owner: string, opts: CollectOpts): Promise<RepoDescriptor[]> {
   const fields = 'name,description,primaryLanguage,stargazerCount,isFork,isArchived,owner';
-  const json = await run(['gh', 'repo', 'list', owner, '--limit', String(opts.limit ?? 500), '--json', fields]);
+  const json = await run(['gh', 'repo', 'list', owner, '--limit', '500', '--json', fields]);
   let repos = parseRepoList(json, opts);
   if (opts.only?.length) repos = repos.filter((r) => opts.only?.includes(r.name));
+  // --limit caps how many of the SELECTED repos to process, applied after --only/filters.
+  if (opts.limit != null) repos = repos.slice(0, opts.limit);
 
   const out: RepoDescriptor[] = [];
   for (const r of repos) {
