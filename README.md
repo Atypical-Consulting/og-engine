@@ -292,6 +292,42 @@ curl -X POST http://localhost:3000/validate \
   -d '{"title": "Will this headline fit?", "format": "og", "titleSize": 48}'
 ```
 
+### README banners
+
+A CLI that generates a branded 1280×640 banner for every repo on a GitHub
+account and (optionally) opens a PR that adds `.github/banner.png` and a
+README reference. It uses the `readme` format and `readme-banner` template,
+calling `renderCard` in-process — no HTTP round trip.
+
+```bash
+bun run fonts:download            # once, before the first run
+bun run banners                   # render every repo -> out/banners/ + contact sheet
+bun run banners --only FormCraft --dry-run
+bun run banners --account Atypical-Consulting --commit --batch 20
+```
+
+Flags: `--account <owner>` (defaults to all known accounts), `--only <name>[,<name>...]`
+to target specific repos, `--limit <n>` to cap how many of the *selected*
+repos (after `--only`/fork/archive filters) get processed, `--include-forks`
+/ `--include-archived` to opt back in (both are skipped by default),
+`--dry-run` to log what a commit would do without touching anything, `--commit`
+to actually clone, add the banner, and open a PR via `gh`, and `--batch <n>`
+to commit in waves of `n` repos, pausing for Enter between waves when run
+from a TTY. Without `--dry-run` or `--commit`, the script only renders to
+`out/banners/` and leaves repos untouched. `--commit` refuses to run against
+every repo unscoped — pass `--only`, `--limit`, or `--batch` to bound the run.
+
+Content is pulled from each repo's metadata (name, description, primary
+language, star count) plus the first line of its README as a tagline; any
+emoji in the tagline are stripped. Per-repo overrides live in a repo's own
+`.og/banner.json`:
+
+```json
+{ "tagline": "A punchier one-liner than the README's first line", "accent": "#38ef7d", "wordmark": "Atypical Consulting" }
+```
+
+All fields are optional — set only what you want to override.
+
 ## Benchmarks
 
 Measured on Apple M2, 8 cores, 24 GB RAM, Bun 1.3.11. 1,000 iterations per scenario with 50 warmup (discarded). Full report: [`benchmarks/results/2026-04-03-report.md`](benchmarks/results/2026-04-03-report.md).

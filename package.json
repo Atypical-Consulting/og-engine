@@ -16,6 +16,7 @@
     "bench": "bun run benchmarks/run.ts",
     "fonts:download": "bun run scripts/download-fonts.ts",
     "fonts:refresh-catalog": "bun run scripts/refresh-google-fonts.ts",
+    "banners": "bun run scripts/generate-readme-banners.ts",
     "bench:full": "bun run benchmarks/run-full.ts",
     "prepare": "lefthook install"
   },

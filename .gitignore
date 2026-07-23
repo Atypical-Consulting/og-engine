@@ -29,3 +29,6 @@ benchmarks/results/*.json
 data/*.db
 data/*.db-wal
 data/*.db-shm
+
+# Generated banner output
+out/

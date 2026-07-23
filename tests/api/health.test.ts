@@ -26,7 +26,7 @@ describe('GET /health', () => {
     const body = await res.json();
     expect(body.fonts).toBeInstanceOf(Array);
     expect(body.fonts.length).toBeGreaterThan(0);
-    expect(body.formats).toEqual(['og', 'twitter', 'square', 'linkedin', 'story']);
+    expect(body.formats).toEqual(['og', 'twitter', 'square', 'linkedin', 'story', 'readme']);
     expect(body.templates).toEqual([
       'default',
       'social-card',
@@ -35,6 +35,7 @@ describe('GET /health', () => {
       'event',
       'github-repo',
       'product-card',
+      'readme-banner',
       'testimonial',
       'news-article',
       'pricing',
