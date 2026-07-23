@@ -128,15 +128,17 @@ export const readmeBannerTemplate: TemplateFn = (input) => {
   if (stars) {
     const starFont = `600 ${Math.round(17 * s)}px ${ff}`;
     ctx.font = starFont;
-    const starChar = '★';
+    const starOuter = Math.round(9 * s);
+    const starInner = Math.round(4 * s);
     const countW = measureTextWidth(stars, starFont);
-    const starW = measureTextWidth(starChar, starFont);
+    const starW = starOuter * 2;
     const gap = Math.round(7 * s);
     const totalW = starW + gap + countW;
     const startX = W - px - totalW;
-    ctx.textAlign = 'left';
     ctx.fillStyle = rgba(accent, 0.9);
-    ctx.fillText(starChar, startX, bottomY);
+    drawStar(ctx, startX + starOuter, bottomY, starOuter, starInner);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(230,237,243,0.9)';
     ctx.fillText(stars, startX + starW + gap, bottomY);
   }
@@ -166,4 +168,25 @@ function roundRect(
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
+}
+
+function drawStar(
+  ctx: import('@napi-rs/canvas').SKRSContext2D,
+  cx: number,
+  cy: number,
+  outerR: number,
+  innerR: number,
+) {
+  let rot = -Math.PI / 2;
+  const step = Math.PI / 5;
+  ctx.beginPath();
+  ctx.moveTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+  for (let i = 0; i < 5; i++) {
+    rot += step;
+    ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+    rot += step;
+    ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+  }
+  ctx.closePath();
+  ctx.fill();
 }

@@ -4,7 +4,6 @@ import type { RenderOptions } from '../../src/engine/renderer';
 export interface BannerOverride {
   tagline?: string;
   accent?: string;
-  emoji?: string;
   wordmark?: string;
 }
 
@@ -33,10 +32,10 @@ export function formatStars(n: number): string {
 
 export function buildBannerRenderOptions(repo: RepoDescriptor): RenderOptions {
   const o = repo.override ?? {};
-  const tagline = o.tagline ?? repo.tagline ?? repo.description ?? '';
+  const tagline = stripEmoji(o.tagline ?? repo.tagline ?? repo.description ?? '');
   const wordmark = o.wordmark ?? WORDMARKS[repo.owner] ?? repo.owner;
   const accent = o.accent ?? languageColor(repo.language);
-  const title = o.emoji ? `${o.emoji} ${repo.name}` : repo.name;
+  const title = repo.name;
 
   return {
     title,
@@ -66,4 +65,11 @@ export function buildBannerRenderOptions(repo: RepoDescriptor): RenderOptions {
     namedImages: {},
     outputQuality: 90,
   };
+}
+
+const EMOJI =
+  /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{200D}]/gu;
+
+function stripEmoji(s: string): string {
+  return s.replace(EMOJI, '').replace(/\s+/g, ' ').trim();
 }

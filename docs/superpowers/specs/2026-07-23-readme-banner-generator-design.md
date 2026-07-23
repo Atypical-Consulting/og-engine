@@ -22,7 +22,7 @@ The same 1280×640 asset doubles as the repo's GitHub **social preview** image.
   committed via one PR per repo, so I can harmonize 327 repos without manual design.
 - As a visitor, I see a recognizable, on-brand banner at the top of every README, with
   the repo name, a one-line pitch, primary language, and star count.
-- As the owner of a flagship repo, I can override the tagline / accent / emoji via a
+- As the owner of a flagship repo, I can override the tagline / accent / wordmark via a
   small `.og/banner.json` file when the defaults aren't good enough.
 
 ## Decisions (settled during brainstorming)
@@ -99,7 +99,7 @@ committed before visual QA.
 `stargazerCount,primaryLanguage,isFork,isArchived,owner`. For each repo, fetch the
 README's first meaningful line via `gh api repos/{owner}/{name}/readme` (raw) — the
 first non-heading, non-badge, non-blank line — as the tagline; fallback to the GitHub
-description. Read optional `.og/banner.json` (`{ tagline?, accent?, emoji?, wordmark? }`)
+description. Read optional `.og/banner.json` (`{ tagline?, accent?, wordmark? }`)
 if present in the repo.
 
 **Phase B — render**: build the render input (`template: 'readme-banner'`, content,
@@ -134,13 +134,13 @@ gh (repos + README 1st line) ─┐
 {
   "tagline": "The fastest way to build dynamic Blazor forms",
   "accent": "#8844AE",
-  "emoji": "🎨",
   "wordmark": "Philippe Matray"
 }
 ```
 
 All fields optional. `accent` overrides the language color; `wordmark` overrides the
-per-owner default; `emoji` is prepended to the repo name if set.
+per-owner default. Emoji are stripped from taglines (no emoji font is registered);
+banners render glyph-clean.
 
 ## Testing strategy (vitest)
 

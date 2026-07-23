@@ -28,15 +28,20 @@ describe('buildBannerRenderOptions', () => {
     expect(o.variables?.wordmark).toBe('Atypical Consulting');
   });
 
-  it('applies overrides (tagline, accent, emoji, wordmark) with precedence', () => {
+  it('applies overrides (tagline, accent, wordmark) with precedence', () => {
     const o = buildBannerRenderOptions({
       ...base,
-      override: { tagline: 'Custom pitch', accent: '#8844AE', emoji: '🎨', wordmark: 'PM' },
+      override: { tagline: 'Custom pitch', accent: '#8844AE', wordmark: 'PM' },
     });
     expect(o.description).toBe('Custom pitch');
     expect(o.accent).toBe('#8844AE');
-    expect(o.title).toBe('🎨 FormCraft');
+    expect(o.title).toBe('FormCraft');
     expect(o.variables?.wordmark).toBe('PM');
+  });
+
+  it('strips emoji from the tagline used as description', () => {
+    const o = buildBannerRenderOptions({ ...base, tagline: 'Fast forms 🎨' });
+    expect(o.description).toBe('Fast forms');
   });
 
   it('falls back tagline -> description -> empty', () => {
