@@ -44,6 +44,17 @@ describe('buildBannerRenderOptions', () => {
     expect(o.description).toBe('Fast forms');
   });
 
+  it('keeps arrows intact while still stripping emoji', () => {
+    const withArrow = buildBannerRenderOptions({
+      ...base,
+      tagline: 'Markdown → HTML converter',
+    });
+    expect(withArrow.description).toBe('Markdown → HTML converter');
+
+    const withEmoji = buildBannerRenderOptions({ ...base, tagline: 'Markdown → HTML 🎨 converter' });
+    expect(withEmoji.description).toBe('Markdown → HTML converter');
+  });
+
   it('falls back tagline -> description -> empty', () => {
     expect(buildBannerRenderOptions({ ...base, tagline: null }).description).toBe('gh description');
     expect(buildBannerRenderOptions({ ...base, tagline: null, description: null }).description).toBe('');

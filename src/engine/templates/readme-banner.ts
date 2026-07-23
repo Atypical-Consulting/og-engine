@@ -52,7 +52,8 @@ export const readmeBannerTemplate: TemplateFn = (input) => {
     const chipY = topY + markSize / 2 - chipH / 2;
 
     ctx.fillStyle = rgba(accent, 0.12);
-    roundRect(ctx, chipX, chipY, chipW, chipH, Math.round(chipH / 2));
+    ctx.beginPath();
+    ctx.roundRect(chipX, chipY, chipW, chipH, Math.round(chipH / 2));
     ctx.fill();
 
     const cy = topY + markSize / 2;
@@ -152,23 +153,6 @@ export const readmeBannerTemplate: TemplateFn = (input) => {
     overflow,
   };
 };
-
-function roundRect(
-  ctx: import('@napi-rs/canvas').SKRSContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
 
 function drawStar(
   ctx: import('@napi-rs/canvas').SKRSContext2D,

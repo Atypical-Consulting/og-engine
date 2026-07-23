@@ -1,7 +1,23 @@
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { run } from './collect';
 import { ensureBannerInReadme } from './readme-edit';
+
+/**
+ * Runs a git command and reports whether it produced a non-zero exit code,
+ * without throwing. Used for status checks (e.g. `git diff --cached --quiet`)
+ * where a non-zero exit is an expected outcome, not a failure.
+ */
+async function runStatus(cmd: string[]): Promise<number> {
+  const proc = Bun.spawn(cmd, { stdout: 'ignore', stderr: 'ignore' });
+  return proc.exited;
+}
+
+async function hasStagedChanges(dir: string): Promise<boolean> {
+  // `git diff --cached --quiet` exits 0 when nothing is staged, 1 when something is.
+  const code = await runStatus(['git', '-C', dir, 'diff', '--cached', '--quiet']);
+  return code !== 0;
+}
 
 export async function commitBanner(args: {
   owner: string;
@@ -19,6 +35,9 @@ export async function commitBanner(args: {
     return { repo, action: 'dry-run' };
   }
 
+  // Resumable: a prior run may have left a partial (or fully-cloned) checkout
+  // behind, and `gh repo clone` refuses to clone into a non-empty directory.
+  await rm(dir, { recursive: true, force: true });
   await run(['gh', 'repo', 'clone', repo, dir, '--', '--depth', '1']);
   await mkdir(join(dir, '.github'), { recursive: true });
   await copyFile(pngPath, join(dir, '.github', 'banner.png'));
@@ -35,6 +54,14 @@ export async function commitBanner(args: {
 
   await run(['git', '-C', dir, 'checkout', '-b', 'chore/readme-banner']);
   await run(['git', '-C', dir, 'add', '.github/banner.png', 'README.md']);
+
+  if (!(await hasStagedChanges(dir))) {
+    // Banner + README are already up to date on this repo (e.g. a previous
+    // run's PR already merged) — nothing to commit, so skip cleanly instead
+    // of letting `git commit` hard-fail on an empty diff.
+    return { repo, action: 'skipped' };
+  }
+
   await run(['git', '-C', dir, 'commit', '-m', 'chore: add branded README banner']);
   await run(['git', '-C', dir, 'push', '-u', 'origin', 'chore/readme-banner']);
   await run([

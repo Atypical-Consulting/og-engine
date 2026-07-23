@@ -303,16 +303,19 @@ calling `renderCard` in-process — no HTTP round trip.
 bun run fonts:download            # once, before the first run
 bun run banners                   # render every repo -> out/banners/ + contact sheet
 bun run banners --only FormCraft --dry-run
-bun run banners --account Atypical-Consulting --commit
+bun run banners --account Atypical-Consulting --commit --batch 20
 ```
 
 Flags: `--account <owner>` (defaults to all known accounts), `--only <name>[,<name>...]`
-to target specific repos, `--limit <n>` to cap how many repos are fetched,
-`--include-forks` / `--include-archived` to opt back in (both are skipped by
-default), `--dry-run` to log what a commit would do without touching
-anything, and `--commit` to actually clone, add the banner, and open a PR via
-`gh`. Without `--dry-run` or `--commit`, the script only renders to
-`out/banners/` and leaves repos untouched.
+to target specific repos, `--limit <n>` to cap how many of the *selected*
+repos (after `--only`/fork/archive filters) get processed, `--include-forks`
+/ `--include-archived` to opt back in (both are skipped by default),
+`--dry-run` to log what a commit would do without touching anything, `--commit`
+to actually clone, add the banner, and open a PR via `gh`, and `--batch <n>`
+to commit in waves of `n` repos, pausing for Enter between waves when run
+from a TTY. Without `--dry-run` or `--commit`, the script only renders to
+`out/banners/` and leaves repos untouched. `--commit` refuses to run against
+every repo unscoped — pass `--only`, `--limit`, or `--batch` to bound the run.
 
 Content is pulled from each repo's metadata (name, description, primary
 language, star count) plus the first line of its README as a tagline; any
