@@ -20,6 +20,24 @@ interface Flags {
   batch?: number;
 }
 
+/**
+ * Parses a numeric flag's raw value into a positive integer. When the flag is
+ * absent, returns undefined. When it's present but not a positive integer
+ * (0, negative, or non-numeric/NaN), fails loudly and exits before any side
+ * effect — a silently-ignored bad value here (e.g. `--batch 0`) would
+ * otherwise fall through as "unset" and defeat both the safety guard and the
+ * wave gate below.
+ */
+function parsePositiveInt(flag: string, raw: string | undefined): number | undefined {
+  if (raw == null) return undefined;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n <= 0) {
+    console.error(`--${flag} must be a positive integer (got ${JSON.stringify(raw)}).`);
+    process.exit(1);
+  }
+  return n;
+}
+
 function parseFlags(argv: string[]): Flags {
   const get = (k: string): string | undefined => {
     const i = argv.indexOf(`--${k}`);
@@ -33,8 +51,8 @@ function parseFlags(argv: string[]): Flags {
     skipArchived: !has('include-archived'),
     dryRun: has('dry-run'),
     commit: has('commit'),
-    limit: get('limit') ? Number(get('limit')) : undefined,
-    batch: get('batch') ? Number(get('batch')) : undefined,
+    limit: parsePositiveInt('limit', get('limit')),
+    batch: parsePositiveInt('batch', get('batch')),
   };
 }
 
@@ -175,13 +193,18 @@ async function main() {
       for (const repo of repos) await runOne(repo);
     }
 
-    const committedCount = results.filter(
-      (r) => r.action === 'pr-opened' || r.action === 'dry-run',
-    ).length;
     const skippedCount = results.filter((r) => r.action === 'skipped').length;
-    console.log(
-      `\nCommitted: ${committedCount}, Skipped: ${skippedCount}, Failed: ${failures.length}`,
-    );
+    if (flags.dryRun) {
+      const wouldCommitCount = results.filter((r) => r.action === 'dry-run').length;
+      console.log(
+        `\nWould commit: ${wouldCommitCount}, Skipped: ${skippedCount}, Failed: ${failures.length}`,
+      );
+    } else {
+      const committedCount = results.filter((r) => r.action === 'pr-opened').length;
+      console.log(
+        `\nCommitted: ${committedCount}, Skipped: ${skippedCount}, Failed: ${failures.length}`,
+      );
+    }
     if (failures.length) {
       console.log('Failed repos:');
       for (const f of failures) {
