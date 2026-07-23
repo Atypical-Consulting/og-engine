@@ -58,6 +58,30 @@ curl -X POST http://localhost:3000/render \
 
 ```bash
 # Clone & install
+
+<!-- portfolio-toc:start -->
+
+## Table of Contents
+
+- [Why OG Engine?](#why-og-engine)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+- [Formats](#formats)
+- [Fonts](#fonts)
+- [Style Options](#style-options)
+- [Templates](#templates)
+- [Integration Examples](#integration-examples)
+- [Benchmarks](#benchmarks)
+- [Self-Hosting](#self-hosting)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Roadmap](#roadmap)
+- [Comparison with Alternatives](#comparison-with-alternatives)
+- [Contributing](#contributing)
+- [License](#license)
+
+<!-- portfolio-toc:end -->
+
 git clone https://github.com/Atypical-Consulting/og-engine.git
 cd og-engine
 bun install
