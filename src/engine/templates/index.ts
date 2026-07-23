@@ -8,6 +8,7 @@ import { newsArticleTemplate } from './news-article';
 import { pricingTemplate } from './pricing';
 import { productCardTemplate } from './product-card';
 import { profileCardTemplate } from './profile-card';
+import { readmeBannerTemplate } from './readme-banner';
 import { socialCardTemplate } from './social-card';
 import { testimonialTemplate } from './testimonial';
 import type { TemplateFn } from './types';
@@ -22,6 +23,7 @@ export const TEMPLATES: Record<string, TemplateFn> = {
   event: eventTemplate,
   'github-repo': githubRepoTemplate,
   'product-card': productCardTemplate,
+  'readme-banner': readmeBannerTemplate,
   testimonial: testimonialTemplate,
   'news-article': newsArticleTemplate,
   pricing: pricingTemplate,

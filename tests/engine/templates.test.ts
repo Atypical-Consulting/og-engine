@@ -34,7 +34,7 @@ function opts(template: string): RenderOptions {
 }
 
 describe('template registry', () => {
-  it('exports 12 templates', () => {
+  it('exports 13 templates', () => {
     expect(TEMPLATE_NAMES).toEqual([
       'default',
       'social-card',
@@ -43,6 +43,7 @@ describe('template registry', () => {
       'event',
       'github-repo',
       'product-card',
+      'readme-banner',
       'testimonial',
       'news-article',
       'pricing',
