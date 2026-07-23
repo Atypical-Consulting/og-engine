@@ -13,6 +13,7 @@ export const FORMATS: Record<string, Format> = {
   square: { w: 1080, h: 1080, label: 'Square', ratio: '1080x1080', maxTitleLines: 4, maxDescLines: 5 },
   linkedin: { w: 1200, h: 627, label: 'LinkedIn', ratio: '1200x627', maxTitleLines: 3, maxDescLines: 4 },
   story: { w: 1080, h: 1920, label: 'Story', ratio: '1080x1920', maxTitleLines: 5, maxDescLines: 6 },
+  readme: { w: 1280, h: 640, label: 'README', ratio: '1280x640', maxTitleLines: 2, maxDescLines: 3 },
 };
 
 export type FormatKey = keyof typeof FORMATS;
