@@ -11,8 +11,8 @@ export function extractTagline(markdown: string): string | null {
       if (line.includes('-->')) {
         inComment = false;
         // Extract everything after -->
-        const parts = line.split('-->');
-        line = parts[1]?.trim() || '';
+        const commentEndIdx = line.indexOf('-->');
+        line = line.slice(commentEndIdx + 3).trim();
         if (!line) continue; // No prose after comment
       } else {
         continue; // Still in comment
@@ -23,8 +23,8 @@ export function extractTagline(markdown: string): string | null {
     if (line.startsWith('<!--')) {
       if (line.includes('-->')) {
         // Same-line closed comment: extract the part after -->
-        const parts = line.split('-->');
-        line = parts[1]?.trim() || '';
+        const commentEndIdx = line.indexOf('-->');
+        line = line.slice(commentEndIdx + 3).trim();
         if (!line) continue; // No prose after comment
       } else {
         inComment = true;
@@ -58,11 +58,15 @@ export function extractTagline(markdown: string): string | null {
   return null;
 }
 
+// Whitelist-based HTML tag regex to avoid corrupting prose with angle brackets
+const HTML_TAG =
+  /<\/?(?:p|div|span|a|b|i|em|strong|small|br|hr|h[1-6]|center|sub|sup|u|s|mark|code|pre|kbd|abbr|blockquote|img|picture|source|figure|figcaption|details|summary|table|thead|tbody|tr|td|th|ul|ol|li|nav|section|article|header|footer|main|aside)(?:\s[^<>]*)?\/?>/gi;
+
 function stripInlineMd(s: string): string {
   return s
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // inline images
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links -> text
-    .replace(/<[^>]*>/g, '') // HTML tags (rule 2)
+    .replace(HTML_TAG, '') // HTML tags (whitelist only, preserve <T>, <API_KEY>, etc.)
     .replace(/[*_`]/g, '') // emphasis / code ticks
     .replace(/\s+/g, ' ')
     .trim();

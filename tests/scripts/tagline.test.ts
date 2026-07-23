@@ -98,4 +98,34 @@ describe('extractTagline', () => {
   it('skips underscore-spaced line (becomes empty after stripping)', () => {
     expect(extractTagline('# T\n\n_ _\n\nReal prose.')).toBe('Real prose.');
   });
+
+  // Regression tests: preserve angle brackets in prose (not HTML tags)
+  it('preserves generic type syntax Array<string>', () => {
+    expect(extractTagline('Supports Array<string> parameters.')).toBe('Supports Array<string> parameters.');
+  });
+
+  it('preserves generic type syntax Promise<T>', () => {
+    expect(extractTagline('Use Promise<T> for async.')).toBe('Use Promise<T> for async.');
+  });
+
+  it('preserves generic type syntax List<T>', () => {
+    expect(extractTagline('Iterate over List<T> with ease.')).toBe('Iterate over List<T> with ease.');
+  });
+
+  it('preserves angle bracket placeholders (underscore removed for markdown)', () => {
+    // Note: underscores are stripped as Markdown emphasis markers, so <API_KEY> → <APIKEY>
+    expect(extractTagline('Set your <API_KEY> variable.')).toBe('Set your <APIKEY> variable.');
+  });
+
+  it('preserves mathematical/logical expressions', () => {
+    expect(extractTagline('Runs fast: 5 < 10 and 20 > 3.')).toBe('Runs fast: 5 < 10 and 20 > 3.');
+  });
+
+  it('still strips actual HTML tags from wrapped content', () => {
+    expect(extractTagline('# T\n\n<p align="center">The pitch line.</p>')).toBe('The pitch line.');
+  });
+
+  it('preserves arrow in prose followed by --> in comment', () => {
+    expect(extractTagline('<!-- end --> Note: A --> B mapping.')).toBe('Note: A --> B mapping.');
+  });
 });
