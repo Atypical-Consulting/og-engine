@@ -28,6 +28,15 @@
 
 ---
 
+## Features
+
+- **Millisecond OG images** — generate Open Graph images, social cards and email banners server-side in ~22ms, ~10MB per render
+- **No browser** — Canvas-based text measurement instead of Puppeteer/Playwright, so no headless Chromium to ship or scale
+- **Drop-in replacement** — swap it in for an existing Puppeteer/Playwright image pipeline
+- **Multiple templates & formats** — a template system with several ready formats (incl. a README banner generator)
+- **Curated fonts** — a unified, bundled font set registered for consistent rendering
+- **Use it your way** — an in-process render API, an HTTP service, and an SDK
+
 ## Why OG Engine?
 
 Every time you generate an OG image with Puppeteer, you're spinning up a **full Chromium instance** to render some text on a rectangle. That's 500MB of RAM and ~129ms (warm) to ~658ms (cold) of latency — for a PNG.
