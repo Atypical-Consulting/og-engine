@@ -120,6 +120,38 @@ describe('POST /webhooks/stripe', () => {
     expect(updated!.stripe_customer_id).toBe('cus_456');
   });
 
+  it('returns 200 and still provisions the user when the welcome email fails', async () => {
+    const { sendWelcomeEmail } = await import('../../src/email/send');
+    vi.mocked(sendWelcomeEmail).mockRejectedValueOnce(new Error('resend unavailable'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const app = await importWebhooksRoute();
+    const res = await postWebhook(app, {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          customer_email: 'emailfail@example.com',
+          customer: 'cus_ef',
+          subscription: 'sub_ef',
+        },
+      },
+    });
+
+    // A failing email provider must NOT fail the webhook — Stripe only needs a 2xx.
+    expect(res.status).toBe(200);
+    // Billing state is persisted synchronously before the response.
+    const user = findUserByEmail('emailfail@example.com');
+    expect(user).not.toBeNull();
+    expect(user!.plan).toBe('pro');
+    expect(findApiKeyByEmail('emailfail@example.com')).not.toBeNull();
+
+    // Let the deferred (fire-and-forget) email rejection settle, then assert it
+    // was logged rather than thrown.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
   it('handles customer.subscription.deleted — downgrades to free', async () => {
     const user = createUser('cancel@example.com', 'pro');
     createApiKey(user.id);
@@ -132,6 +164,29 @@ describe('POST /webhooks/stripe', () => {
     expect(res.status).toBe(200);
     const updated = findUserByEmail('cancel@example.com');
     expect(updated!.plan).toBe('free');
+  });
+
+  it('returns 200 and still downgrades when the downgrade email fails', async () => {
+    const user = createUser('dgfail@example.com', 'pro');
+    createApiKey(user.id);
+    updateStripeInfo(user.id, 'cus_dgf', 'sub_dgf');
+
+    const { sendDowngradeEmail } = await import('../../src/email/send');
+    vi.mocked(sendDowngradeEmail).mockRejectedValueOnce(new Error('resend unavailable'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const app = await importWebhooksRoute();
+    const res = await postWebhook(app, {
+      type: 'customer.subscription.deleted',
+      data: { object: { id: 'sub_dgf' } },
+    });
+
+    expect(res.status).toBe(200);
+    expect(findUserByEmail('dgfail@example.com')!.plan).toBe('free');
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 
   it('handles invoice.paid — resets usage', async () => {
