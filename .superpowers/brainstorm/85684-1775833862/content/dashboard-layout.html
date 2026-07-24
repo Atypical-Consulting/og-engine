@@ -1,0 +1,121 @@
+<h2>Dashboard Layout</h2>
+<p class="subtitle">Shell structure with sidebar navigation and htmx content swapping</p>
+
+<div class="mockup">
+  <div class="mockup-header">Dashboard Shell — /dashboard/*</div>
+  <div class="mockup-body" style="padding: 0; min-height: 500px; display: flex; font-family: system-ui, sans-serif;">
+
+    <!-- Sidebar -->
+    <div style="width: 220px; background: #0d1117; border-right: 1px solid #222; padding: 16px 0; flex-shrink: 0;">
+      <!-- Logo -->
+      <div style="padding: 0 16px 20px; border-bottom: 1px solid #222; margin-bottom: 12px;">
+        <div style="color: #38ef7d; font-weight: bold; font-size: 15px;">⚡ OG Engine</div>
+        <div style="color: #666; font-size: 11px; margin-top: 2px;">Dashboard</div>
+      </div>
+
+      <!-- Nav items -->
+      <div style="padding: 0 8px;">
+        <div style="background: #1a2332; color: #58a6ff; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; cursor: pointer;">
+          📊 Overview
+        </div>
+        <div style="color: #999; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; cursor: pointer;">
+          🖼️ Images
+        </div>
+        <div style="color: #999; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; cursor: pointer;">
+          🔑 API Keys
+        </div>
+        <div style="color: #999; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; cursor: pointer;">
+          💳 Billing
+        </div>
+        <div style="color: #999; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; cursor: pointer;">
+          📈 Usage
+        </div>
+        <div style="color: #999; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; cursor: pointer;">
+          🎨 Templates
+        </div>
+        <div style="color: #999; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; cursor: pointer;">
+          🔗 Webhooks
+        </div>
+        <div style="color: #999; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; cursor: pointer;">
+          ⚙️ Settings
+        </div>
+      </div>
+
+      <!-- Bottom -->
+      <div style="position: absolute; bottom: 60px; left: 0; width: 220px; padding: 0 8px; border-top: 1px solid #222; padding-top: 12px;">
+        <div style="color: #666; padding: 8px 12px; font-size: 12px;">
+          philippe@example.com
+        </div>
+        <div style="color: #888; padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;">
+          🚪 Log out
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div style="flex: 1; background: #111; padding: 32px;">
+      <!-- Header -->
+      <div style="margin-bottom: 24px;">
+        <h3 style="color: #fff; margin: 0 0 4px; font-size: 20px;">Overview</h3>
+        <div style="color: #666; font-size: 13px;">Welcome back, Philippe</div>
+      </div>
+
+      <!-- Stats cards -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+        <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 16px;">
+          <div style="color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Plan</div>
+          <div style="color: #38ef7d; font-size: 22px; font-weight: bold; margin-top: 4px;">Pro</div>
+          <div style="color: #666; font-size: 12px;">€39/mo</div>
+        </div>
+        <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 16px;">
+          <div style="color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Usage This Period</div>
+          <div style="color: #fff; font-size: 22px; font-weight: bold; margin-top: 4px;">12,847</div>
+          <div style="color: #666; font-size: 12px;">of 50,000 renders</div>
+          <!-- Progress bar -->
+          <div style="background: #333; border-radius: 4px; height: 4px; margin-top: 8px;">
+            <div style="background: #38ef7d; border-radius: 4px; height: 4px; width: 25.7%;"></div>
+          </div>
+        </div>
+        <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 16px;">
+          <div style="color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Avg Render Time</div>
+          <div style="color: #fff; font-size: 22px; font-weight: bold; margin-top: 4px;">18.3ms</div>
+          <div style="color: #666; font-size: 12px;">last 7 days</div>
+        </div>
+      </div>
+
+      <!-- Recent renders -->
+      <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="color: #fff; font-size: 14px; font-weight: bold;">Recent Renders</div>
+          <div style="color: #58a6ff; font-size: 12px; cursor: pointer;">View all →</div>
+        </div>
+        <div style="border-top: 1px solid #333;">
+          <div style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #222; gap: 12px;">
+            <div style="width: 48px; height: 28px; background: #252540; border-radius: 4px; flex-shrink: 0;"></div>
+            <div style="flex: 1; color: #ccc; font-size: 13px;">Server-Side Text Layout Without...</div>
+            <div style="color: #888; font-size: 11px;">og · default</div>
+            <div style="color: #666; font-size: 11px;">2 min ago</div>
+          </div>
+          <div style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #222; gap: 12px;">
+            <div style="width: 48px; height: 28px; background: #252540; border-radius: 4px; flex-shrink: 0;"></div>
+            <div style="flex: 1; color: #ccc; font-size: 13px;">How Pretext Measures Text</div>
+            <div style="color: #888; font-size: 11px;">twitter · blog-hero</div>
+            <div style="color: #666; font-size: 11px;">15 min ago</div>
+          </div>
+          <div style="display: flex; align-items: center; padding: 10px 0; gap: 12px;">
+            <div style="width: 48px; height: 28px; background: #252540; border-radius: 4px; flex-shrink: 0;"></div>
+            <div style="flex: 1; color: #ccc; font-size: 13px;">Quarterly Revenue Report Q1</div>
+            <div style="color: #888; font-size: 11px;">linkedin · social-card</div>
+            <div style="color: #666; font-size: 11px;">1 hour ago</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- htmx annotation -->
+      <div style="margin-top: 24px; background: #1c1c0e; border: 1px dashed #554400; border-radius: 6px; padding: 12px; font-size: 11px; color: #aa8800;">
+        <strong>htmx pattern:</strong> Sidebar links use <code style="background: #252520; padding: 2px 4px; border-radius: 3px;">hx-get="/dashboard/images" hx-target="#main-content" hx-push-url="true"</code> — clicking a nav item swaps just the main content area, no full page reload. The sidebar stays put.
+      </div>
+    </div>
+
+  </div>
+</div>

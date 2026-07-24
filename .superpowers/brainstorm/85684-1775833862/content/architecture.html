@@ -1,0 +1,106 @@
+<h2>Architecture Overview</h2>
+<p class="subtitle">How the dashboard, auth, and OpenAPI layers fit into the existing Hono server</p>
+
+<div class="mockup">
+  <div class="mockup-header">System Architecture</div>
+  <div class="mockup-body" style="padding: 24px; font-family: monospace; font-size: 13px; line-height: 1.6;">
+    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+
+      <!-- Browser column -->
+      <div style="flex: 1; min-width: 200px;">
+        <div style="background: #1a1a2e; border: 1px solid #444; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+          <div style="color: #38ef7d; font-weight: bold; margin-bottom: 8px;">🌐 Browser</div>
+          <div style="color: #ccc; font-size: 12px;">
+            <div style="background: #252540; padding: 8px; border-radius: 4px; margin-bottom: 6px;">
+              <strong style="color: #fff;">Docs Site</strong> (Astro/Starlight)<br>
+              <span style="color: #888;">Static — separate deployment</span>
+            </div>
+            <div style="background: #252540; padding: 8px; border-radius: 4px;">
+              <strong style="color: #fff;">Dashboard</strong> (htmx)<br>
+              <span style="color: #888;">HTML fragments from Hono</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hono Server column -->
+      <div style="flex: 2; min-width: 350px;">
+        <div style="background: #1a1a2e; border: 2px solid #38ef7d; border-radius: 8px; padding: 16px;">
+          <div style="color: #38ef7d; font-weight: bold; margin-bottom: 12px;">⚡ Hono Server (single process)</div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <div style="background: #0d1117; padding: 10px; border-radius: 6px; border: 1px solid #333;">
+              <div style="color: #58a6ff; font-weight: bold; font-size: 11px;">API Routes /api/*</div>
+              <div style="color: #888; font-size: 11px; margin-top: 4px;">
+                POST /api/render<br>
+                POST /api/validate<br>
+                POST /api/render/batch<br>
+                GET /api/health<br>
+                GET /api/openapi.json
+              </div>
+            </div>
+            <div style="background: #0d1117; padding: 10px; border-radius: 6px; border: 1px solid #333;">
+              <div style="color: #da70d6; font-weight: bold; font-size: 11px;">Auth Routes /auth/*</div>
+              <div style="color: #888; font-size: 11px; margin-top: 4px;">
+                GET /auth/login<br>
+                POST /auth/send-link<br>
+                GET /auth/verify?token=...<br>
+                POST /auth/logout
+              </div>
+            </div>
+            <div style="background: #0d1117; padding: 10px; border-radius: 6px; border: 1px solid #333;">
+              <div style="color: #f0c040; font-weight: bold; font-size: 11px;">Dashboard Routes /dashboard/*</div>
+              <div style="color: #888; font-size: 11px; margin-top: 4px;">
+                GET /dashboard (overview)<br>
+                GET /dashboard/images<br>
+                GET /dashboard/api-keys<br>
+                GET /dashboard/billing<br>
+                GET /dashboard/usage<br>
+                GET /dashboard/templates<br>
+                GET /dashboard/webhooks<br>
+                GET /dashboard/settings
+              </div>
+            </div>
+            <div style="background: #0d1117; padding: 10px; border-radius: 6px; border: 1px solid #333;">
+              <div style="color: #ff6b6b; font-weight: bold; font-size: 11px;">Swagger UI /docs</div>
+              <div style="color: #888; font-size: 11px; margin-top: 4px;">
+                GET /docs → Swagger UI<br>
+                GET /api/openapi.json<br>
+                <br>
+                Auto-generated from<br>
+                Zod schemas + routes
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="background: #1c2333; padding: 8px; border-radius: 4px; text-align: center;">
+              <div style="color: #38ef7d; font-size: 11px; font-weight: bold;">Render Engine</div>
+              <div style="color: #666; font-size: 10px;">Pretext + Canvas</div>
+            </div>
+            <div style="background: #1c2333; padding: 8px; border-radius: 4px; text-align: center;">
+              <div style="color: #38ef7d; font-size: 11px; font-weight: bold;">SQLite</div>
+              <div style="color: #666; font-size: 10px;">Users, sessions, usage</div>
+            </div>
+            <div style="background: #1c2333; padding: 8px; border-radius: 4px; text-align: center;">
+              <div style="color: #38ef7d; font-size: 11px; font-weight: bold;">Middleware</div>
+              <div style="color: #666; font-size: 10px;">Auth, rate-limit, CORS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Flow arrows -->
+    <div style="margin-top: 16px; padding: 12px; background: #0d1117; border-radius: 6px; border: 1px solid #333;">
+      <div style="color: #58a6ff; font-size: 11px; font-weight: bold; margin-bottom: 6px;">Key flows:</div>
+      <div style="color: #888; font-size: 11px;">
+        <div>① <strong style="color: #da70d6;">Login:</strong> GET /auth/login → form → POST /auth/send-link → email with magic link → GET /auth/verify?token=xxx → set session cookie → redirect /dashboard</div>
+        <div style="margin-top: 4px;">② <strong style="color: #f0c040;">Dashboard:</strong> Every request sends session cookie → middleware validates → returns HTML fragment → htmx swaps into page</div>
+        <div style="margin-top: 4px;">③ <strong style="color: #58a6ff;">API:</strong> Bearer token auth (unchanged) → JSON response</div>
+        <div style="margin-top: 4px;">④ <strong style="color: #ff6b6b;">Swagger:</strong> /docs serves Swagger UI → points to /api/openapi.json → spec auto-generated from Zod schemas</div>
+      </div>
+    </div>
+  </div>
+</div>

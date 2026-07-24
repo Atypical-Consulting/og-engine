@@ -1,0 +1,50 @@
+name: Daily DB Backup
+
+on:
+  schedule:
+    # Every day at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger backup
+        id: backup
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            https://og-engine.com/admin/backup-db \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 120)
+
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -n -1)
+
+          echo "Status: $http_code"
+          echo "Response: $body"
+          echo "http_code=$http_code" >> "$GITHUB_OUTPUT"
+          echo "body=$body" >> "$GITHUB_OUTPUT"
+
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Backup failed with status $http_code: $body"
+            exit 1
+          fi
+
+      - name: Alert on failure
+        if: failure()
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer ${{ secrets.RESEND_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg to "${{ secrets.ADMIN_EMAIL }}" \
+              --arg run_url "$RUN_URL" \
+              '{
+                from: "OG Engine <alerts@og-engine.com>",
+                to: [$to],
+                subject: "[ALERT] OG Engine daily DB backup failed",
+                html: ("<p>The daily SQLite backup job failed.</p><p>HTTP status: ${{ steps.backup.outputs.http_code }}</p><p><a href=\"" + $run_url + "\">View GitHub Actions run →</a></p>")
+              }')"

@@ -1,0 +1,68 @@
+<h2>What should the dashboard include?</h2>
+<p class="subtitle">Select all sections you want in the dashboard. You can always add more later — pick what matters for launch.</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="overview" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Overview / Home</h3>
+      <p>Usage meter (calls used / limit), current plan, quick stats (total renders, avg render time). The "at a glance" page.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="images" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Generated Images Gallery</h3>
+      <p>Browse past renders with thumbnails, metadata (template, format, timestamp), and re-render / download actions. Searchable and filterable.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="api-keys" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>API Keys</h3>
+      <p>View, regenerate, or revoke API keys. Copy-to-clipboard. Show last used timestamp. Support multiple keys per account.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="subscription" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>Subscription & Billing</h3>
+      <p>Current plan details, upgrade/downgrade buttons, billing history, link to Stripe portal for payment method management.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="usage" onclick="toggleSelect(this)">
+    <div class="letter">5</div>
+    <div class="content">
+      <h3>Usage Analytics</h3>
+      <p>Detailed usage charts — calls per day/week/month, breakdown by endpoint, by format, by template. Quota warnings.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="templates" onclick="toggleSelect(this)">
+    <div class="letter">6</div>
+    <div class="content">
+      <h3>Custom Templates</h3>
+      <p>Create, edit, preview, and delete custom JSON templates (Scale tier only). Template editor with live preview.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="webhooks" onclick="toggleSelect(this)">
+    <div class="letter">7</div>
+    <div class="content">
+      <h3>Webhooks / Triggers</h3>
+      <p>Manage webhook triggers — create, test, view delivery logs, toggle active/inactive.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="settings" onclick="toggleSelect(this)">
+    <div class="letter">8</div>
+    <div class="content">
+      <h3>Account Settings</h3>
+      <p>Email preferences, notification settings, delete account. Basic profile management.</p>
+    </div>
+  </div>
+</div>
