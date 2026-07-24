@@ -2,6 +2,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
 import { beforeAll, describe, expect, it } from 'vitest';
+import pkg from '../../package.json' with { type: 'json' };
 import { healthRoute } from '../../src/api/health';
 import { registerFonts } from '../../src/engine/fonts';
 
@@ -42,6 +43,6 @@ describe('GET /health', () => {
       'profile-card',
       'announcement',
     ]);
-    expect(body.version).toBe('0.1.0');
+    expect(body.version).toBe(pkg.version);
   });
 });

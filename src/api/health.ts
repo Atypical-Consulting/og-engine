@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import pkg from '../../package.json' with { type: 'json' };
 import { FONTS } from '../engine/fonts';
 import { FORMAT_KEYS } from '../engine/formats';
 import { TEMPLATE_NAMES } from '../engine/templates';
@@ -11,6 +12,6 @@ healthRoute.get('/health', (c) => {
     fonts: FONTS.map((f) => f.name),
     formats: FORMAT_KEYS,
     templates: TEMPLATE_NAMES,
-    version: '0.1.0',
+    version: pkg.version,
   });
 });
