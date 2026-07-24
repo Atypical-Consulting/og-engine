@@ -15,6 +15,17 @@ import { sendDowngradeEmail, sendUpgradeEmail, sendWelcomeEmail } from '../email
 
 export const webhooksRoute = new Hono();
 
+// Run a best-effort side-effect (e.g. sending an email) off the webhook's
+// critical path. Stripe only needs a 2xx and gives up / retries if we're slow,
+// so a slow or failing provider must never delay or fail the response. Billing
+// state is always persisted synchronously before we defer. Errors are logged,
+// never thrown.
+function defer(promise: Promise<unknown>, context: string): void {
+  promise.catch((err) => {
+    console.error(`[webhooks] deferred side-effect failed (${context}):`, err);
+  });
+}
+
 function getPlanFromPriceId(priceId: string): Plan | null {
   const mapping: Record<string, Plan> = {
     [process.env.STRIPE_PRICE_STARTER ?? '']: 'starter',
@@ -75,7 +86,7 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
         apiKey = createApiKey(user.id);
       }
 
-      await sendWelcomeEmail(email, apiKey.key, plan);
+      defer(sendWelcomeEmail(email, apiKey.key, plan), 'sendWelcomeEmail');
       break;
     }
 
@@ -92,7 +103,7 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const user = findUserByStripeSubscription(subId);
       if (user) {
         updatePlan(user.id, plan);
-        await sendUpgradeEmail(user.email, plan);
+        defer(sendUpgradeEmail(user.email, plan), 'sendUpgradeEmail');
       }
       break;
     }
@@ -105,7 +116,7 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const user = findUserByStripeSubscription(subId);
       if (user) {
         updatePlan(user.id, 'free');
-        await sendDowngradeEmail(user.email);
+        defer(sendDowngradeEmail(user.email), 'sendDowngradeEmail');
       }
       break;
     }
