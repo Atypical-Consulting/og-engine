@@ -21,7 +21,7 @@
   },
   "overrides": {
     "zod": "^4.0.0",
-    "@astrojs/sitemap": "3.7.3",
+    "@astrojs/sitemap": "3.7.4",
     "vite": ">=7.3.2",
     "svgo": "^4.0.2",
     "js-yaml": "^4.3.0"
