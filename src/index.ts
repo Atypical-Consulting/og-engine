@@ -15,6 +15,7 @@ import { triggersRoute } from './api/triggers';
 import { usageRoute } from './api/usage';
 import { validateRoute } from './api/validate';
 import { webhooksRoute } from './api/webhooks';
+import { warnIfBaseUrlUnset } from './auth/base-url';
 import { csrfMiddleware, sessionMiddleware } from './auth/middleware';
 import { authRoutes } from './auth/routes';
 import { dashboardRoutes } from './dashboard/routes';
@@ -189,6 +190,7 @@ const FONTS_DIR = join(import.meta.dir, '..', 'fonts');
 
 async function start() {
   await registerFonts(FONTS_DIR);
+  warnIfBaseUrlUnset();
   console.log(`OG Engine listening on http://localhost:${PORT}`);
   if (authEnabled) {
     console.log('Auth: enabled (set AUTH_ENABLED=false to disable)');
