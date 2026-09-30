@@ -393,6 +393,133 @@ export function getDailyUsage(userId: string, days = 30): { date: string; count:
     .all(userId, `-${days}`) as { date: string; count: number }[];
 }
 
+// ─── Funnel Stats (admin) ────────────────────────────────────
+
+export interface FunnelStats {
+  users_total: number;
+  users_by_plan: Record<Plan, number>;
+  users_created_last_7d: number;
+  users_created_last_30d: number;
+  activated_users_total: number;
+  activated_last_7d: number;
+  activated_last_30d: number;
+  active_users_last_7d: number;
+  active_users_last_30d: number;
+  renders_total: number;
+  renders_last_7d: number;
+  renders_last_30d: number;
+  users_with_stripe_customer_id: number;
+  median_hours_signup_to_first_render: number | null;
+  generated_at: string;
+}
+
+/**
+ * Aggregate funnel counters for the whole instance. Read-only.
+ *
+ * `created_at` is written both as ISO-8601 (`users`) and as SQLite datetime
+ * (`render_history`), so every comparison normalises through `datetime()`.
+ *
+ * `activated_*` counts users whose *first* render landed in the window (the
+ * activation event); `active_users_*` counts users with any render in it.
+ */
+export function getFunnelStats(): FunnelStats {
+  const d = getDb();
+
+  const users = d
+    .prepare(
+      `SELECT
+         COUNT(*) AS users_total,
+         COALESCE(SUM(CASE WHEN plan = 'free' THEN 1 ELSE 0 END), 0) AS plan_free,
+         COALESCE(SUM(CASE WHEN plan = 'starter' THEN 1 ELSE 0 END), 0) AS plan_starter,
+         COALESCE(SUM(CASE WHEN plan = 'pro' THEN 1 ELSE 0 END), 0) AS plan_pro,
+         COALESCE(SUM(CASE WHEN plan = 'scale' THEN 1 ELSE 0 END), 0) AS plan_scale,
+         COALESCE(SUM(CASE WHEN datetime(created_at) >= datetime('now', '-7 days') THEN 1 ELSE 0 END), 0) AS created_7d,
+         COALESCE(SUM(CASE WHEN datetime(created_at) >= datetime('now', '-30 days') THEN 1 ELSE 0 END), 0) AS created_30d,
+         COALESCE(SUM(CASE WHEN stripe_customer_id IS NOT NULL THEN 1 ELSE 0 END), 0) AS with_stripe
+       FROM users`,
+    )
+    .get() as {
+    users_total: number;
+    plan_free: number;
+    plan_starter: number;
+    plan_pro: number;
+    plan_scale: number;
+    created_7d: number;
+    created_30d: number;
+    with_stripe: number;
+  };
+
+  const renders = d
+    .prepare(
+      `SELECT
+         COUNT(*) AS renders_total,
+         COALESCE(SUM(CASE WHEN datetime(created_at) >= datetime('now', '-7 days') THEN 1 ELSE 0 END), 0) AS renders_7d,
+         COALESCE(SUM(CASE WHEN datetime(created_at) >= datetime('now', '-30 days') THEN 1 ELSE 0 END), 0) AS renders_30d,
+         COUNT(DISTINCT user_id) AS activated_total,
+         COUNT(DISTINCT CASE WHEN datetime(created_at) >= datetime('now', '-7 days') THEN user_id END) AS active_7d,
+         COUNT(DISTINCT CASE WHEN datetime(created_at) >= datetime('now', '-30 days') THEN user_id END) AS active_30d
+       FROM render_history`,
+    )
+    .get() as {
+    renders_total: number;
+    renders_7d: number;
+    renders_30d: number;
+    activated_total: number;
+    active_7d: number;
+    active_30d: number;
+  };
+
+  const activations = d
+    .prepare(
+      `SELECT
+         COALESCE(SUM(CASE WHEN first_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END), 0) AS activated_7d,
+         COALESCE(SUM(CASE WHEN first_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END), 0) AS activated_30d
+       FROM (SELECT user_id, MIN(datetime(created_at)) AS first_at FROM render_history GROUP BY user_id)`,
+    )
+    .get() as { activated_7d: number; activated_30d: number };
+
+  const median = d
+    .prepare(
+      `WITH deltas AS (
+         SELECT (julianday(fr.first_at) - julianday(datetime(u.created_at))) * 24.0 AS hours
+         FROM (SELECT user_id, MIN(datetime(created_at)) AS first_at FROM render_history GROUP BY user_id) fr
+         JOIN users u ON u.id = fr.user_id
+       )
+       SELECT AVG(hours) AS median_hours
+       FROM (
+         SELECT hours FROM deltas
+         ORDER BY hours
+         LIMIT 2 - ((SELECT COUNT(*) FROM deltas) % 2)
+         OFFSET (SELECT (COUNT(*) - 1) / 2 FROM deltas)
+       )`,
+    )
+    .get() as { median_hours: number | null };
+
+  return {
+    users_total: users.users_total,
+    users_by_plan: {
+      free: users.plan_free,
+      starter: users.plan_starter,
+      pro: users.plan_pro,
+      scale: users.plan_scale,
+    },
+    users_created_last_7d: users.created_7d,
+    users_created_last_30d: users.created_30d,
+    activated_users_total: renders.activated_total,
+    activated_last_7d: activations.activated_7d,
+    activated_last_30d: activations.activated_30d,
+    active_users_last_7d: renders.active_7d,
+    active_users_last_30d: renders.active_30d,
+    renders_total: renders.renders_total,
+    renders_last_7d: renders.renders_7d,
+    renders_last_30d: renders.renders_30d,
+    users_with_stripe_customer_id: users.with_stripe,
+    median_hours_signup_to_first_render:
+      median.median_hours === null ? null : Math.round(median.median_hours * 100) / 100,
+    generated_at: new Date().toISOString(),
+  };
+}
+
 // ─── Custom Templates ────────────────────────────────────────
 
 export interface CustomTemplateRecord {
