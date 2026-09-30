@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { renderCard } from '../engine/renderer';
+import { outputFormatGate } from '../middleware/auth';
 import { batchSchema } from '../schemas/request';
 
 export const batchRoute = new Hono();
@@ -35,6 +36,14 @@ batchRoute.post('/render/batch', async (c) => {
   }
 
   const { items } = parsed.data;
+
+  // Plan gate on every requested output format. /render/batch is already Pro+ via
+  // planGate('batch'), so this only matters if that path gate is ever relaxed.
+  for (const item of items) {
+    const formatGate = outputFormatGate(c, item.output.format);
+    if (formatGate) return formatGate;
+  }
+
   const t0 = performance.now();
 
   // Render all items
