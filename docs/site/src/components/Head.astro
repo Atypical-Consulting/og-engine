@@ -1,8 +1,11 @@
 ---
 /**
  * Custom Head component override for Starlight.
- * Renders all default head tags + injects BreadcrumbList JSON-LD structured data.
+ * Renders all default head tags + injects BreadcrumbList JSON-LD structured data
+ * and the analytics tag.
  */
+import Analytics from './Analytics.astro';
+
 const { head, entry, siteTitle } = Astro.locals.starlightRoute;
 
 // Build breadcrumb items from the page slug
@@ -68,3 +71,4 @@ const breadcrumbSchema = JSON.stringify({
 {breadcrumbs.length > 1 && (
   <script type="application/ld+json" set:html={breadcrumbSchema} />
 )}
+<Analytics />

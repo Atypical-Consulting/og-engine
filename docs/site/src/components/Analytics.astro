@@ -1,0 +1,16 @@
+---
+/**
+ * Umami analytics tag.
+ *
+ * Renders nothing unless PUBLIC_UMAMI_WEBSITE_ID is set at build time, so the
+ * site ships untracked by default and analytics is switched on by supplying a
+ * single build arg (see Dockerfile). Umami is cookieless and stores no
+ * personal data, so no consent banner is required.
+ *
+ * PUBLIC_UMAMI_SRC overrides the script origin for self-hosted Umami.
+ */
+const websiteId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID;
+const scriptSrc = import.meta.env.PUBLIC_UMAMI_SRC || 'https://cloud.umami.is/script.js';
+---
+
+{websiteId && <script defer src={scriptSrc} data-website-id={websiteId} is:inline />}
