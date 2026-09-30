@@ -2,20 +2,20 @@ import { Hono } from 'hono';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { closeDb, createApiKey, createUser, findApiKeyByEmail, findUserByEmail, updateStripeInfo } from '../../src/db';
 
-// Mock stripe
+// Mock stripe. The call mocks live outside the constructor so a single test can
+// make one delivery fail (`mockRejectedValueOnce`) without rebuilding the double.
+const stripeMocks = vi.hoisted(() => ({
+  constructEventAsync: vi.fn(),
+  retrieve: vi.fn(),
+}));
+
 vi.mock('stripe', () => {
   return {
     // biome-ignore lint/complexity/useArrowFunction: function keyword required for `new Stripe()` constructor mock
     default: vi.fn().mockImplementation(function () {
       return {
-        webhooks: {
-          constructEventAsync: vi.fn().mockImplementation(async (body: string) => JSON.parse(body)),
-        },
-        subscriptions: {
-          retrieve: vi.fn().mockResolvedValue({
-            items: { data: [{ price: { id: 'price_pro_monthly' } }] },
-          }),
-        },
+        webhooks: { constructEventAsync: stripeMocks.constructEventAsync },
+        subscriptions: { retrieve: stripeMocks.retrieve },
       };
     }),
   };
@@ -29,6 +29,14 @@ vi.mock('../../src/email/send', () => ({
 }));
 
 beforeEach(() => {
+  stripeMocks.constructEventAsync.mockReset();
+  stripeMocks.constructEventAsync.mockImplementation(async (body: string) => JSON.parse(body));
+  stripeMocks.retrieve.mockReset();
+  stripeMocks.retrieve.mockResolvedValue({
+    status: 'active',
+    items: { data: [{ price: { id: 'price_pro_monthly' } }] },
+  });
+
   closeDb();
   process.env.DATABASE_URL = 'file::memory:';
   process.env.STRIPE_SECRET_KEY = 'sk_test_123';
@@ -210,6 +218,165 @@ describe('POST /webhooks/stripe', () => {
     expect(res.status).toBe(200);
     const updated = findUserByEmail('invoice@example.com');
     expect(updated!.calls_used).toBe(0);
+  });
+
+  // Stripe retries deliveries and does not guarantee ordering. Both branches
+  // below handed out paid entitlement for free before the event ledger and the
+  // ordering watermark existed.
+  describe('idempotency at the boundary', () => {
+    it('resets usage exactly once when the same invoice.paid is delivered twice', async () => {
+      const user = createUser('replay@example.com', 'pro');
+      createApiKey(user.id);
+      updateStripeInfo(user.id, 'cus_replay', 'sub_replay');
+      const { getDb } = await import('../../src/db');
+      const db = getDb();
+      const setUsed = (n: number) => db.prepare('UPDATE users SET calls_used = ? WHERE id = ?').run(n, user.id);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const invoicePaid = {
+        id: 'evt_invoice_replay',
+        type: 'invoice.paid',
+        created: 1_700_000_000,
+        data: { object: { parent: { subscription_details: { subscription: 'sub_replay' } } } },
+      };
+
+      const app = await importWebhooksRoute();
+
+      setUsed(4321);
+      const first = await postWebhook(app, invoicePaid);
+      expect(first.status).toBe(200);
+      expect(findUserByEmail('replay@example.com')!.calls_used).toBe(0);
+
+      // The customer spends quota, then Stripe retries the same invoice.
+      setUsed(4321);
+      const replay = await postWebhook(app, invoicePaid);
+      expect(replay.status).toBe(200);
+      // Usage must be untouched: one invoice buys exactly one quota period.
+      expect(findUserByEmail('replay@example.com')!.calls_used).toBe(4321);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('evt_invoice_replay'));
+      warnSpy.mockRestore();
+    });
+
+    it('does not restore the paid plan when subscription.updated arrives after deleted', async () => {
+      const user = createUser('ooo@example.com', 'pro');
+      createApiKey(user.id);
+      updateStripeInfo(user.id, 'cus_ooo', 'sub_ooo');
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const app = await importWebhooksRoute();
+
+      const deleted = await postWebhook(app, {
+        id: 'evt_sub_deleted',
+        type: 'customer.subscription.deleted',
+        created: 1_700_000_500,
+        data: { object: { id: 'sub_ooo', status: 'canceled' } },
+      });
+      expect(deleted.status).toBe(200);
+      expect(findUserByEmail('ooo@example.com')!.plan).toBe('free');
+
+      // Distinct event id, so the ledger lets it through — only the ordering
+      // watermark can stop it. Stripe generated it *before* the cancellation.
+      const updated = await postWebhook(app, {
+        id: 'evt_sub_updated',
+        type: 'customer.subscription.updated',
+        created: 1_700_000_400,
+        data: {
+          object: { id: 'sub_ooo', status: 'active', items: { data: [{ price: { id: 'price_pro_monthly' } }] } },
+        },
+      });
+      expect(updated.status).toBe(200);
+
+      const after = findUserByEmail('ooo@example.com')!;
+      expect(after.plan).toBe('free');
+      expect(after.calls_limit).toBe(500);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('evt_sub_updated'), expect.anything());
+      warnSpy.mockRestore();
+    });
+
+    it('treats the cancellation as final when the replayed updated carries no newer timestamp', async () => {
+      const user = createUser('noclock@example.com', 'pro');
+      createApiKey(user.id);
+      updateStripeInfo(user.id, 'cus_noclock', 'sub_noclock');
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const app = await importWebhooksRoute();
+
+      // The payloads from the reproduction harness: neither carries `created`.
+      await postWebhook(app, {
+        id: 'evt_nc_deleted',
+        type: 'customer.subscription.deleted',
+        data: { object: { id: 'sub_noclock' } },
+      });
+      expect(findUserByEmail('noclock@example.com')!.plan).toBe('free');
+
+      await postWebhook(app, {
+        id: 'evt_nc_updated',
+        type: 'customer.subscription.updated',
+        data: { object: { id: 'sub_noclock', items: { data: [{ price: { id: 'price_pro_monthly' } }] } } },
+      });
+      expect(findUserByEmail('noclock@example.com')!.plan).toBe('free');
+      warnSpy.mockRestore();
+    });
+
+    it('still upgrades on a newer subscription.updated after a cancellation', async () => {
+      const user = createUser('resub@example.com', 'pro');
+      createApiKey(user.id);
+      updateStripeInfo(user.id, 'cus_resub', 'sub_resub');
+
+      const app = await importWebhooksRoute();
+
+      await postWebhook(app, {
+        id: 'evt_resub_deleted',
+        type: 'customer.subscription.deleted',
+        created: 1_700_000_500,
+        data: { object: { id: 'sub_resub', status: 'canceled' } },
+      });
+      expect(findUserByEmail('resub@example.com')!.plan).toBe('free');
+
+      // Genuinely newer event: the guard must not freeze the account on free.
+      await postWebhook(app, {
+        id: 'evt_resub_updated',
+        type: 'customer.subscription.updated',
+        created: 1_700_000_900,
+        data: {
+          object: { id: 'sub_resub', status: 'active', items: { data: [{ price: { id: 'price_pro_monthly' } }] } },
+        },
+      });
+      const after = findUserByEmail('resub@example.com')!;
+      expect(after.plan).toBe('pro');
+      expect(after.calls_limit).toBe(50_000);
+    });
+
+    it('releases the claim when processing throws so the Stripe retry is not swallowed', async () => {
+      // Money has already changed hands: if the failed delivery kept its claim,
+      // Stripe's retry would be dropped as a duplicate and the paying customer
+      // would never be provisioned.
+      stripeMocks.retrieve.mockRejectedValueOnce(new Error('stripe unavailable'));
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const event = {
+        id: 'evt_retry_me',
+        type: 'checkout.session.completed',
+        created: 1_700_000_900,
+        data: { object: { customer_email: 'retry@example.com', customer: 'cus_retry', subscription: 'sub_retry' } },
+      };
+
+      const app = await importWebhooksRoute();
+
+      // Hono turns the thrown error into a 500, which is what makes Stripe retry.
+      const failed = await postWebhook(app, event);
+      expect(failed.status).toBe(500);
+      expect(findUserByEmail('retry@example.com')).toBeNull();
+
+      const { findStripeEvent } = await import('../../src/db');
+      expect(findStripeEvent('evt_retry_me')).toBeNull();
+
+      const retried = await postWebhook(app, event);
+      expect(retried.status).toBe(200);
+      expect(findUserByEmail('retry@example.com')!.plan).toBe('pro');
+      expect(findStripeEvent('evt_retry_me')).not.toBeNull();
+      errSpy.mockRestore();
+    });
   });
 
   it('returns 500 when Stripe is not configured', async () => {
