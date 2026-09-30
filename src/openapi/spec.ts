@@ -23,7 +23,10 @@ export function createOpenApiSpec() {
     },
     servers: [
       {
-        url: 'https://api.og-engine.com',
+        // The API is served from the apex host at root paths (see src/index.ts
+        // route mounts). `api.og-engine.com` has a DNS record but no TLS
+        // certificate, so it cannot terminate HTTPS — do not advertise it.
+        url: 'https://og-engine.com',
         description: 'Production',
       },
       {
