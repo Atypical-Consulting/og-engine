@@ -212,6 +212,49 @@ describe('POST /webhooks/stripe', () => {
     expect(updated!.calls_used).toBe(0);
   });
 
+  // A branch that returns 200 without provisioning is invisible to Stripe — it
+  // never retries a 2xx. These assert the drop leaves a trace naming the event.
+  describe('silent-drop branches are logged', () => {
+    it('logs when a subscription price id maps to no plan', async () => {
+      const user = createUser('unmapped@example.com', 'pro');
+      createApiKey(user.id);
+      updateStripeInfo(user.id, 'cus_um', 'sub_um');
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const app = await importWebhooksRoute();
+      const res = await postWebhook(app, {
+        id: 'evt_unmapped',
+        type: 'customer.subscription.updated',
+        data: { object: { id: 'sub_um', items: { data: [{ price: { id: 'price_not_in_env' } }] } } },
+      });
+
+      expect(res.status).toBe(200);
+      expect(errSpy).toHaveBeenCalledWith(
+        expect.stringContaining('evt_unmapped'),
+        expect.objectContaining({ priceId: 'price_not_in_env' }),
+      );
+      errSpy.mockRestore();
+    });
+
+    it('logs when no local user is linked to the subscription', async () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const app = await importWebhooksRoute();
+      const res = await postWebhook(app, {
+        id: 'evt_orphan',
+        type: 'customer.subscription.deleted',
+        data: { object: { id: 'sub_no_such_user' } },
+      });
+
+      expect(res.status).toBe(200);
+      expect(errSpy).toHaveBeenCalledWith(
+        expect.stringContaining('evt_orphan'),
+        expect.objectContaining({ subId: 'sub_no_such_user' }),
+      );
+      errSpy.mockRestore();
+    });
+  });
+
   it('returns 500 when Stripe is not configured', async () => {
     delete process.env.STRIPE_SECRET_KEY;
     vi.resetModules();

@@ -26,6 +26,17 @@ function defer(promise: Promise<unknown>, context: string): void {
   });
 }
 
+// A webhook branch that returns 200 without provisioning anything is invisible:
+// Stripe treats the 2xx as success and never retries, so a mis-set price id or a
+// missing email silently costs a paying customer their entitlement. Log every
+// such drop with the event id so it is findable after the fact.
+function dropped(event: Stripe.Event, reason: string, detail: Record<string, unknown> = {}): void {
+  console.error(
+    `[webhooks] dropped ${event.type} (${event.id}): ${reason}`,
+    Object.keys(detail).length > 0 ? detail : '',
+  );
+}
+
 function getPlanFromPriceId(priceId: string): Plan | null {
   const mapping: Record<string, Plan> = {
     [process.env.STRIPE_PRICE_STARTER ?? '']: 'starter',
@@ -65,12 +76,38 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
 
-      if (!email || !subscriptionId) break;
+      if (!email || !subscriptionId) {
+        dropped(event, 'session has no email or no subscription', {
+          sessionId: session.id,
+          hasEmail: !!email,
+          hasSubscription: !!subscriptionId,
+        });
+        break;
+      }
 
-      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      let sub: Stripe.Subscription;
+      try {
+        sub = await stripe.subscriptions.retrieve(subscriptionId);
+      } catch (err) {
+        // Money has already changed hands here. Log who we failed to provision,
+        // then rethrow so Stripe sees a non-2xx and retries the delivery.
+        console.error(
+          `[webhooks] provisioning failed for ${email} (${event.id}): could not retrieve ${subscriptionId}`,
+          err,
+        );
+        throw err;
+      }
+
       const priceId = sub.items.data[0]?.price?.id;
       const plan = priceId ? getPlanFromPriceId(priceId) : null;
-      if (!plan) break;
+      if (!plan) {
+        dropped(event, 'price id is not mapped to a plan — check STRIPE_PRICE_* env vars', {
+          email,
+          priceId,
+          subscriptionId,
+        });
+        break;
+      }
 
       let user = findUserByEmail(email);
       let apiKey = findApiKeyByEmail(email);
@@ -95,41 +132,62 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const subId = sub.id;
       const priceId = sub.items?.data?.[0]?.price?.id;
 
-      if (!subId || !priceId) break;
+      if (!subId || !priceId) {
+        dropped(event, 'subscription has no id or no price', { subId, priceId });
+        break;
+      }
 
       const plan = getPlanFromPriceId(priceId);
-      if (!plan) break;
+      if (!plan) {
+        dropped(event, 'price id is not mapped to a plan — check STRIPE_PRICE_* env vars', { subId, priceId });
+        break;
+      }
 
       const user = findUserByStripeSubscription(subId);
-      if (user) {
-        updatePlan(user.id, plan);
-        defer(sendUpgradeEmail(user.email, plan), 'sendUpgradeEmail');
+      if (!user) {
+        dropped(event, 'no local user linked to this subscription', { subId, plan });
+        break;
       }
+
+      updatePlan(user.id, plan);
+      defer(sendUpgradeEmail(user.email, plan), 'sendUpgradeEmail');
       break;
     }
 
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription;
       const subId = sub.id;
-      if (!subId) break;
+      if (!subId) {
+        dropped(event, 'subscription has no id');
+        break;
+      }
 
       const user = findUserByStripeSubscription(subId);
-      if (user) {
-        updatePlan(user.id, 'free');
-        defer(sendDowngradeEmail(user.email), 'sendDowngradeEmail');
+      if (!user) {
+        dropped(event, 'no local user linked to this subscription', { subId });
+        break;
       }
+
+      updatePlan(user.id, 'free');
+      defer(sendDowngradeEmail(user.email), 'sendDowngradeEmail');
       break;
     }
 
     case 'invoice.paid': {
       const invoice = event.data.object as Stripe.Invoice;
       const subId = (invoice.parent?.subscription_details?.subscription as string) ?? null;
-      if (!subId) break;
+      if (!subId) {
+        dropped(event, 'invoice is not tied to a subscription', { invoiceId: invoice.id });
+        break;
+      }
 
       const user = findUserByStripeSubscription(subId);
-      if (user) {
-        resetUsage(user.id);
+      if (!user) {
+        dropped(event, 'no local user linked to this subscription', { subId });
+        break;
       }
+
+      resetUsage(user.id);
       break;
     }
   }
