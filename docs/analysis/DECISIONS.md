@@ -26,8 +26,10 @@ at all — that is a copy gap to close, not a gate to add.
 
 **Wire behavior (WebP):** `output.format` arrives in the request body, so the gate cannot be
 path-level `planGate` middleware. `outputFormatGate()` in `src/middleware/auth.ts` runs inside the
-`/render`, `/render/from-url` and `/render/batch` handlers after Zod parsing and returns
-`402 plan_required`.
+`/render`, `/render/from-url`, `/render/batch` and `/triggers` handlers after Zod parsing and
+returns `402 plan_required`. `/triggers` is checked twice — once when the render config is saved,
+and again on `/triggers/:id/fire`, because a saved trigger outlives the plan that created it and a
+mid-period downgrade must stop paid renders.
 
 **Rollout flag:** enforcement is off unless `WEBP_PAYWALL_ENABLED=true`. With the flag unset, free
 keys keep receiving WebP exactly as before. Turning the paywall on is a customer-visible pricing
