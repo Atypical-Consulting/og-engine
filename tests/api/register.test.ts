@@ -46,6 +46,19 @@ describe('POST /auth/register', () => {
     expect(body.apiKey).toMatch(/^oge_sk_/);
   });
 
+  it('does not claim an email was sent on the duplicate path', async () => {
+    const { sendWelcomeEmail } = await import('../../src/email/send');
+    await post({ email: 'dup2@example.com' });
+    vi.mocked(sendWelcomeEmail).mockClear();
+
+    const res = await post({ email: 'dup2@example.com' });
+    const body = await res.json();
+
+    // This branch intentionally sends nothing, so the message must not promise one.
+    expect(sendWelcomeEmail).not.toHaveBeenCalled();
+    expect(body.message).not.toMatch(/sent/i);
+  });
+
   it('returns 400 for invalid email', async () => {
     const res = await post({ email: 'not-an-email' });
     expect(res.status).toBe(400);

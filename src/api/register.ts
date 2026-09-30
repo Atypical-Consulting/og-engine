@@ -41,7 +41,10 @@ registerRoute.post('/auth/register', async (c) => {
 
   const { email } = parsed.data;
 
-  // Per DECISIONS.md Decision 4: duplicate registration returns existing key
+  // Per DECISIONS.md Decision 4: duplicate registration returns existing key.
+  // This branch deliberately sends no email — re-registering is unauthenticated,
+  // so mailing on every call would let anyone send to an arbitrary address. The
+  // message must not claim a send that never happens.
   const existing = findApiKeyByEmail(email);
   if (existing) {
     const user = findUserByEmail(email);
@@ -49,7 +52,7 @@ registerRoute.post('/auth/register', async (c) => {
       apiKey: existing.key,
       plan: user?.plan ?? 'free',
       limit: user?.calls_limit ?? 500,
-      message: `Existing API key returned. Also sent to ${email}.`,
+      message: 'Existing API key returned.',
     });
   }
 
