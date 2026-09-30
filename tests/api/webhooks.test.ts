@@ -255,6 +255,52 @@ describe('POST /webhooks/stripe', () => {
     });
   });
 
+  describe('customer.subscription.updated — upgrade vs downgrade', () => {
+    it('emails the customer when the plan actually goes up', async () => {
+      const user = createUser('goingup@example.com', 'starter');
+      createApiKey(user.id);
+      updateStripeInfo(user.id, 'cus_up', 'sub_up');
+      const { sendUpgradeEmail } = await import('../../src/email/send');
+      vi.mocked(sendUpgradeEmail).mockClear();
+
+      const app = await importWebhooksRoute();
+      const res = await postWebhook(app, {
+        id: 'evt_up',
+        type: 'customer.subscription.updated',
+        data: { object: { id: 'sub_up', items: { data: [{ price: { id: 'price_pro_monthly' } }] } } },
+      });
+
+      expect(res.status).toBe(200);
+      expect(findUserByEmail('goingup@example.com')!.plan).toBe('pro');
+      expect(sendUpgradeEmail).toHaveBeenCalledWith('goingup@example.com', 'pro');
+    });
+
+    it('does not congratulate a mid-period downgrade', async () => {
+      const user = createUser('goingdown@example.com', 'pro');
+      createApiKey(user.id);
+      updateStripeInfo(user.id, 'cus_down', 'sub_down');
+      const { sendUpgradeEmail } = await import('../../src/email/send');
+      vi.mocked(sendUpgradeEmail).mockClear();
+
+      const app = await importWebhooksRoute();
+      const res = await postWebhook(app, {
+        id: 'evt_down',
+        type: 'customer.subscription.updated',
+        data: {
+          object: { id: 'sub_down', items: { data: [{ price: { id: 'price_starter_monthly' } }] } },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      // Entitlement still converges on the new plan…
+      const updated = findUserByEmail('goingdown@example.com');
+      expect(updated!.plan).toBe('starter');
+      expect(updated!.calls_limit).toBe(10_000);
+      // …but the customer is not told they were upgraded.
+      expect(sendUpgradeEmail).not.toHaveBeenCalled();
+    });
+  });
+
   it('returns 500 when Stripe is not configured', async () => {
     delete process.env.STRIPE_SECRET_KEY;
     vi.resetModules();

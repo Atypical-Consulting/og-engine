@@ -37,6 +37,10 @@ function dropped(event: Stripe.Event, reason: string, detail: Record<string, unk
   );
 }
 
+// Plans in ascending order of entitlement, so we can tell an upgrade from a
+// downgrade. `customer.subscription.updated` fires for both.
+const PLAN_RANK: Record<Plan, number> = { free: 0, starter: 1, pro: 2, scale: 3 };
+
 function getPlanFromPriceId(priceId: string): Plan | null {
   const mapping: Record<string, Plan> = {
     [process.env.STRIPE_PRICE_STARTER ?? '']: 'starter',
@@ -149,8 +153,21 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
         break;
       }
 
+      const previousPlan = user.plan;
       updatePlan(user.id, plan);
-      defer(sendUpgradeEmail(user.email, plan), 'sendUpgradeEmail');
+
+      // Only congratulate an actual upgrade. A mid-period downgrade (Pro →
+      // Starter) also arrives as customer.subscription.updated, and telling
+      // that customer "Plan upgraded!" is simply false. There is no
+      // downgrade-confirmation copy yet, so log the change and send nothing
+      // rather than send the wrong thing.
+      if (PLAN_RANK[plan] > PLAN_RANK[previousPlan]) {
+        defer(sendUpgradeEmail(user.email, plan), 'sendUpgradeEmail');
+      } else if (PLAN_RANK[plan] < PLAN_RANK[previousPlan]) {
+        console.info(
+          `[webhooks] ${event.type} (${event.id}): downgraded ${user.id} ${previousPlan} -> ${plan}; no email sent (no downgrade copy)`,
+        );
+      }
       break;
     }
 
