@@ -16,6 +16,12 @@ RUN bun install --frozen-lockfile
 COPY docs/site/ ./
 # AvailableFontsTable.tsx imports from ../../../../src/engine/font-catalog
 COPY src/engine /app/src/engine
+# Analytics is off unless a website id is supplied at build time:
+#   fly deploy --build-arg PUBLIC_UMAMI_WEBSITE_ID=<id>
+ARG PUBLIC_UMAMI_WEBSITE_ID=""
+ARG PUBLIC_UMAMI_SRC=""
+ENV PUBLIC_UMAMI_WEBSITE_ID=$PUBLIC_UMAMI_WEBSITE_ID
+ENV PUBLIC_UMAMI_SRC=$PUBLIC_UMAMI_SRC
 RUN bun run build
 
 # Runner stage — no build tools needed
