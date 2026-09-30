@@ -2,7 +2,7 @@
 
 > This file is the single source of truth for product decisions.
 > All documentation, analysis, and implementation MUST align with these decisions.
-> Last updated: 2026-04-03
+> Last updated: 2026-09-30
 
 ## Decision 1: Currency
 
@@ -18,7 +18,17 @@
 - **CDN caching:** Pro+ (infrastructure feature)
 - **Custom JSON templates:** Scale only
 
-All plans get: all 5 formats, all 4 built-in templates, all 8 fonts, /validate unlimited.
+Two different things are called "format" in the API, and only one of them is gated:
+
+- **Card format** — the top-level `format` key (`og`, `twitter`, `square`, `linkedin`,
+  `story`, `readme`; see `src/engine/formats.ts`). **Never gated.** All plans get all
+  card formats.
+- **Output format** — `output.format`, which is `png | webp | pdf` and nothing else
+  (`src/schemas/request.ts`). PNG and **PDF are free on every plan**; WebP is the single
+  gated output format (Starter+), enforced behind `WEBP_PAYWALL_ENABLED`.
+
+All plans also get every built-in template, every bundled font, and unlimited `/validate`.
+The pricing page — not this file — is the authority on what we sell.
 
 ## Decision 3: /validate Authentication
 
