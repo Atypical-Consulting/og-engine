@@ -22,6 +22,12 @@ primary_region = "cdg"
   IMAGE_CACHE_MAX = "1000"
   RATE_LIMIT_MAX = "100"
   RATE_LIMIT_WINDOW_MS = "60000"
+  # SEO: the same app answers on both hostnames, which splits ranking signals
+  # across two indexable copies of the docs site. GET/HEAD requests for docs
+  # pages on an alias host get a 301 to the canonical one; API routes are
+  # unaffected. Remove either var to turn the redirect off.
+  CANONICAL_HOST = "og-engine.com"
+  CANONICAL_HOST_ALIASES = "og-engine.fly.dev"
 
 [http_service]
   internal_port = 3000

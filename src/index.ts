@@ -20,6 +20,7 @@ import { authRoutes } from './auth/routes';
 import { dashboardRoutes } from './dashboard/routes';
 import { registerFonts } from './engine/fonts';
 import { authMiddleware, optionalAuthMiddleware, planGate, usageTracking } from './middleware/auth';
+import { canonicalHost } from './middleware/canonical-host';
 import { rateLimit } from './middleware/rate-limit';
 import { openapiRoutes } from './openapi/swagger';
 
@@ -133,6 +134,11 @@ app.route('/', usageRoute);
 app.route('/', templatesRoute);
 app.route('/', triggersRoute);
 app.route('/', billingRoute);
+
+// ─── Canonical host redirect (docs site only) ───────────────
+// Registered after the API routes so they answer first: an integration pointed
+// at og-engine.fly.dev keeps working, only crawlable pages are redirected.
+app.use('*', canonicalHost());
 
 // ─── Static docs site (Astro build output) ─────────────────
 const DOCS_DIR = join(import.meta.dir, '..', 'docs-dist');
