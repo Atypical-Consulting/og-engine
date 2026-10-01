@@ -35,6 +35,13 @@ COPY --from=docs /app/docs/site/dist ./docs-dist
 # Create data directory for SQLite
 RUN mkdir -p /data
 
+# Build identifier surfaced on GET /health, so "is my fix live?" is one curl:
+#   fly deploy --build-arg GIT_SHA=$(git rev-parse --short HEAD)
+# Leaving it unset is fine — /health falls back to Fly's own per-deploy
+# FLY_IMAGE_REF, which also changes on every deploy.
+ARG GIT_SHA=""
+ENV GIT_SHA=$GIT_SHA
+
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATABASE_URL=file:/data/og-engine.db

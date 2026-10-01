@@ -45,4 +45,24 @@ describe('GET /health', () => {
     ]);
     expect(body.version).toBe(pkg.version);
   });
+
+  // Without this, nobody can tell whether a given fix is actually deployed —
+  // `version` only moves on a release, not on a deploy.
+  it('identifies the running build', async () => {
+    process.env.GIT_SHA = 'abc1234';
+    const res = await app.request('/health');
+    const body = await res.json();
+    expect(body.build.commit).toBe('abc1234');
+    delete process.env.GIT_SHA;
+  });
+
+  it('falls back to Fly’s per-deploy image ref when no sha was baked in', async () => {
+    delete process.env.GIT_SHA;
+    process.env.FLY_IMAGE_REF = 'registry.fly.io/og-engine:deployment-01JABC';
+    const res = await app.request('/health');
+    const body = await res.json();
+    expect(body.build.commit).toBeNull();
+    expect(body.build.image).toBe('registry.fly.io/og-engine:deployment-01JABC');
+    delete process.env.FLY_IMAGE_REF;
+  });
 });
