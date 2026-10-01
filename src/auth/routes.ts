@@ -2,13 +2,12 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { sendMagicLinkEmail } from '../email/send';
 import { escapeHtml } from '../utils/html';
+import { resolveBaseUrl } from './base-url';
 import { createMagicLinkToken } from './magic-link';
 import { clearSessionCookie, getCookie, setSessionCookie } from './middleware';
 import { verifyMagicLink } from './session';
 
 const authRoutes = new Hono();
-
-const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 
 const emailSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -91,7 +90,7 @@ authRoutes.post('/auth/send-link', async (c) => {
     const { token } = createMagicLinkToken(email);
     const verifyParams = new URLSearchParams({ token });
     if (returnTo) verifyParams.set('returnTo', returnTo);
-    const verifyUrl = `${BASE_URL}/auth/verify?${verifyParams.toString()}`;
+    const verifyUrl = `${resolveBaseUrl(c)}/auth/verify?${verifyParams.toString()}`;
 
     await sendMagicLinkEmail(email, verifyUrl);
   } catch (err) {

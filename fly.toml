@@ -8,6 +8,10 @@
 #   STRIPE_PRICE_SCALE      - Stripe Price ID for Scale plan
 #   RESEND_API_KEY           - Resend transactional email API key
 #   ADMIN_CRON_SECRET        - Shared secret for GitHub Action cron
+#
+# BASE_URL is NOT a secret — it is declared in [env] below so it is versioned
+# and reviewable. It is the origin used to build magic-link login URLs, so a
+# wrong value means nobody can complete signup.
 
 app = "og-engine"
 primary_region = "cdg"
@@ -18,6 +22,7 @@ primary_region = "cdg"
 [env]
   PORT = "3000"
   NODE_ENV = "production"
+  BASE_URL = "https://og-engine.com"
   DATABASE_URL = "file:/data/og-engine.db"
   IMAGE_CACHE_MAX = "1000"
   RATE_LIMIT_MAX = "100"

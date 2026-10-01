@@ -12,9 +12,11 @@ import { renderRoute } from './api/render';
 import { renderFromUrlRoute } from './api/render-from-url';
 import { templatesRoute } from './api/templates';
 import { triggersRoute } from './api/triggers';
+import { upgradeRoute } from './api/upgrade';
 import { usageRoute } from './api/usage';
 import { validateRoute } from './api/validate';
 import { webhooksRoute } from './api/webhooks';
+import { warnIfBaseUrlUnset } from './auth/base-url';
 import { csrfMiddleware, sessionMiddleware } from './auth/middleware';
 import { authRoutes } from './auth/routes';
 import { dashboardRoutes } from './dashboard/routes';
@@ -123,6 +125,9 @@ app.route('/', healthRoute);
 app.route('/', registerRoute);
 app.route('/', webhooksRoute);
 app.route('/', adminRoute);
+// Must stay above the `serveStatic('*')` mount below: /upgrade/:plan is the
+// identity-carrying hop behind every purchase CTA on the static docs site.
+app.route('/', upgradeRoute);
 
 // ─── API routes ──────────────────────────────────────────────
 app.route('/', validateRoute);
@@ -189,6 +194,7 @@ const FONTS_DIR = join(import.meta.dir, '..', 'fonts');
 
 async function start() {
   await registerFonts(FONTS_DIR);
+  warnIfBaseUrlUnset();
   console.log(`OG Engine listening on http://localhost:${PORT}`);
   if (authEnabled) {
     console.log('Auth: enabled (set AUTH_ENABLED=false to disable)');
