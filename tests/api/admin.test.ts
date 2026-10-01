@@ -15,12 +15,14 @@ beforeEach(() => {
   closeDb();
   process.env.DATABASE_URL = 'file::memory:';
   process.env.ADMIN_CRON_SECRET = 'test_admin_secret';
+  delete process.env.ADMIN_STATS_TOKEN;
 });
 
 afterAll(() => {
   closeDb();
   delete process.env.DATABASE_URL;
   delete process.env.ADMIN_CRON_SECRET;
+  delete process.env.ADMIN_STATS_TOKEN;
 });
 
 async function createApp() {
@@ -192,10 +194,74 @@ describe('GET /admin/stats', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 500 when ADMIN_CRON_SECRET not configured', async () => {
+  it('returns 500 when neither admin credential is configured', async () => {
     delete process.env.ADMIN_CRON_SECRET;
     const app = await createApp();
     const res = await getStats(app, 'anything');
     expect(res.status).toBe(500);
+  });
+});
+
+/**
+ * The whole point of ADMIN_STATS_TOKEN: a bearer that reads the funnel must not
+ * also be able to reset every free quota and log out every session. If any of
+ * these four start passing the wrong way, the read-only grant is no longer read-only.
+ */
+describe('admin token scoping', () => {
+  const STATS_TOKEN = 'test_stats_token';
+
+  beforeEach(() => {
+    process.env.ADMIN_STATS_TOKEN = STATS_TOKEN;
+  });
+
+  it('accepts ADMIN_STATS_TOKEN on GET /admin/stats', async () => {
+    const app = await createApp();
+    const res = await getStats(app, STATS_TOKEN);
+    expect(res.status).toBe(200);
+    expect((await res.json()).users_total).toBe(0);
+  });
+
+  it('rejects ADMIN_STATS_TOKEN on POST /admin/reset-free-quotas with 401', async () => {
+    const user = createUser('free@example.com', 'free');
+    createApiKey(user.id);
+    getDb().prepare('UPDATE users SET calls_used = 42 WHERE id = ?').run(user.id);
+
+    const app = await createApp();
+    const res = await postReset(app, STATS_TOKEN);
+    expect(res.status).toBe(401);
+    // the destructive side effect must not have run
+    expect(findUserByEmail('free@example.com')!.calls_used).toBe(42);
+  });
+
+  it('still accepts ADMIN_CRON_SECRET on both routes', async () => {
+    const app = await createApp();
+    expect((await getStats(app, 'test_admin_secret')).status).toBe(200);
+    expect((await postReset(app, 'test_admin_secret')).status).toBe(200);
+  });
+
+  it('rejects an unauthenticated caller on both routes', async () => {
+    const app = await createApp();
+    expect((await getStats(app)).status).toBe(401);
+    expect((await postReset(app)).status).toBe(401);
+  });
+
+  it('serves stats on ADMIN_CRON_SECRET alone while the stats token is unset', async () => {
+    delete process.env.ADMIN_STATS_TOKEN;
+    const app = await createApp();
+    expect((await getStats(app, 'test_admin_secret')).status).toBe(200);
+  });
+
+  it('does not authenticate an empty-string credential', async () => {
+    process.env.ADMIN_STATS_TOKEN = '';
+    const app = await createApp();
+    expect((await getStats(app, '')).status).toBe(401);
+  });
+
+  it('serves stats on ADMIN_STATS_TOKEN alone while the cron secret is unset', async () => {
+    delete process.env.ADMIN_CRON_SECRET;
+    const app = await createApp();
+    expect((await getStats(app, STATS_TOKEN)).status).toBe(200);
+    // reset-free-quotas has no credential left to accept
+    expect((await postReset(app, STATS_TOKEN)).status).toBe(500);
   });
 });
