@@ -33,7 +33,7 @@ head:
             "name": "Does OG Engine handle non-Latin scripts like CJK and Arabic?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. Pretext handles CJK (Chinese, Japanese, Korean), Arabic (with bidirectional text), emoji, grapheme clusters, and mixed-script content. Pre-loaded fonts include Noto Sans JP and Noto Sans AR."
+              "text": "Yes. Pretext handles CJK (Chinese, Japanese, Korean), Arabic (with bidirectional text), grapheme clusters, and mixed-script content. Pre-loaded fonts include Noto Sans JP and Noto Sans Arabic. Emoji are measured as single grapheme clusters, but none of the pre-loaded fonts carries emoji glyphs, so an emoji renders as an empty box."
             }
           },
           {
@@ -166,7 +166,7 @@ Every image rendered server-side in under 3ms. Pixel-perfect text layout, gradie
 <div class="step-number">3</div>
 <div class="step-content">
 <h3>Get Your Image</h3>
-<p>PNG or WebP in the response. Typical render: ~2ms. Supports CJK, Arabic, emoji, and mixed scripts.</p>
+<p>PNG or WebP in the response. Typical render: ~2ms. Supports CJK, Arabic, and mixed scripts. Emoji glyphs are not rendered.</p>
 </div>
 </div>
 </div>

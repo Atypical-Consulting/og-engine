@@ -114,7 +114,7 @@ export default defineConfig({
                 '~22ms render time (6-30x faster than Puppeteer)',
                 'Zero browser dependencies',
                 '500+ concurrent renders per instance',
-                'CJK, Arabic, emoji, and bidirectional text support',
+                'CJK, Arabic, mixed-script and bidirectional text support (no emoji glyphs)',
                 'PNG and WebP output',
                 '5 image formats (OG, Twitter, Square, LinkedIn, Story)',
                 '4 built-in templates',
@@ -176,6 +176,9 @@ export default defineConfig({
           items: [
             { label: 'Available Fonts', link: '/fonts/available-fonts/' },
             { label: 'OG Engine vs Puppeteer', link: '/compare/puppeteer/' },
+            { label: 'vercel/og Alternative', link: '/compare/vercel-og/' },
+            { label: 'Bannerbear Alternative', link: '/compare/bannerbear/' },
+            { label: 'Satori Alternative', link: '/compare/satori/' },
             { label: 'Self-Hosting (Docker)', link: '/self-hosting/docker/' },
           ],
         },

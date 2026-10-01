@@ -1,6 +1,6 @@
 ---
-title: "Multilingual OG Images: CJK, Arabic, and Emoji"
-description: Most OG image generators break on CJK, Arabic, and emoji text. OG Engine handles bidirectional text, grapheme clusters, and mixed scripts natively.
+title: "Multilingual OG Images: CJK, Arabic, and Mixed Scripts"
+description: Most OG image generators break on CJK and Arabic text. OG Engine handles bidirectional text, grapheme clusters, and mixed scripts natively. Emoji glyphs are not rendered.
 head:
   - tag: script
     attrs:
@@ -9,8 +9,8 @@ head:
       {
         "@context": "https://schema.org",
         "@type": "Article",
-        "headline": "Multilingual OG Images: CJK, Arabic, and Emoji",
-        "description": "Most OG image generators break on CJK, Arabic, and emoji text. OG Engine handles bidirectional text, grapheme clusters, and mixed scripts natively.",
+        "headline": "Multilingual OG Images: CJK, Arabic, and Mixed Scripts",
+        "description": "Most OG image generators break on CJK and Arabic text. OG Engine handles bidirectional text, grapheme clusters, and mixed scripts natively. Emoji glyphs are not rendered.",
         "author": {
           "@type": "Organization",
           "name": "OG Engine",
@@ -31,7 +31,7 @@ head:
       }
 ---
 
-If your product serves users who write in Japanese, Arabic, Chinese, Korean, or who use emoji in titles — your OG image generator probably has bugs you haven't noticed yet.
+If your product serves users who write in Japanese, Arabic, Chinese or Korean, your OG image generator probably has bugs you haven't noticed yet. One up-front caveat before we start: OG Engine does not render emoji glyphs. If your titles contain emoji, read [Emoji: measured correctly, not drawn](#emoji-measured-correctly-not-drawn) first.
 
 ## The Problem
 
@@ -44,7 +44,7 @@ Most OG image solutions use one of two approaches:
    - Emoji sequences (splits multi-codepoint emoji into broken symbols)
    - Mixed scripts (Japanese + English in one title)
 
-OG Engine handles all of these correctly because it uses Pretext for text segmentation rather than naive string splitting.
+OG Engine gets the CJK, Arabic and mixed-script cases right, because it uses Pretext for text segmentation rather than naive string splitting. It gets emoji *segmentation* right for the same reason — but it has no emoji font to draw with, so the glyph itself comes out as an empty box. That limitation is detailed below.
 
 ## CJK: Chinese, Japanese, Korean
 
@@ -81,7 +81,7 @@ Additionally, Arabic letters change shape based on position:
 
 Pretext handles the Unicode Bidirectional Algorithm (UAX #9), and the font shaping is handled by the Canvas text renderer (Skia via @napi-rs/canvas).
 
-OG Engine ships with **Noto Sans AR** pre-loaded.
+OG Engine ships with **Noto Sans Arabic** pre-loaded.
 
 ### Example
 
@@ -90,11 +90,13 @@ OG Engine ships with **Noto Sans AR** pre-loaded.
   "format": "og",
   "title": "إنشاء صور OG بدون متصفح",
   "description": "محرك تخطيط النص بدون Chrome — 2 مللي ثانية لكل صورة",
-  "style": { "font": "Noto Sans AR" }
+  "style": { "font": "Noto Sans Arabic" }
 }
 ```
 
-## Emoji
+## Emoji: measured correctly, not drawn
+
+This is the one case OG Engine does not handle today, and it is worth being precise about where the line falls.
 
 Modern emoji are surprisingly complex:
 
@@ -103,17 +105,11 @@ Modern emoji are surprisingly complex:
 - Family: 👨‍👩‍👧‍👦 = four people joined by zero-width joiners (7 codepoints, 1 glyph)
 - Compound: ❤️‍🔥 = heart + ZWJ + fire
 
-Naive string operations (like `str.length` or `str.slice()`) break these sequences. Pretext uses grapheme cluster segmentation (UAX #29) to treat each visual emoji as a single unit for line breaking and measurement.
+Naive string operations (like `str.length` or `str.slice()`) break these sequences. Pretext uses grapheme cluster segmentation (UAX #29) to treat each visual emoji as a single unit for line breaking and measurement — so the *layout* is right: a family emoji counts as one cluster, not seven, and a line never breaks in the middle of a ZWJ sequence.
 
-### Example
+What is missing is the glyph. None of OG Engine's pre-loaded font families is an emoji face, and there is no option to supply one, so an emoji in your text renders as an empty box (`▯`) — "tofu". A title like `Ship Features, Not Browsers 🚀` comes back with the rocket drawn as `▯`, at the correct width, in the correct position.
 
-```json
-{
-  "format": "og",
-  "title": "Ship Features, Not Browsers 🚀",
-  "description": "From Tokyo 🇯🇵 to Cairo 🇪🇬 — pixel-perfect text in every language."
-}
-```
+So the practical guidance is: keep emoji out of OG Engine titles and descriptions for now. If emoji are essential to your cards, a Satori-based renderer with its `graphemeImages` escape hatch, or a headless browser, will do what OG Engine cannot — see [OG Engine vs Satori](/compare/satori/).
 
 ## Mixed Script Content
 
@@ -128,7 +124,7 @@ OG Engine ships with 8 font families covering major script systems:
 | Outfit | Latin | Default, modern geometric |
 | Inter | Latin | Technical, neutral |
 | Noto Sans JP | Latin + CJK | Japanese content |
-| Noto Sans AR | Latin + Arabic | Arabic content |
+| Noto Sans Arabic | Latin + Arabic | Arabic content |
 | Playfair Display | Latin | Editorial, elegant |
 | Sora | Latin | Friendly, rounded |
 | Space Grotesk | Latin | Developer-focused |
