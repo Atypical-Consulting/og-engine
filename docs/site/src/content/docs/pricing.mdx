@@ -54,6 +54,8 @@ head:
       }
 ---
 
+import SignupForm from '../../components/SignupForm';
+
 All plans share the same engine — same speed, same quality, same fonts, same formats. Pick the quota that fits.
 
 <div class="pricing-grid">
@@ -74,7 +76,9 @@ All plans share the same engine — same speed, same quality, same fonts, same f
     <li class="excluded">Batch rendering</li>
     <li class="excluded">CDN caching</li>
   </ul>
-  <a href="/quick-start/" class="pricing-cta cta-outline">Start Free</a>
+  <div class="pricing-signup not-content">
+    <SignupForm client:load />
+  </div>
 </div>
 
 <div class="pricing-card">
