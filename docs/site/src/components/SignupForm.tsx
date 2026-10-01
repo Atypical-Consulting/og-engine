@@ -11,6 +11,16 @@ interface SuccessPayload {
 
 const API_BASE = 'https://og-engine.com';
 
+/**
+ * Path of the page this form was submitted from, so the signup can be
+ * attributed to the page that produced it. Only the path travels — no query
+ * string, no referrer, no identifier of any kind.
+ */
+function signupSource(): string {
+  if (typeof window === 'undefined') return '/';
+  return window.location.pathname || '/';
+}
+
 export default function SignupForm() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
@@ -24,7 +34,8 @@ export default function SignupForm() {
     setStatus('loading');
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
+      const src = encodeURIComponent(signupSource());
+      const res = await fetch(`${API_BASE}/auth/register?src=${src}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),

@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
 import { cors } from 'hono/cors';
 import { adminRoute } from './api/admin';
+import { analyticsRoute } from './api/analytics';
 import { batchRoute } from './api/batch';
 import { billingRoute } from './api/billing';
 import { healthRoute } from './api/health';
@@ -19,6 +20,7 @@ import { csrfMiddleware, sessionMiddleware } from './auth/middleware';
 import { authRoutes } from './auth/routes';
 import { dashboardRoutes } from './dashboard/routes';
 import { registerFonts } from './engine/fonts';
+import { pageViewTracking } from './middleware/analytics';
 import { authMiddleware, optionalAuthMiddleware, planGate, usageTracking } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
 import { openapiRoutes } from './openapi/swagger';
@@ -123,6 +125,7 @@ app.route('/', healthRoute);
 app.route('/', registerRoute);
 app.route('/', webhooksRoute);
 app.route('/', adminRoute);
+app.route('/', analyticsRoute);
 
 // ─── API routes ──────────────────────────────────────────────
 app.route('/', validateRoute);
@@ -136,6 +139,11 @@ app.route('/', billingRoute);
 
 // ─── Static docs site (Astro build output) ─────────────────
 const DOCS_DIR = join(import.meta.dir, '..', 'docs-dist');
+
+// Page-view tracking sits here on purpose: every API route above has already
+// claimed its requests, so this only ever wraps the docs handler. It records
+// successful HTML GETs only. ANALYTICS_ENABLED=false turns it off.
+app.use('*', pageViewTracking());
 
 app.use(
   '*',

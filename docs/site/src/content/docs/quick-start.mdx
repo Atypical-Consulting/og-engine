@@ -16,10 +16,12 @@ Sign up with your email. No credit card required.
 <summary>Prefer the terminal? Use curl instead.</summary>
 
 ```bash
-curl -X POST https://og-engine.com/auth/register \
+curl -X POST "https://og-engine.com/auth/register?src=/quick-start/" \
   -H "Content-Type: application/json" \
   -d '{"email": "you@example.com"}'
 ```
+
+The optional `src` parameter just tells us which page you signed up from. Drop it and the request works identically.
 
 ```json
 { "apiKey": "oge_sk_a1b2c3...", "plan": "free", "limit": 500, "message": "API key also sent to you@example.com" }
