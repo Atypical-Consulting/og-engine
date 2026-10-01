@@ -565,6 +565,8 @@ export interface FunnelStats {
   renders_last_7d: number;
   renders_last_30d: number;
   users_with_stripe_customer_id: number;
+  api_keys_total: number;
+  api_keys_active: number;
   median_hours_signup_to_first_render: number | null;
   generated_at: string;
 }
@@ -625,6 +627,15 @@ export function getFunnelStats(): FunnelStats {
     active_30d: number;
   };
 
+  const apiKeys = d
+    .prepare(
+      `SELECT
+         COUNT(*) AS keys_total,
+         COALESCE(SUM(CASE WHEN active = 1 THEN 1 ELSE 0 END), 0) AS keys_active
+       FROM api_keys`,
+    )
+    .get() as { keys_total: number; keys_active: number };
+
   const activations = d
     .prepare(
       `SELECT
@@ -670,6 +681,8 @@ export function getFunnelStats(): FunnelStats {
     renders_last_7d: renders.renders_7d,
     renders_last_30d: renders.renders_30d,
     users_with_stripe_customer_id: users.with_stripe,
+    api_keys_total: apiKeys.keys_total,
+    api_keys_active: apiKeys.keys_active,
     median_hours_signup_to_first_render:
       median.median_hours === null ? null : Math.round(median.median_hours * 100) / 100,
     generated_at: new Date().toISOString(),

@@ -7,7 +7,13 @@
 #   STRIPE_PRICE_PRO        - Stripe Price ID for Pro plan
 #   STRIPE_PRICE_SCALE      - Stripe Price ID for Scale plan
 #   RESEND_API_KEY           - Resend transactional email API key
-#   ADMIN_CRON_SECRET        - Shared secret for GitHub Action cron
+#   ADMIN_CRON_SECRET        - Shared secret for GitHub Action cron. Gates the
+#                              destructive POST /admin/reset-free-quotas, and is
+#                              still accepted on GET /admin/stats.
+#   ADMIN_STATS_TOKEN        - Read-only bearer for GET /admin/stats only.
+#                              Hand this out instead of ADMIN_CRON_SECRET when
+#                              someone needs funnel numbers; it cannot reset
+#                              quotas or purge sessions.
 
 app = "og-engine"
 primary_region = "cdg"
