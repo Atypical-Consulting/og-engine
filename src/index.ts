@@ -12,6 +12,7 @@ import { renderRoute } from './api/render';
 import { renderFromUrlRoute } from './api/render-from-url';
 import { templatesRoute } from './api/templates';
 import { triggersRoute } from './api/triggers';
+import { upgradeRoute } from './api/upgrade';
 import { usageRoute } from './api/usage';
 import { validateRoute } from './api/validate';
 import { webhooksRoute } from './api/webhooks';
@@ -124,6 +125,9 @@ app.route('/', healthRoute);
 app.route('/', registerRoute);
 app.route('/', webhooksRoute);
 app.route('/', adminRoute);
+// Must stay above the `serveStatic('*')` mount below: /upgrade/:plan is the
+// identity-carrying hop behind every purchase CTA on the static docs site.
+app.route('/', upgradeRoute);
 
 // ─── API routes ──────────────────────────────────────────────
 app.route('/', validateRoute);
