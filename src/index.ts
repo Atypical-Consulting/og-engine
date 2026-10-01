@@ -10,6 +10,7 @@ import { healthRoute } from './api/health';
 import { registerRoute } from './api/register';
 import { renderRoute } from './api/render';
 import { renderFromUrlRoute } from './api/render-from-url';
+import { signupRoute } from './api/signup';
 import { templatesRoute } from './api/templates';
 import { triggersRoute } from './api/triggers';
 import { usageRoute } from './api/usage';
@@ -121,6 +122,9 @@ app.route('/', openapiRoutes);
 app.route('/', authRoutes);
 app.route('/', healthRoute);
 app.route('/', registerRoute);
+// Must stay ahead of the docs-site static handler below, which would otherwise
+// swallow /signup into the Astro 404 page.
+app.route('/', signupRoute);
 app.route('/', webhooksRoute);
 app.route('/', adminRoute);
 

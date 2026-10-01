@@ -1,12 +1,12 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createApiKey, createUser, findApiKeyByEmail, findUserByEmail } from '../db';
-import { sendWelcomeEmail } from '../email/send';
+import { provisionFreeAccount } from '../auth/provision';
+import { emailField } from '../utils/email';
 
 export const registerRoute = new Hono();
 
 const registerSchema = z.object({
-  email: z.string().email('A valid email address is required.'),
+  email: emailField('A valid email address is required.'),
 });
 
 registerRoute.post('/auth/register', async (c) => {
@@ -39,32 +39,19 @@ registerRoute.post('/auth/register', async (c) => {
     );
   }
 
-  const { email } = parsed.data;
-
-  // Per DECISIONS.md Decision 4: duplicate registration returns existing key
-  const existing = findApiKeyByEmail(email);
-  if (existing) {
-    const user = findUserByEmail(email);
-    return c.json({
-      apiKey: existing.key,
-      plan: user?.plan ?? 'free',
-      limit: user?.calls_limit ?? 500,
-      message: `Existing API key returned. Also sent to ${email}.`,
-    });
-  }
-
-  const user = createUser(email, 'free');
-  const record = createApiKey(user.id);
-
-  await sendWelcomeEmail(email, record.key, user.plan);
+  // Normalization, duplicate handling and the deferred welcome email all live in
+  // provisionFreeAccount, shared with the signup page at POST /signup.
+  const result = provisionFreeAccount(parsed.data.email);
 
   return c.json(
     {
-      apiKey: record.key,
-      plan: user.plan,
-      limit: user.calls_limit,
-      message: `API key created. Also sent to ${email}.`,
+      apiKey: result.apiKey,
+      plan: result.plan,
+      limit: result.limit,
+      message: result.created
+        ? `API key created. Also sent to ${result.email}.`
+        : 'Existing API key returned. No email sent — recover it from the dashboard via /auth/login.',
     },
-    201,
+    result.created ? 201 : 200,
   );
 });
