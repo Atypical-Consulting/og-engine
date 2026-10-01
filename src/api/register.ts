@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createApiKey, createUser, findApiKeyByEmail, findUserByEmail } from '../db';
+import { createApiKey, createUser, findApiKeyByEmail } from '../db';
 import { sendWelcomeEmail } from '../email/send';
 
 export const registerRoute = new Hono();
@@ -49,16 +49,23 @@ registerRoute.post('/auth/register', async (c) => {
   // outside for as long as it took to get production log access.
   let stage: Stage = 'lookup';
   try {
-    // Per DECISIONS.md Decision 4: duplicate registration returns existing key
+    // Per DECISIONS.md Decision 4 (amended): duplicate registration must NOT
+    // return the existing key. This endpoint is unauthenticated, so echoing a
+    // key back to anyone who guesses an email is credential disclosure. The
+    // caller recovers the key themselves via POST /auth/send-link — we do not
+    // send mail here, or an anonymous caller could put mail in someone else's
+    // inbox.
     const existing = findApiKeyByEmail(email);
     if (existing) {
-      const user = findUserByEmail(email);
-      return c.json({
-        apiKey: existing.key,
-        plan: user?.plan ?? 'free',
-        limit: user?.calls_limit ?? 500,
-        message: `Existing API key returned. Also sent to ${email}.`,
-      });
+      return c.json(
+        {
+          error: 'account_exists',
+          message:
+            'An account already exists for this email. Log in at https://og-engine.com/auth/login to retrieve your API key.',
+          docs: 'https://og-engine.com/api-reference/errors#account_exists',
+        },
+        409,
+      );
     }
 
     stage = 'create_user';

@@ -172,7 +172,29 @@ Features gated by plan:
 
 ---
 
+### 409 Conflict
+
+#### `account_exists`
+
+`POST /auth/register` was called with an email address that already has an account.
+
+```json
+{
+  "error": "account_exists",
+  "message": "An account already exists for this email. Log in at https://og-engine.com/auth/login to retrieve your API key.",
+  "docs": "https://og-engine.com/api-reference/errors#account_exists"
+}
+```
+
+The response deliberately contains **no** `apiKey`, `plan`, or `limit`. `/auth/register` is unauthenticated, so returning an existing key would hand credentials to anyone who guessed an email address. No email is sent on this path either.
+
+**Fix:** Recover the existing key through the login flow — request a link at [og-engine.com/auth/login](https://og-engine.com/auth/login), or `POST /auth/send-link` with your email, then read the key from the dashboard. If you meant to create a second account, register a different address.
+
+---
+
 ### 429 Too Many Requests
+
+Two distinct errors share this status. `rate_limited` is your monthly render quota; `rate_limit_exceeded` is a short-window per-IP request limit.
 
 #### `rate_limited`
 
@@ -193,6 +215,28 @@ Your plan's monthly render quota has been exhausted.
 ```
 
 **Fix:** Wait for the quota to reset at the timestamp in `details.resetAt`, or [upgrade your plan](/pricing/). Remember that `/validate` is always free and does not count toward your quota.
+
+---
+
+#### `rate_limit_exceeded`
+
+Too many requests from your IP address inside the middleware's time window. This is independent of your plan quota — it applies to unauthenticated endpoints too.
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Limit: 20 per 3600s.",
+  "retryAfterMs": 2384112,
+  "docs": "https://og-engine.com/api-reference/errors#rate_limit_exceeded"
+}
+```
+
+| Endpoint | Limit |
+|---|---|
+| `/auth/register`, `/auth/send-link` | 20 per hour per IP |
+| `/render`, `/render/batch`, `/render/from-url`, `/validate` | 100 per minute per IP (default) |
+
+**Fix:** Wait `retryAfterMs` milliseconds and retry. The `X-RateLimit-Reset` header carries the Unix timestamp when the window rolls over.
 
 ---
 
