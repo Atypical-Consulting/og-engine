@@ -8,6 +8,13 @@
 #   STRIPE_PRICE_SCALE      - Stripe Price ID for Scale plan
 #   RESEND_API_KEY           - Resend transactional email API key
 #   ADMIN_CRON_SECRET        - Shared secret for GitHub Action cron
+#
+# Optional (not secrets, but set the same way). Each is the public Stripe
+# Payment Link for that plan; unset means no in-product upgrade link for it.
+# src/utils/checkout-link.ts appends the account identity before use.
+#   STRIPE_PAYMENT_LINK_STARTER - Payment Link for Starter
+#   STRIPE_PAYMENT_LINK_PRO     - Payment Link for Pro
+#   STRIPE_PAYMENT_LINK_SCALE   - Payment Link for Scale
 
 app = "og-engine"
 primary_region = "cdg"
