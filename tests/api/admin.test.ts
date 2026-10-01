@@ -147,6 +147,9 @@ describe('GET /admin/stats', () => {
     expect(body.renders_last_7d).toBe(2);
     expect(body.renders_last_30d).toBe(3);
     expect(body.users_with_stripe_customer_id).toBe(1);
+    // one key per seeded user, all issued active
+    expect(body.api_keys_total).toBe(4);
+    expect(body.api_keys_active).toBe(4);
     // median of a 2h and a 4h time-to-first-render
     expect(body.median_hours_signup_to_first_render).toBeCloseTo(3, 1);
     expect(new Date(body.generated_at).toString()).not.toBe('Invalid Date');
@@ -163,7 +166,21 @@ describe('GET /admin/stats', () => {
     expect(body.activated_users_total).toBe(0);
     expect(body.renders_total).toBe(0);
     expect(body.users_with_stripe_customer_id).toBe(0);
+    expect(body.api_keys_total).toBe(0);
+    expect(body.api_keys_active).toBe(0);
     expect(body.median_hours_signup_to_first_render).toBeNull();
+  });
+
+  it('counts revoked keys in api_keys_total but not in api_keys_active', async () => {
+    const live = seedUser('live@example.com', 'free', 10);
+    seedUser('revoked@example.com', 'free', 10);
+    getDb().prepare('UPDATE api_keys SET active = 0 WHERE user_id != ?').run(live.user.id);
+
+    const app = await createApp();
+    const body = await (await getStats(app, 'test_admin_secret')).json();
+
+    expect(body.api_keys_total).toBe(2);
+    expect(body.api_keys_active).toBe(1);
   });
 
   it('never mutates data', async () => {
