@@ -86,7 +86,12 @@ curl -X POST https://og-engine.com/validate \
 
 ## Step 5 — Use the SDK (Optional)
 
+The SDK is published to GitHub Packages rather than npmjs.com, so installing it
+needs a scope mapping and a GitHub token with `read:packages` — see
+[SDK Installation](/sdk/installation/). Everything above already works without it.
+
 ```bash
+# requires the .npmrc from /sdk/installation/ and GITHUB_TOKEN in your env
 npm install @atypical-consulting/og-engine-sdk
 ```
 

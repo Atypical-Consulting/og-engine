@@ -5,11 +5,53 @@ description: Install the OG Engine TypeScript SDK and initialize a client with y
 
 The official OG Engine SDK provides a typed TypeScript client for all API endpoints. It handles authentication, retry logic on 5xx errors, and returns typed responses.
 
-## Install
+:::caution[The SDK is not on the public npm registry yet]
+`@atypical-consulting/og-engine-sdk` is published to **GitHub Packages**, not to
+npmjs.com. A plain `npm install @atypical-consulting/og-engine-sdk` fails with
+`404 Not Found`, and GitHub Packages returns `401` to anonymous requests, so
+installing it requires a GitHub personal access token with the `read:packages`
+scope.
 
-Choose your package manager:
+**If you just want to call the API, you do not need the SDK.** The API is plain
+HTTP — see [Without the SDK](#without-the-sdk) below for a copy-pasteable
+`fetch` version with no install step and no token.
+:::
+
+## Without the SDK
+
+The whole API is one `POST` away, with no dependency and no registry auth:
+
+```typescript
+const res = await fetch('https://og-engine.com/render', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${process.env.OG_ENGINE_API_KEY}`,
+  },
+  body: JSON.stringify({ format: 'og', title: 'Hello World' }),
+})
+
+const png = Buffer.from(await res.arrayBuffer())
+```
+
+This is the form used throughout the [guides](/guides/generating-images/) and the
+[API reference](/api-reference/render/).
+
+## Install the SDK from GitHub Packages
+
+If you do want the typed client, point the `@atypical-consulting` scope at GitHub
+Packages and authenticate. Add to `.npmrc`:
+
+```ini
+@atypical-consulting:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+Then export a token that has `read:packages` and install:
 
 ```bash
+export GITHUB_TOKEN=ghp_your_token_here
+
 # npm
 npm install @atypical-consulting/og-engine-sdk
 

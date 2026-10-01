@@ -67,14 +67,22 @@ The speed advantage over Puppeteer comes from architecture, not just raw encodin
 ## Run It Yourself
 
 ```bash
-git clone https://github.com/phmatray/og-engine
+git clone https://github.com/Atypical-Consulting/og-engine
 cd og-engine
 bun install
 bun run fonts:download
+
+# bench:full measures Puppeteer as the baseline, so it needs a Chrome binary.
+# `bun install` does not download one — fetch it explicitly:
+npx puppeteer browsers install chrome
+
 bun run bench:full
 ```
 
 Results are saved to `benchmarks/results/`. The markdown report is human-readable; the JSON contains every individual timing for your own analysis.
+
+To measure OG Engine on its own and skip the Puppeteer baseline (no Chrome
+needed), run `bun run bench` instead.
 
 ## Source
 

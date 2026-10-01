@@ -7,9 +7,17 @@ Add dynamic Open Graph images to your Next.js app in under 5 minutes. Works with
 
 ## Install the SDK
 
+The SDK is published to GitHub Packages, not to npmjs.com, so `npm install`
+needs a scope mapping and a GitHub token with `read:packages`. See
+[SDK Installation](/sdk/installation/) for the `.npmrc` setup.
+
 ```bash
+# requires the .npmrc from /sdk/installation/ and GITHUB_TOKEN in your env
 npm install @atypical-consulting/og-engine-sdk
 ```
+
+Prefer no dependency? Every example below works with plain `fetch` against the
+HTTP API — see [Without the SDK](/sdk/installation/#without-the-sdk).
 
 ## App Router — Route Handler
 
