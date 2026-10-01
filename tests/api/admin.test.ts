@@ -248,6 +248,9 @@ describe('GET /admin/stats', () => {
     const app = await createApp();
     const res = await getStats(app, 'anything');
     expect(res.status).toBe(500);
+  });
+});
+
 function getPriceCheck(app: Hono, secret?: string) {
   const headers: Record<string, string> = {};
   if (secret) headers.Authorization = `Bearer ${secret}`;
