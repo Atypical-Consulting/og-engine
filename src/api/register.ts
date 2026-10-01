@@ -6,8 +6,10 @@ import { normalizeEmail } from '../utils/email';
 
 export const registerRoute = new Hono();
 
+// `.trim()` runs before `.email()`, so a pasted address with stray whitespace
+// signs up instead of 400-ing. Case is canonicalised separately below.
 const registerSchema = z.object({
-  email: z.string().email('A valid email address is required.'),
+  email: z.string().trim().email('A valid email address is required.'),
 });
 
 registerRoute.post('/auth/register', async (c) => {

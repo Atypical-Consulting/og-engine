@@ -190,6 +190,17 @@ describe('the other writers of the join key', () => {
     expect(body.apiKey).toBe(existingKey.key);
     expect(countUsers()).toBe(1);
     expect(countApiKeys()).toBe(1);
+
+    // A pasted address with stray whitespace signs in, rather than 400-ing on
+    // Zod's .email() before normalisation ever gets a chance to run.
+    const padded = await app.request('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: '  reg@example.com  ' }),
+    });
+    expect(padded.status).toBe(200);
+    expect(((await padded.json()) as { apiKey: string }).apiKey).toBe(existingKey.key);
+    expect(countUsers()).toBe(1);
   });
 
   it('a magic-link login at a different casing resolves to the same account', async () => {

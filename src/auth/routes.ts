@@ -15,7 +15,7 @@ const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 // the form branch of /auth/send-link get the canonical form. Logging in as
 // `Dev@Example.com` must land on the same account as `dev@example.com`.
 const emailSchema = z.object({
-  email: z.string().email('Please enter a valid email address.').transform(normalizeEmail),
+  email: z.string().trim().email('Please enter a valid email address.').transform(normalizeEmail),
 });
 
 // ─── GET /auth/login ────────────────────────────────────────
