@@ -8,6 +8,8 @@
 #   STRIPE_PRICE_SCALE      - Stripe Price ID for Scale plan
 #   RESEND_API_KEY           - Resend transactional email API key
 #   ADMIN_CRON_SECRET        - Shared secret for GitHub Action cron
+#   ERROR_LOG_TOKEN          - Bearer token for GET /admin/errors (read-only
+#                              tail of unhandled exceptions)
 
 app = "og-engine"
 primary_region = "cdg"

@@ -169,6 +169,24 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
+      # ERROR_LOG_TOKEN authenticates GET /admin/errors, the only way this team
+      # can read a production stack trace without Fly log access (ATY-123).
+      # Staged, not released on its own: the deploy below picks it up, so this
+      # costs no extra machine restart. The value is never echoed.
+      - name: Sync ERROR_LOG_TOKEN to Fly
+        run: |
+          set -euo pipefail
+          # The `secrets` context is not usable in a step `if:`, so guard here.
+          if [ -z "${ERROR_LOG_TOKEN:-}" ]; then
+            echo "::warning::ERROR_LOG_TOKEN repo secret is unset — GET /admin/errors will 500 until it is set"
+            exit 0
+          fi
+          printf '%s' "$ERROR_LOG_TOKEN" \
+            | flyctl secrets set ERROR_LOG_TOKEN=- --stage -a og-engine
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          ERROR_LOG_TOKEN: ${{ secrets.ERROR_LOG_TOKEN }}
+
       - name: Deploy to Fly.io
         run: flyctl deploy --remote-only
         env:
