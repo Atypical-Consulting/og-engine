@@ -17,10 +17,16 @@ POST https://og-engine.com/auth/register
 |---|---|---|---|
 | `email` | string | Yes | Your email address |
 
+## Query Parameters
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `src` | string | No | Path of the page you signed up from, e.g. `/quick-start/`. Used only to count which docs pages lead to signups. Omitting it changes nothing about the response. |
+
 ## Example Request
 
 ```bash
-curl -X POST https://og-engine.com/auth/register \
+curl -X POST "https://og-engine.com/auth/register?src=/api-reference/register/" \
   -H "Content-Type: application/json" \
   -d '{"email": "you@example.com"}'
 ```

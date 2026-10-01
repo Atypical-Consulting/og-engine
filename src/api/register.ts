@@ -1,7 +1,9 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { attributeSignup } from '../analytics/attribution';
 import { createApiKey, createUser, findApiKeyByEmail, findUserByEmail } from '../db';
 import { sendWelcomeEmail } from '../email/send';
+import { analyticsEnabled } from '../middleware/analytics';
 
 export const registerRoute = new Hono();
 
@@ -55,6 +57,12 @@ registerRoute.post('/auth/register', async (c) => {
 
   const user = createUser(email, 'free');
   const record = createApiKey(user.id);
+
+  // Only new users are attributed. A repeat registration returns early above,
+  // so replaying this request can never double-count the funnel.
+  if (analyticsEnabled()) {
+    attributeSignup(c, user.id, record.id);
+  }
 
   await sendWelcomeEmail(email, record.key, user.plan);
 

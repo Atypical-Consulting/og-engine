@@ -209,6 +209,16 @@ export function createOpenApiSpec() {
           description: 'Register with an email address and receive an API key for authenticating requests.',
           tags: ['Auth'],
           security: [],
+          parameters: [
+            {
+              name: 'src',
+              in: 'query',
+              required: false,
+              schema: { type: 'string', example: '/quick-start/' },
+              description:
+                'Optional path of the page you signed up from. Used only to count which docs pages lead to signups; omitting it changes nothing about the response.',
+            },
+          ],
           requestBody: {
             required: true,
             content: {
