@@ -95,7 +95,7 @@ describe('POST /signup', () => {
     expect(countUsers()).toBe(1);
 
     const html = await second.text();
-    expect(html).toContain('You already have an account');
+    expect(html).toContain('That address already has a key');
     // A public form must not hand a live credential to whoever typed the address.
     expect(html).not.toContain(key as string);
     expect(html).toContain('/auth/login');
@@ -108,7 +108,7 @@ describe('POST /signup', () => {
     const res = await submit('Dev@Example.com');
     expect(res.status).toBe(200);
     expect(countUsers()).toBe(1);
-    expect(await res.text()).toContain('You already have an account');
+    expect(await res.text()).toContain('That address already has a key');
 
     // Same account, same key, and the row is stored normalized.
     expect(findApiKeyByEmail('dev@example.com')?.key).toBe(key);

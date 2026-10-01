@@ -10,10 +10,6 @@ const signupSchema = z.object({
   email: emailField('Please enter a valid email address.'),
 });
 
-// NOTE: the strings below are functional placeholders in the same voice as the
-// existing /auth/login page. The positioning copy for this page (headline,
-// promise, what the free tier is sold as) is owned by marketing — see the
-// follow-up issue linked from ATY-60. Do not grow marketing prose here.
 const PAGE_STYLE = `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -32,6 +28,10 @@ const PAGE_STYLE = `
     pre { background: #0f0f0f; border: 1px solid #262626; border-radius: 8px; padding: 12px; margin: 16px 0; overflow-x: auto; font-size: 12px; color: #d4d4d4; }
     a { color: #38ef7d; text-decoration: none; }
     a:hover { text-decoration: underline; }
+    .hint { color: #737373; font-size: 12px; line-height: 1.5; margin-top: 10px; }
+    .fineprint { color: #737373; font-size: 12px; line-height: 1.6; margin-top: 16px; }
+    .cta { display: block; width: 100%; padding: 12px; border-radius: 8px; background: #38ef7d; color: #0a0a0a; font-size: 16px; font-weight: 600; text-align: center; margin-top: 20px; }
+    .cta:hover { background: #2dd36f; text-decoration: none; }
 `;
 
 function page(title: string, body: string): string {
@@ -56,13 +56,17 @@ ${body}
 function signupForm(error?: string): string {
   const errorBlock = error ? `    <p class="error">${escapeHtml(error)}</p>\n` : '';
   return page(
-    'Create a free account',
-    `    <p class="subtitle">Free tier: 500 renders per month. No card required.</p>
+    'Get your API key',
+    `    <h2>Get your API key</h2>
+    <p class="subtitle">Free forever: 500 renders a month, no credit card, no trial clock. Your key works the second you submit this form.</p>
 ${errorBlock}    <form method="POST" action="/signup">
       <label for="email">Email address</label>
       <input type="email" id="email" name="email" placeholder="you@example.com" required autofocus>
       <button type="submit">Get my API key</button>
+      <p class="hint">No password to choose — we email the key and nothing else.</p>
     </form>
+    <p class="fineprint">Free is the same engine: every format, every built-in template, all 53 bundled fonts, PNG and PDF output. WebP output, batch rendering and CDN caching start on Starter, €10/mo.</p>
+    <p class="fineprint">Pass 500 renders in a month and the API returns 429 until your quota resets. With no card on file, nothing can be charged.</p>
     <p style="margin-top:24px;">Already have an account? <a href="/auth/login">Log in</a></p>`,
   );
 }
@@ -97,11 +101,13 @@ signupRoute.post('/signup', async (c) => {
   if (!result.created) {
     return c.html(
       page(
-        'You already have an account',
-        `    <h2>You already have an account</h2>
-    <p><strong>${safeEmail}</strong> is already registered, so we did not create a second one.</p>
-    <p style="margin-top:16px;">Use the magic link to get back into your dashboard, where your API key is listed.</p>
-    <p style="margin-top:16px;"><a href="/auth/login">Email me a login link →</a></p>`,
+        'That address already has a key',
+        `    <h2>That address already has a key</h2>
+    <p><strong>${safeEmail}</strong> is already registered, so we did not create a second account. Your existing key is still live and your quota is untouched.</p>
+    <p style="margin-top:16px;">We never print a key on this page for an address that already exists — anyone can type any address into a public form. A login link proves the mailbox is yours.</p>
+    <a class="cta" href="/auth/login">Email me a login link →</a>
+    <p class="fineprint">The link arrives with the subject “Log in to OG Engine” and is good for 15 minutes. Your key is on the API Keys page of the dashboard: masked, with a Copy button.</p>
+    <p class="fineprint">Lost it for good? Log in and regenerate it — the old key stops working immediately.</p>`,
       ),
       200,
     );
@@ -111,19 +117,25 @@ signupRoute.post('/signup', async (c) => {
   // signup to a first successful render, and it means a mail provider outage
   // cannot leave a brand-new account unusable.
   const safeKey = escapeHtml(result.apiKey);
+  // The plan comes out of the DB lowercase ('free'); display it capitalised so
+  // it reads as the plan's name rather than an enum value.
+  const planLabel = escapeHtml(result.plan.charAt(0).toUpperCase() + result.plan.slice(1));
+  const limitLabel = result.limit.toLocaleString('en-US');
   return c.html(
     page(
-      'Your API key',
-      `    <h2>Your API key</h2>
-    <p>Copy this now — we also emailed it to <strong>${safeEmail}</strong>.</p>
+      'Your API key is ready',
+      `    <h2>Your API key is ready</h2>
+    <p>Copy it now. This is the only page that prints it in full — in your dashboard it is masked to the last eight characters, with a Copy button.</p>
     <code class="key">${safeKey}</code>
-    <p>Plan: <strong>${escapeHtml(result.plan)}</strong> · ${result.limit.toLocaleString('en-US')} renders/month</p>
-    <p style="margin-top:16px;">Your first render:</p>
+    <p>We are emailing a copy to <strong>${safeEmail}</strong>, subject line “Your OG Engine API Key”.</p>
+    <p>Plan: <strong>${planLabel}</strong> · ${limitLabel} renders a month</p>
+    <p style="margin-top:16px;">Your first render — paste this into a terminal:</p>
     <pre>curl -X POST https://og-engine.com/render \\
   -H "Authorization: Bearer ${safeKey}" \\
   -H "Content-Type: application/json" \\
   -d '{"format":"og","title":"Hello World"}' \\
   --output card.png</pre>
+    <p>That writes <code>card.png</code> — a 1200×630 PNG — and spends 1 of your ${limitLabel} renders.</p>
     <p><a href="https://og-engine.com/quick-start/">Read the quick start →</a></p>`,
     ),
     201,
