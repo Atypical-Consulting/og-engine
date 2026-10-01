@@ -68,13 +68,25 @@ let db: SqliteDatabase | null = null;
 export function getDb(): SqliteDatabase {
   if (!db) {
     const raw = process.env.DATABASE_URL?.replace('file:', '') ?? join(process.cwd(), 'data', 'og-engine.db');
-    db = openDatabase(raw);
-    migrate(db);
+    const opened = openDatabase(raw);
+    // Assign only after migrate() succeeds. Caching a half-migrated handle hides
+    // the failure behind a generic 500 on the next request instead of retrying
+    // (and is exactly how ATY-78 stayed invisible for so long).
+    migrate(opened);
+    db = opened;
   }
   return db;
 }
 
 function migrate(d: SqliteDatabase): void {
+  createTables(d);
+  // Must run before createIndexes(): an index over a column that a legacy
+  // database is missing aborts the whole migration part-way through.
+  convergeSchema(d);
+  createIndexes(d);
+}
+
+function createTables(d: SqliteDatabase): void {
   d.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -89,8 +101,6 @@ function migrate(d: SqliteDatabase): void {
       active INTEGER NOT NULL DEFAULT 1
     );
 
-    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-
     CREATE TABLE IF NOT EXISTS api_keys (
       id TEXT PRIMARY KEY,
       key TEXT UNIQUE NOT NULL,
@@ -99,8 +109,6 @@ function migrate(d: SqliteDatabase): void {
       created_at TEXT NOT NULL,
       active INTEGER NOT NULL DEFAULT 1
     );
-
-    CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
 
     CREATE TABLE IF NOT EXISTS render_history (
       id TEXT PRIMARY KEY,
@@ -114,11 +122,6 @@ function migrate(d: SqliteDatabase): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);
-    CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(email);
-    CREATE INDEX IF NOT EXISTS idx_render_history_user_id ON render_history(user_id);
-    CREATE INDEX IF NOT EXISTS idx_render_history_created_at ON render_history(created_at);
-
     CREATE TABLE IF NOT EXISTS custom_templates (
       id TEXT PRIMARY KEY,
       api_key_id TEXT NOT NULL,
@@ -127,9 +130,6 @@ function migrate(d: SqliteDatabase): void {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
-
-    CREATE INDEX IF NOT EXISTS idx_custom_templates_api_key ON custom_templates(api_key_id);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_custom_templates_name_owner ON custom_templates(api_key_id, name);
 
     CREATE TABLE IF NOT EXISTS webhooks (
       id TEXT PRIMARY KEY,
@@ -141,8 +141,6 @@ function migrate(d: SqliteDatabase): void {
       created_at TEXT NOT NULL
     );
 
-    CREATE INDEX IF NOT EXISTS idx_webhooks_api_key ON webhooks(api_key_id);
-
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -151,8 +149,6 @@ function migrate(d: SqliteDatabase): void {
       expires_at TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
-    CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
-    CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 
     CREATE TABLE IF NOT EXISTS magic_links (
       id TEXT PRIMARY KEY,
@@ -162,9 +158,169 @@ function migrate(d: SqliteDatabase): void {
       used INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+  `);
+}
+
+function createIndexes(d: SqliteDatabase): void {
+  d.exec(`
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_email ON api_keys(email);
+    CREATE INDEX IF NOT EXISTS idx_render_history_user_id ON render_history(user_id);
+    CREATE INDEX IF NOT EXISTS idx_render_history_created_at ON render_history(created_at);
+    CREATE INDEX IF NOT EXISTS idx_custom_templates_api_key ON custom_templates(api_key_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_custom_templates_name_owner ON custom_templates(api_key_id, name);
+    CREATE INDEX IF NOT EXISTS idx_webhooks_api_key ON webhooks(api_key_id);
+    CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
+    CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_magic_links_token_hash ON magic_links(token_hash);
     CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email);
   `);
+}
+
+// ─── Schema convergence ──────────────────────────────────────
+//
+// `CREATE TABLE IF NOT EXISTS` is a silent no-op against a table that already
+// exists in an older shape, so a long-lived volume never picks up columns added
+// after it was created. These migrations bring such a database up to the
+// declared schema. They are idempotent and safe to run on every boot.
+
+/**
+ * Columns that may be absent from a table created by an older build, keyed by
+ * table. Each value is the `ALTER TABLE … ADD COLUMN` type fragment, so every
+ * one must be nullable or carry a constant default — SQLite refuses to add a
+ * NOT NULL column without a default to a table that already holds rows.
+ *
+ * Drift that cannot be repaired additively is handled by
+ * rebuildLegacyApiKeys() below.
+ */
+const ADDITIVE_COLUMNS: Record<string, Record<string, string>> = {
+  users: {
+    stripe_customer_id: 'TEXT',
+    stripe_subscription_id: 'TEXT',
+    calls_limit: 'INTEGER NOT NULL DEFAULT 500',
+    calls_used: 'INTEGER NOT NULL DEFAULT 0',
+    active: 'INTEGER NOT NULL DEFAULT 1',
+  },
+  api_keys: {
+    user_id: 'TEXT REFERENCES users(id)',
+    active: 'INTEGER NOT NULL DEFAULT 1',
+  },
+  render_history: {
+    request_payload: "TEXT NOT NULL DEFAULT '{}'",
+    render_time_ms: 'REAL',
+  },
+};
+
+function columnNames(d: SqliteDatabase, table: string): string[] {
+  // `table` is always a literal from our own schema declarations, never input.
+  const rows = d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  return rows.map((r) => r.name);
+}
+
+function convergeSchema(d: SqliteDatabase): void {
+  rebuildLegacyApiKeys(d);
+
+  for (const [table, columns] of Object.entries(ADDITIVE_COLUMNS)) {
+    const existing = new Set(columnNames(d, table));
+    if (existing.size === 0) continue; // table absent entirely — createTables() owns it
+    for (const [column, type] of Object.entries(columns)) {
+      if (existing.has(column)) continue;
+      console.warn(`[db] migrating: ALTER TABLE ${table} ADD COLUMN ${column}`);
+      d.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    }
+  }
+}
+
+/**
+ * Repairs an `api_keys` table created before quotas moved to the `users` table
+ * (commit d20d486). That shape carries the per-key plan/quota/Stripe columns,
+ * has no `user_id`, and declares `period_start TEXT NOT NULL` with no default —
+ * so the current INSERT cannot satisfy it and every signup 500s (ATY-78).
+ *
+ * SQLite cannot drop a NOT NULL constraint in place, so this is the standard
+ * rebuild: back the table up, carry each key's quota state over to a `users`
+ * row, then recreate `api_keys` in the canonical shape with `user_id` linked.
+ * The `api_keys_backup_aty78` table is the rollback path and is left in place.
+ */
+function rebuildLegacyApiKeys(d: SqliteDatabase): void {
+  const columns = columnNames(d, 'api_keys');
+  if (columns.length === 0) return; // freshly created by createTables()
+  const isLegacy = !columns.includes('user_id') || columns.includes('period_start');
+  if (!isLegacy) return;
+
+  console.warn('[db] migrating: rebuilding legacy api_keys table (ATY-78)');
+
+  const has = (c: string) => columns.includes(c);
+  const legacyKeys = d.prepare('SELECT * FROM api_keys').all() as Record<string, unknown>[];
+
+  // Foreign keys must be off around a drop/rename, and PRAGMA is a no-op inside
+  // a transaction — so toggle it outside the transaction boundary.
+  d.exec('PRAGMA foreign_keys=OFF');
+  d.exec('BEGIN');
+  try {
+    d.exec('CREATE TABLE IF NOT EXISTS api_keys_backup_aty78 AS SELECT * FROM api_keys');
+
+    // Carry each distinct email's quota state across to a users row. Earliest
+    // key wins when one address has several, so plan/usage come from the
+    // account's original record rather than an arbitrary one.
+    const byEmail = new Map<string, Record<string, unknown>>();
+    for (const row of [...legacyKeys].sort((a, b) =>
+      String(a.created_at ?? '').localeCompare(String(b.created_at ?? '')),
+    )) {
+      const email = String(row.email ?? '');
+      if (email && !byEmail.has(email)) byEmail.set(email, row);
+    }
+
+    const insertUser = d.prepare(`
+      INSERT OR IGNORE INTO users (id, email, plan, stripe_customer_id, stripe_subscription_id, calls_limit, calls_used, period_start, created_at, active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const [email, row] of byEmail) {
+      const plan = (has('plan') ? (row.plan as Plan) : 'free') ?? 'free';
+      insertUser.run(
+        crypto.randomUUID(),
+        email,
+        plan,
+        has('stripe_customer_id') ? (row.stripe_customer_id ?? null) : null,
+        has('stripe_subscription_id') ? (row.stripe_subscription_id ?? null) : null,
+        has('calls_limit') ? (row.calls_limit ?? PLAN_LIMITS[plan]) : PLAN_LIMITS[plan],
+        has('calls_used') ? (row.calls_used ?? 0) : 0,
+        (has('period_start') ? (row.period_start as string) : null) ?? new Date().toISOString(),
+        (row.created_at as string) ?? new Date().toISOString(),
+        has('active') ? (row.active ?? 1) : 1,
+      );
+    }
+
+    d.exec(`
+      CREATE TABLE api_keys_aty78_new (
+        id TEXT PRIMARY KEY,
+        key TEXT UNIQUE NOT NULL,
+        email TEXT NOT NULL,
+        user_id TEXT REFERENCES users(id),
+        created_at TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1
+      );
+
+      INSERT INTO api_keys_aty78_new (id, key, email, user_id, created_at, active)
+      SELECT ak.id, ak.key, ak.email, ${has('user_id') ? 'COALESCE(ak.user_id, u.id)' : 'u.id'}, ak.created_at, ${has('active') ? 'ak.active' : '1'}
+      FROM api_keys ak
+      LEFT JOIN users u ON u.email = ak.email;
+
+      DROP TABLE api_keys;
+      ALTER TABLE api_keys_aty78_new RENAME TO api_keys;
+    `);
+
+    d.exec('COMMIT');
+  } catch (err) {
+    d.exec('ROLLBACK');
+    throw err;
+  } finally {
+    d.exec('PRAGMA foreign_keys=ON');
+  }
+
+  console.warn(`[db] migrated ${legacyKeys.length} legacy api_keys row(s); backup kept in api_keys_backup_aty78`);
 }
 
 // ─── User CRUD ───────────────────────────────────────────────
