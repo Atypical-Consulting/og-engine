@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   closeDb,
   createApiKey,
@@ -11,16 +11,67 @@ import {
   toSqliteDateTime,
 } from '../../src/db';
 
+// What the mocked Stripe API answers for `prices.retrieve`. Hoisted so the
+// `vi.mock` factory can close over it; tests swap in the drift they exercise.
+const stripePrices = vi.hoisted(() => {
+  class StripeError extends Error {
+    code?: string;
+  }
+  return {
+    StripeError,
+    retrieve: null as ((id: string) => Promise<unknown>) | null,
+  };
+});
+
+vi.mock('stripe', () => {
+  // biome-ignore lint/complexity/useArrowFunction: function keyword required for `new Stripe()` constructor mock
+  const Stripe = vi.fn().mockImplementation(function () {
+    return {
+      prices: {
+        retrieve: vi.fn().mockImplementation(async (id: string) => stripePrices.retrieve?.(id)),
+      },
+    };
+  });
+  Object.assign(Stripe, { errors: { StripeError: stripePrices.StripeError } });
+  return { default: Stripe };
+});
+
+/** A live, correctly-priced Price, as Stripe would return it. */
+function livePrice(id: string, unitAmount: number) {
+  return { id, active: true, type: 'recurring', unit_amount: unitAmount, currency: 'eur' };
+}
+
+/** The 404 Stripe raises for a price id that does not exist on the account. */
+function resourceMissing(id: string) {
+  const err = new stripePrices.StripeError(`No such price: ${id}`);
+  err.code = 'resource_missing';
+  return err;
+}
+
 beforeEach(() => {
   closeDb();
   process.env.DATABASE_URL = 'file::memory:';
   process.env.ADMIN_CRON_SECRET = 'test_admin_secret';
+  process.env.STRIPE_SECRET_KEY = 'sk_test_123';
+  process.env.STRIPE_PRICE_STARTER = 'price_starter';
+  process.env.STRIPE_PRICE_PRO = 'price_pro';
+  process.env.STRIPE_PRICE_SCALE = 'price_scale';
+  stripePrices.retrieve = async (id) => {
+    if (id === 'price_starter') return livePrice(id, 1000);
+    if (id === 'price_pro') return livePrice(id, 3900);
+    if (id === 'price_scale') return livePrice(id, 9900);
+    throw resourceMissing(id);
+  };
 });
 
 afterAll(() => {
   closeDb();
   delete process.env.DATABASE_URL;
   delete process.env.ADMIN_CRON_SECRET;
+  delete process.env.STRIPE_SECRET_KEY;
+  delete process.env.STRIPE_PRICE_STARTER;
+  delete process.env.STRIPE_PRICE_PRO;
+  delete process.env.STRIPE_PRICE_SCALE;
 });
 
 async function createApp() {
@@ -197,5 +248,87 @@ describe('GET /admin/stats', () => {
     const app = await createApp();
     const res = await getStats(app, 'anything');
     expect(res.status).toBe(500);
+function getPriceCheck(app: Hono, secret?: string) {
+  const headers: Record<string, string> = {};
+  if (secret) headers.Authorization = `Bearer ${secret}`;
+  return app.request('/admin/stripe-price-check', { method: 'GET', headers });
+}
+
+// The charging side of the money path lives in the Stripe dashboard and the
+// provisioning side lives in the env vars. Nothing compares them, which is how
+// a price id can drift silently. This endpoint is that comparison.
+describe('GET /admin/stripe-price-check', () => {
+  it('reports ok for every tier when the configured ids resolve correctly', async () => {
+    const app = await createApp();
+    const res = await getPriceCheck(app, 'test_admin_secret');
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.checks.map((c: { plan: string; status: string }) => [c.plan, c.status])).toEqual([
+      ['starter', 'ok'],
+      ['pro', 'ok'],
+      ['scale', 'ok'],
+    ]);
+    // Covers Scale, which has no Payment Link and so cannot be checked any
+    // other way without a credential.
+    expect(body.checks[2].priceId).toBe('price_scale');
+  });
+
+  it('flags a price id Stripe has never heard of', async () => {
+    process.env.STRIPE_PRICE_PRO = 'price_archived_and_recreated';
+    const app = await createApp();
+    const res = await getPriceCheck(app, 'test_admin_secret');
+
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.ok).toBe(false);
+    const pro = body.checks.find((c: { plan: string }) => c.plan === 'pro');
+    expect(pro.status).toBe('not_found');
+    expect(pro.priceId).toBe('price_archived_and_recreated');
+  });
+
+  it('flags a tier whose env var is unset', async () => {
+    delete process.env.STRIPE_PRICE_SCALE;
+    const app = await createApp();
+    const res = await getPriceCheck(app, 'test_admin_secret');
+
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    const scale = body.checks.find((c: { plan: string }) => c.plan === 'scale');
+    expect(scale.status).toBe('not_configured');
+    expect(scale.priceId).toBeNull();
+  });
+
+  it('flags a price that resolves but is archived or priced wrong', async () => {
+    stripePrices.retrieve = async (id) => {
+      if (id === 'price_starter') return { ...livePrice(id, 1500), active: false };
+      if (id === 'price_pro') return livePrice(id, 3900);
+      if (id === 'price_scale') return { ...livePrice(id, 9900), currency: 'usd' };
+      throw resourceMissing(id);
+    };
+
+    const app = await createApp();
+    const res = await getPriceCheck(app, 'test_admin_secret');
+
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    const starter = body.checks.find((c: { plan: string }) => c.plan === 'starter');
+    expect(starter.status).toBe('mismatch');
+    expect(starter.problems).toEqual(['Price is archived in Stripe.', 'Price is 1500 minor units, expected 1000.']);
+    const scale = body.checks.find((c: { plan: string }) => c.plan === 'scale');
+    expect(scale.problems).toEqual(['Price is in usd, expected eur.']);
+  });
+
+  it('never echoes the Stripe secret key', async () => {
+    const app = await createApp();
+    const res = await getPriceCheck(app, 'test_admin_secret');
+    expect(await res.text()).not.toContain('sk_test_123');
+  });
+
+  it('returns 401 without the admin secret', async () => {
+    const app = await createApp();
+    expect((await getPriceCheck(app)).status).toBe(401);
+    expect((await getPriceCheck(app, 'wrong_secret')).status).toBe(401);
   });
 });
