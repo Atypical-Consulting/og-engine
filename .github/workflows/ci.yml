@@ -145,6 +145,30 @@ jobs:
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
+      # The DB lives on a mounted volume, so a release that converges the schema
+      # rewrites data the image does not own. Snapshot before the new machine can
+      # boot against it. This blocks the deploy on purpose: shipping a migration
+      # with no restore point is the one failure we cannot walk back.
+      - name: Snapshot data volume before deploy
+        run: |
+          set -euo pipefail
+          ids=$(flyctl volumes list -a og-engine --json \
+            | jq -r '.[] | select(.name == "og_engine_data") | .id')
+          if [ -z "$ids" ]; then
+            echo "::error::no og_engine_data volume found for app og-engine — refusing to deploy without a restore point"
+            exit 1
+          fi
+          for id in $ids; do
+            echo "Snapshotting volume $id"
+            flyctl volumes snapshots create "$id"
+          done
+          for id in $ids; do
+            echo "Snapshots now held for $id:"
+            flyctl volumes snapshots list "$id"
+          done
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
       - name: Deploy to Fly.io
         run: flyctl deploy --remote-only
         env:
