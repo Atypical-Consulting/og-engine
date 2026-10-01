@@ -12,11 +12,11 @@ const FAQS: FaqItem[] = [
   },
   {
     question: 'Does it handle non-Latin scripts?',
-    answer: 'Yes. Pretext handles CJK (Chinese, Japanese, Korean), Arabic (with bidirectional text), emoji, grapheme clusters, and mixed-script content. Pre-loaded fonts include Noto Sans JP and Noto Sans AR.',
+    answer: 'CJK and Arabic glyphs render correctly from the bundled Noto Sans JP, SC, KR and Arabic fonts, including right-to-left Arabic shaping. Two limits apply today: no emoji font is bundled, so emoji render as a missing-glyph box, and line breaking splits on whitespace, so a Japanese or Chinese title longer than one line will not wrap.',
   },
   {
     question: 'Can I validate text without generating an image?',
-    answer: 'Yes. POST /validate checks if your text fits a layout — free, unlimited, no authentication required. Use it to catch overflow before rendering.',
+    answer: 'Yes. POST /validate checks if your text fits a layout — free, no authentication required, and it never consumes render quota. Like the render endpoints it is rate limited to 100 requests per minute per IP. Use it to catch overflow before rendering.',
   },
   {
     question: 'Is there a free plan?',

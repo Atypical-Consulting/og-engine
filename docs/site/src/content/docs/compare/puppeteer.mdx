@@ -13,8 +13,8 @@ If you're using Puppeteer, Playwright, or any headless browser to generate OG im
 | **Runtime** | Chrome binary + Xvfb + sandbox + Node.js | Node.js (or Bun) only |
 | **Text rendering** | Full browser layout engine (Blink) | Pretext: Unicode-aware segmentation + Canvas |
 | **Output** | Screenshot of browser viewport | Canvas → PNG / WebP |
-| **Languages** | All (full browser) | All — CJK, Arabic, emoji, bidirectional |
-| **Fonts** | System fonts or network fetch | Pre-loaded .ttf files (8 families, zero latency) |
+| **Languages** | All (full browser) | Latin, CJK and Arabic glyphs via bundled Noto fonts. No emoji font is bundled, so emoji render as `▯`. CJK line breaking is not yet space-free aware — see [what you lose](#what-you-lose) |
+| **Fonts** | System fonts or network fetch | Pre-loaded .ttf files (53 families, zero latency) |
 
 ## Performance
 
@@ -45,6 +45,17 @@ OG Engine is **not** a general-purpose browser renderer. It generates images fro
 - Execute JavaScript in a browser context
 - Screenshot existing web pages
 - Use browser-specific APIs (DOM, CSSOM)
+
+Two text-rendering limits are worth knowing before you migrate:
+
+- **Emoji are not rendered.** No emoji font is bundled, so an emoji in a title or
+  description draws the `▯` missing-glyph box. A browser would render it from the
+  system emoji font.
+- **CJK line breaking is not space-free aware.** Line breaking splits on
+  whitespace, and Japanese and Chinese do not put spaces between characters, so a
+  CJK title longer than one line will overrun its box instead of wrapping. CJK
+  *glyphs* render correctly via the bundled Noto Sans JP / SC / KR fonts; it is the
+  line breaking that is wrong. If your titles are long-form CJK, keep Puppeteer for now.
 
 If you need full HTML rendering, keep Puppeteer. If you need **text-on-image generation** (OG cards, social images, email banners), OG Engine is 6-30x faster and dramatically simpler.
 

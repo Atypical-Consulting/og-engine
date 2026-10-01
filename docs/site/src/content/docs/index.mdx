@@ -33,7 +33,7 @@ head:
             "name": "Does OG Engine handle non-Latin scripts like CJK and Arabic?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. Pretext handles CJK (Chinese, Japanese, Korean), Arabic (with bidirectional text), emoji, grapheme clusters, and mixed-script content. Pre-loaded fonts include Noto Sans JP and Noto Sans AR."
+              "text": "CJK and Arabic glyphs render correctly from the bundled Noto Sans JP, SC, KR and Arabic fonts, including right-to-left Arabic shaping. Two limits apply today: no emoji font is bundled, so emoji render as a missing-glyph box, and line breaking splits on whitespace, so a Japanese or Chinese title longer than one line will not wrap."
             }
           },
           {
@@ -41,7 +41,7 @@ head:
             "name": "Can I validate text without generating an image?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. POST /validate checks if your text fits a layout — free, unlimited, no authentication required. Use it to catch overflow before rendering."
+              "text": "Yes. POST /validate checks if your text fits a layout — free, no authentication required, and it never consumes render quota. Like the render endpoints it is rate limited to 100 requests per minute per IP. Use it to catch overflow before rendering."
             }
           },
           {
@@ -65,7 +65,7 @@ head:
             "name": "What about custom templates?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Scale plan (€99/mo) supports custom JSON templates. All plans get 12 built-in templates. A visual template builder is on the roadmap."
+              "text": "Scale plan (€99/mo) supports custom JSON templates. All plans get 13 built-in templates. A visual template builder is on the roadmap."
             }
           }
         ]
@@ -166,7 +166,7 @@ Every image rendered server-side in under 3ms. Pixel-perfect text layout, gradie
 <div class="step-number">3</div>
 <div class="step-content">
 <h3>Get Your Image</h3>
-<p>PNG or WebP in the response. Typical render: ~2ms. Supports CJK, Arabic, emoji, and mixed scripts.</p>
+<p>PNG, WebP or PDF in the response. Latin, CJK and Arabic glyphs ship in the bundled fonts. Emoji are not yet supported.</p>
 </div>
 </div>
 </div>
@@ -210,7 +210,7 @@ Every image rendered server-side in under 3ms. Pixel-perfect text layout, gradie
 
 ## Free Text Validation
 
-Check if your text fits — **free, unlimited, no signup required.**
+Check if your text fits — **free, no signup required, never counts against your render quota.**
 
 <div class="validate-terminal">
   <div class="validate-terminal-bar">
