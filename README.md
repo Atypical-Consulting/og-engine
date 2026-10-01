@@ -18,6 +18,7 @@
 </p>
 
 <p align="center">
+  <a href="https://og-engine.com/signup"><strong>Get a free API key</strong></a> &bull;
   <a href="#quick-start">Quick Start</a> &bull;
   <a href="#api-reference">API Reference</a> &bull;
   <a href="#self-hosting">Self-Host</a> &bull;

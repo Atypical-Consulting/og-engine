@@ -99,7 +99,8 @@ export default function SignupForm() {
                 Your API key is ready
               </div>
               <div className="og-signup-success-sub">
-                A copy was also sent to <strong>{email}</strong> for safekeeping.
+                We also emailed a copy to <strong>{email}</strong>, subject “Your
+                OG Engine API Key”.
               </div>
             </div>
           </div>

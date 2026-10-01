@@ -97,7 +97,7 @@ curl -X POST https://og-engine.com/render \
 
 ### Migration Checklist
 
-1. **Sign up** — `POST /auth/register` with your email (free, no credit card)
+1. **Sign up** — [og-engine.com/signup](/signup) with your email, or `POST /auth/register` from the terminal (free, no credit card)
 2. **Map your HTML to JSON** — title, description, tag, author, style (accent, font, layout)
 3. **Replace the Puppeteer call** with `og.render()` or a curl to `/render`
 4. **Remove Chrome dependencies** — uninstall `puppeteer`, remove Xvfb from Dockerfile, drop `--no-sandbox` flags
