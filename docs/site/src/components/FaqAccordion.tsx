@@ -8,7 +8,7 @@ interface FaqItem {
 const FAQS: FaqItem[] = [
   {
     question: 'How is this so fast?',
-    answer: 'OG Engine uses Pretext for text measurement — the same Unicode segmentation engine, running server-side with Canvas. No browser startup, no DOM layout, no paint cycle. Just math and pixels.',
+    answer: 'OG Engine uses Pretext for text measurement — the same Unicode segmentation engine, running server-side with Canvas. No browser startup, no DOM layout, no paint cycle. Text layout takes about 0.1ms. A full render is 21.57ms median on an Apple M2, and PNG encoding is ~21ms of that — so the win over Puppeteer is the browser you never launch, not the encoder. Cold-start headless Chrome takes 657ms for the same image.',
   },
   {
     question: 'Does it handle non-Latin scripts?',
@@ -28,7 +28,7 @@ const FAQS: FaqItem[] = [
   },
   {
     question: 'What about custom templates?',
-    answer: 'Scale plan (€99/mo) supports custom JSON templates. All plans get 4 built-in templates. A visual template builder is on the roadmap.',
+    answer: 'Scale plan (€99/mo) supports custom JSON templates. All plans get 13 built-in templates. A visual template builder is on the roadmap.',
   },
 ];
 
@@ -49,8 +49,10 @@ export default function FaqAccordion() {
               <span>{faq.question}</span>
               <span className="faq-chevron" aria-hidden="true">{isOpen ? '−' : '+'}</span>
             </button>
-            <div className="faq-answer" style={{ maxHeight: isOpen ? '200px' : '0' }}>
-              <p>{faq.answer}</p>
+            <div className="faq-answer" style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}>
+              <div className="faq-answer-inner">
+                <p>{faq.answer}</p>
+              </div>
             </div>
           </div>
         );

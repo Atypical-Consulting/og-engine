@@ -14,7 +14,7 @@ const REQUEST_LINES = [
 const RESPONSE_LINES = [
   { text: 'HTTP/1.1 200 OK', cls: 'hr-resp' },
   { text: 'Content-Type: image/png', cls: 'hr-header' },
-  { text: 'X-Render-Time-Ms: 1.87', cls: 'hr-accent' },
+  { text: 'X-Render-Time-Ms: 21.57', cls: 'hr-accent' },
   { text: 'X-Layout-Overflow: false', cls: 'hr-header' },
 ];
 
@@ -46,7 +46,7 @@ export default function HeroRender() {
   const [typedLines, setTypedLines] = useState(0);
   const [responseLines, setResponseLines] = useState(0);
   const [imageRevealed, setImageRevealed] = useState(false);
-  const renderTime = useAnimatedNumber(1.87, 600, phase === 'response' || phase === 'image' || phase === 'done');
+  const renderTime = useAnimatedNumber(21.57, 600, phase === 'response' || phase === 'image' || phase === 'done');
 
   // Start animation when element is visible in viewport
   useEffect(() => {
@@ -113,6 +113,7 @@ export default function HeroRender() {
           <span className="hr-stat-unit">ms</span>
         </div>
         <div className="hr-stat-label">render time</div>
+        <a className="hr-stat-source" href="/benchmarks/">median, Apple M2 &mdash; reproduce it &rarr;</a>
       </div>
 
       {/* ─── Split panel ─── */}

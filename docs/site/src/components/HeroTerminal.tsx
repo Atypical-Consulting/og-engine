@@ -8,7 +8,7 @@ const LINES = [
   { type: 'blank', text: '' },
   { type: 'response', text: '  HTTP/1.1 200 OK' },
   { type: 'header', text: '  Content-Type: image/png' },
-  { type: 'header-accent', text: '  X-Render-Time-Ms: 1.87' },
+  { type: 'header-accent', text: '  X-Render-Time-Ms: 21.57' },
   { type: 'header', text: '  X-Title-Lines: 1' },
   { type: 'header', text: '  X-Layout-Overflow: false' },
   { type: 'blank', text: '' },
@@ -26,7 +26,7 @@ export default function HeroTerminal() {
   }, [visibleLines]);
 
   return (
-    <div className="hero-terminal" role="img" aria-label="Terminal showing OG Engine API request completing in 1.87ms">
+    <div className="hero-terminal" role="img" aria-label="Terminal showing OG Engine API request completing in 21.57ms">
       <div className="hero-terminal-bar">
         <div className="hero-terminal-dots">
           <span className="dot dot-red" />

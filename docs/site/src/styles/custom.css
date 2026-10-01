@@ -1518,6 +1518,7 @@ a.sl-link-button.minimal:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
   padding: 0.4rem 0;
 }
 
@@ -1532,6 +1533,10 @@ a.sl-link-button.minimal:hover {
   font-family: 'Syne', sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
+  /* The cold-start cell is a phrase, not a figure — let it wrap instead of
+     squeezing the label. */
+  text-align: right;
+  text-wrap: balance;
 }
 
 .bench-row-slow {
@@ -1769,10 +1774,20 @@ a.sl-link-button.minimal:hover {
   opacity: 1;
 }
 
+/* Sized by grid-template-rows (0fr -> 1fr) rather than a fixed max-height, so a
+   long answer cannot clip at narrow widths. See docs/site/src/components/FaqAccordion.tsx.
+   The inner wrapper is the grid item and does the clipping: the paragraph's own
+   padding would otherwise floor the collapsed row at 1rem and leak a line of text. */
 .faq-answer {
-  overflow: hidden;
-  transition: max-height 0.3s ease;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
   margin: 0;
+}
+
+.faq-answer-inner {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .faq-answer p {
@@ -1933,6 +1948,24 @@ a.sl-link-button.minimal:hover {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-top: 0.35rem;
+}
+
+/* Attribution for the hero number — deliberately quiet, must not compete with
+   .hr-stat-value. Links through to the benchmark row that produced the figure. */
+.hr-stat-source {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--sl-color-gray-3);
+  text-decoration: none;
+}
+
+.hr-stat-source:hover,
+.hr-stat-source:focus-visible {
+  color: var(--sl-color-gray-2);
+  text-decoration: underline;
 }
 
 /* ─── Split Panels ─── */

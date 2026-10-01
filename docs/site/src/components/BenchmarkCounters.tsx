@@ -37,7 +37,7 @@ export default function BenchmarkCounters() {
     return () => observer.disconnect();
   }, []);
 
-  const heroNumber = useCountUp(500, active);
+  const heroNumber = useCountUp(30, active);
 
   return (
     <div ref={ref} className="bench-hero not-content">
@@ -46,7 +46,7 @@ export default function BenchmarkCounters() {
         <div className="bench-hero-value">
           {heroNumber}<span className="bench-hero-suffix">x</span>
         </div>
-        <div className="bench-hero-label">faster than headless Chrome</div>
+        <div className="bench-hero-label">faster than cold-start headless Chrome</div>
       </div>
 
       {/* Side-by-side comparison */}
@@ -57,8 +57,12 @@ export default function BenchmarkCounters() {
             <span className="bench-side-name">Puppeteer</span>
           </div>
           <div className="bench-row">
-            <span className="bench-row-label">Render</span>
-            <span className="bench-row-value bench-row-slow">~660ms</span>
+            <span className="bench-row-label">Render, warm</span>
+            <span className="bench-row-value bench-row-slow">~129ms</span>
+          </div>
+          <div className="bench-row">
+            <span className="bench-row-label">Render, cold</span>
+            <span className="bench-row-value bench-row-slow">~658ms</span>
           </div>
           <div className="bench-row">
             <span className="bench-row-label">Memory</span>
@@ -67,10 +71,6 @@ export default function BenchmarkCounters() {
           <div className="bench-row">
             <span className="bench-row-label">Concurrency</span>
             <span className="bench-row-value bench-row-slow">5-10</span>
-          </div>
-          <div className="bench-row">
-            <span className="bench-row-label">Cold start</span>
-            <span className="bench-row-value bench-row-slow">~5s</span>
           </div>
         </div>
 
@@ -82,8 +82,12 @@ export default function BenchmarkCounters() {
             <span className="bench-side-name">OG Engine</span>
           </div>
           <div className="bench-row">
-            <span className="bench-row-label">Render</span>
-            <span className="bench-row-value bench-row-fast">~1.87ms</span>
+            <span className="bench-row-label">Render, warm</span>
+            <span className="bench-row-value bench-row-fast">~22ms</span>
+          </div>
+          <div className="bench-row">
+            <span className="bench-row-label">Render, cold</span>
+            <span className="bench-row-value bench-row-fast">no browser to launch</span>
           </div>
           <div className="bench-row">
             <span className="bench-row-label">Memory</span>
@@ -93,15 +97,11 @@ export default function BenchmarkCounters() {
             <span className="bench-row-label">Concurrency</span>
             <span className="bench-row-value bench-row-fast">500+</span>
           </div>
-          <div className="bench-row">
-            <span className="bench-row-label">Cold start</span>
-            <span className="bench-row-value bench-row-fast">~50ms</span>
-          </div>
         </div>
       </div>
 
       <p className="bench-footnote">
-        Benchmarked on identical hardware &middot; <a href="/benchmarks/">Full methodology &rarr;</a>
+        og-engine and Puppeteer measured in the same <code>bun run bench:full</code> on an Apple M2, 24&nbsp;GB &middot; <a href="/benchmarks/">Full methodology &rarr;</a>
       </p>
     </div>
   );
