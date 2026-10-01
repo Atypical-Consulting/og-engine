@@ -215,10 +215,11 @@ Optional `overrides` lets you override specific fields (e.g. `tag`) while keepin
 | `square` | 1080 × 1080 | Instagram / general social |
 | `linkedin` | 1200 × 627 | LinkedIn posts |
 | `story` | 1080 × 1920 | Instagram/TikTok stories |
+| `readme` | 1280 × 640 | GitHub social preview / README banner |
 
 ## Fonts
 
-8 fonts included out of the box, with full Unicode coverage:
+53 font families are included out of the box. The most commonly used:
 
 | Font | Weights | Script support |
 |------|---------|---------------|

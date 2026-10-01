@@ -17,8 +17,23 @@
 // Types
 // ---------------------------------------------------------------------------
 
-export type ImageFormat = 'og' | 'twitter' | 'square' | 'linkedin' | 'story';
-export type TemplateName = 'default' | 'social-card' | 'blog-hero' | 'email-banner';
+/** Keep in sync with FORMATS in src/engine/formats.ts. */
+export type ImageFormat = 'og' | 'twitter' | 'square' | 'linkedin' | 'story' | 'readme';
+/** Keep in sync with TEMPLATES in src/engine/templates/index.ts. */
+export type TemplateName =
+  | 'default'
+  | 'social-card'
+  | 'blog-hero'
+  | 'email-banner'
+  | 'event'
+  | 'github-repo'
+  | 'product-card'
+  | 'readme-banner'
+  | 'testimonial'
+  | 'news-article'
+  | 'pricing'
+  | 'profile-card'
+  | 'announcement';
 export type OutputFormat = 'png' | 'webp' | 'pdf';
 export type Layout = 'left' | 'center' | 'bottom';
 

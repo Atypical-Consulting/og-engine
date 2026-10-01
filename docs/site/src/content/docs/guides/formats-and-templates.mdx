@@ -18,6 +18,7 @@ Each format maps to a canonical set of dimensions used by social platforms:
 | `square` | 1080 × 1080 px | 1:1 | Instagram, general purpose |
 | `linkedin` | 1200 × 627 px | 1.91:1 | LinkedIn posts |
 | `story` | 1080 × 1920 px | 9:16 | Instagram Stories, TikTok, Snapchat |
+| `readme` | 1280 × 640 px | 2:1 | GitHub repository social preview / README banner |
 
 ### How Format Affects Text Layout
 
@@ -30,6 +31,7 @@ Narrower or taller canvases affect how many lines your text wraps to, and theref
 | `square` | 4 | 5 | More vertical space for text |
 | `linkedin` | 3 | 4 | Slightly narrower than `og` |
 | `story` | 5 | 6 | Tall format — text has more room |
+| `readme` | 2 | 3 | Wide and short — designed for a banner headline |
 
 These limits apply at the default font sizes (48px title, 22px description). Increasing `titleSize` reduces the number of lines before overflow, and vice versa. Use the `/validate` endpoint to check without incurring a render.
 
@@ -149,6 +151,7 @@ While all combinations are technically valid, some pairings produce noticeably b
 | `pricing` | `og`, `square` | Feature list needs vertical space |
 | `profile-card` | `twitter`, `square` | Avatar + bio layout suits 16:9 and 1:1 |
 | `announcement` | `og`, `twitter`, `story` | Works across all three aspect ratios |
+| `readme-banner` | `readme` | Built for the 1280 × 640 GitHub social preview |
 
 The `story` format works best with `social-card`, `announcement`, or `default` using a `bottom` layout, so the text sits comfortably in the lower half of the tall canvas.
 

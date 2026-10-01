@@ -1,6 +1,6 @@
 ---
 title: Pricing & Plans
-description: OG Engine pricing from free (500 renders/month) to Scale (200k renders/month). All plans include the same engine, fonts, formats, and 12 templates.
+description: OG Engine pricing from free (500 renders/month) to Scale (200k renders/month). PNG and PDF output on every plan, including Free. WebP output from Starter (€10/mo) up.
 head:
   - tag: script
     attrs:
@@ -31,7 +31,7 @@ head:
             "name": "What happens when I exceed my OG Engine quota?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Render requests return 429 rate_limited. The /validate endpoint stays available. Upgrade anytime to restore capacity immediately."
+              "text": "Render requests return 429 with error code quota_exceeded. The /validate endpoint stays available. Upgrade anytime to restore capacity immediately."
             }
           },
           {
@@ -39,7 +39,15 @@ head:
             "name": "Can I use the OG Engine Free plan forever?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. 500 renders/month, no expiration, no feature degradation. Perfect for personal projects and evaluation."
+              "text": "Yes. 500 renders/month, no expiration, no trial clock. PNG and PDF output, every font, every format, every template, and /validate at no quota cost are included. WebP output, batch rendering, and CDN caching start on the paid plans."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is PDF output included on the OG Engine Free plan?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Set output.format to pdf on any plan, including Free, and you get a single-page PDF sized to the render's exact pixel dimensions. A PDF render costs the same one render as a PNG."
             }
           },
           {
@@ -47,14 +55,14 @@ head:
             "name": "Do batch items count individually toward the render quota?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. A 50-item batch consumes 50 renders. If only 30 remain, 30 succeed and 20 return rate_limited in errors.json."
+              "text": "Yes. A 50-item batch consumes 50 renders. Quota is checked once before the batch starts, so a batch is either accepted whole or rejected whole with quota_exceeded. There is no partial batch."
             }
           }
         ]
       }
 ---
 
-All plans share the same engine — same speed, same quality, same fonts, same formats. Pick the quota that fits.
+All plans share the same engine — same speed, same quality, same fonts, same formats, same templates. **PNG and PDF output are on every plan, including Free.** WebP output starts on Starter. Pick the quota that fits.
 
 <div class="pricing-grid">
 
@@ -65,11 +73,11 @@ All plans share the same engine — same speed, same quality, same fonts, same f
   <div class="pricing-meter"><div class="pricing-meter-fill" style="width: 2.5%"></div></div>
   <div class="pricing-persona">For personal blogs, side projects, and evaluation.</div>
   <ul class="pricing-features">
-    <li>PNG output</li>
-    <li>All 8 fonts</li>
-    <li>All 5 formats</li>
-    <li>All 12 templates</li>
-    <li>/validate — unlimited</li>
+    <li>PNG + PDF output</li>
+    <li>All 53 fonts</li>
+    <li>All 6 formats</li>
+    <li>All 13 templates</li>
+    <li>/validate — free, no quota cost</li>
     <li class="excluded">WebP output</li>
     <li class="excluded">Batch rendering</li>
     <li class="excluded">CDN caching</li>
@@ -84,11 +92,11 @@ All plans share the same engine — same speed, same quality, same fonts, same f
   <div class="pricing-meter"><div class="pricing-meter-fill" style="width: 15%"></div></div>
   <div class="pricing-persona">For growing products shipping WebP images to production.</div>
   <ul class="pricing-features">
-    <li>PNG + WebP output</li>
-    <li>All 8 fonts</li>
-    <li>All 5 formats</li>
-    <li>All 12 templates</li>
-    <li>/validate — unlimited</li>
+    <li>PNG + WebP + PDF output</li>
+    <li>All 53 fonts</li>
+    <li>All 6 formats</li>
+    <li>All 13 templates</li>
+    <li>/validate — free, no quota cost</li>
     <li>Email support</li>
     <li class="excluded">Batch rendering</li>
     <li class="excluded">CDN caching</li>
@@ -104,11 +112,11 @@ All plans share the same engine — same speed, same quality, same fonts, same f
   <div class="pricing-meter"><div class="pricing-meter-fill" style="width: 50%"></div></div>
   <div class="pricing-persona">For SaaS platforms generating social images at scale.</div>
   <ul class="pricing-features">
-    <li>PNG + WebP output</li>
-    <li>All 8 fonts</li>
-    <li>All 5 formats</li>
-    <li>All 12 templates</li>
-    <li>/validate — unlimited</li>
+    <li>PNG + WebP + PDF output</li>
+    <li>All 53 fonts</li>
+    <li>All 6 formats</li>
+    <li>All 13 templates</li>
+    <li>/validate — free, no quota cost</li>
     <li>Batch rendering</li>
     <li>CDN caching</li>
     <li>Priority email support</li>
@@ -121,23 +129,24 @@ All plans share the same engine — same speed, same quality, same fonts, same f
   <div class="pricing-price"><span class="currency">€</span>99<span class="period"> / mo</span></div>
   <div class="pricing-renders">200,000 renders / month</div>
   <div class="pricing-meter"><div class="pricing-meter-fill" style="width: 100%"></div></div>
-  <div class="pricing-persona">For enterprises needing custom branding, SLA, and dedicated support.</div>
+  <div class="pricing-persona">For teams that need their own template design, not one of our 13.</div>
   <ul class="pricing-features">
-    <li>PNG + WebP output</li>
-    <li>All 8 fonts</li>
-    <li>All 5 formats</li>
-    <li>All 12 templates</li>
-    <li>/validate — unlimited</li>
+    <li><strong>Custom JSON templates</strong> — Scale only</li>
+    <li>PNG + WebP + PDF output</li>
+    <li>All 53 fonts</li>
+    <li>All 6 formats</li>
+    <li>All 13 templates</li>
+    <li>/validate — free, no quota cost</li>
     <li>Batch rendering</li>
     <li>CDN caching</li>
-    <li>Custom JSON templates</li>
-    <li>Dedicated infrastructure</li>
-    <li>Dedicated Slack support</li>
+    <li>Priority email support</li>
   </ul>
   <a href="mailto:sales@og-engine.com" class="pricing-cta cta-outline">Contact Sales</a>
 </div>
 
 </div>
+
+**Every plan, including Free:** PNG and PDF output, every font, every format preset, every template, and `/validate` at no quota cost. `output.format: "pdf"` returns a single-page PDF sized to the render's exact pixel dimensions — no extra charge, no separate plan. WebP output requires Starter or above.
 
 > Need more than 200k renders? [Contact sales@og-engine.com](mailto:sales@og-engine.com) for volume pricing with SLA guarantees, dedicated IPs, and custom domains.
 
@@ -148,22 +157,29 @@ All plans share the same engine — same speed, same quality, same fonts, same f
 - `POST /render` = **1 render**
 - Each item in `POST /render/batch` = **1 render**
 - Failed requests (4xx) = **0 renders**
-- `/validate` = **always free**, unlimited, on every plan
+- `/validate` = **0 renders**, on every plan — it never consumes quota (it is still subject to the request rate limit below)
 - `/health` = **0 renders**
+- Output format does not change the cost — PNG, WebP, and PDF are **1 render** each
 
-## Rate Limiting
+## Quotas and Rate Limiting
 
-Paid plan quotas reset each billing cycle (the anniversary of your signup date). Free plan quotas reset on the 1st of each month at 00:00 UTC. No per-second or per-minute caps — burst your entire quota in minutes if you need to.
+These are two separate limits.
 
-Every authenticated response includes:
+**Monthly quota** — how many renders your plan includes. Paid plan quotas reset each billing cycle (the anniversary of your signup date). Free plan quotas reset on the 1st of each month at 00:00 UTC.
+
+**Request rate limit** — how fast you may call the API. `/render`, `/render/batch`, `/render/from-url` and `/validate` are limited to **100 requests per 60 seconds per IP address**. This applies on every plan, including paid plans, and it is independent of your remaining monthly quota.
+
+Every rate-limited response includes the state of the *per-minute* limit:
 
 ```
-X-RateLimit-Limit: 500
-X-RateLimit-Remaining: 347
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 99
 X-RateLimit-Reset: 1735689600
 ```
 
-When `Remaining` hits `0`, render requests return `429 rate_limited` until the quota resets. `/validate` is never rate-limited.
+Exceeding the per-minute limit returns `429` with error code `rate_limit_exceeded` and a `retryAfterMs` field. Exhausting your monthly quota returns `429` with error code `quota_exceeded`.
+
+Need a higher request rate? [Contact sales@og-engine.com](mailto:sales@og-engine.com).
 
 ---
 
@@ -181,7 +197,7 @@ No. Quotas reset to zero each billing cycle (paid plans) or on the 1st of each m
 
 ### What happens when I exceed my quota?
 
-Render requests return `429 rate_limited`. `/validate` stays available. Upgrade anytime to restore capacity immediately.
+Render requests return `429` with error code `quota_exceeded`. `/validate` stays available. Upgrade anytime to restore capacity immediately.
 
 ### Can I downgrade?
 
@@ -189,11 +205,19 @@ Yes. Downgrades apply at the start of the next billing cycle. You keep current f
 
 ### Do batch items count individually?
 
-Yes. A 50-item batch consumes 50 renders. If only 30 remain, 30 succeed and 20 return `rate_limited` in `errors.json`.
+Yes. A 50-item batch consumes 50 renders. Quota is checked once before the batch starts, so a batch is either accepted whole or rejected whole with `quota_exceeded` — there is no partial batch.
 
 ### Can I use the Free plan forever?
 
-Yes. 500 renders/month, no expiration, no feature degradation. Perfect for personal projects and evaluation.
+Yes. 500 renders/month, no expiration, no trial clock. PNG and PDF output, every font, every format, every template, and `/validate` at no quota cost are included. WebP output, batch rendering, and CDN caching start on the paid plans.
+
+### Is PDF output included on the Free plan?
+
+Yes. Set `output.format: "pdf"` on any plan, including Free. You get a single-page PDF sized to the render's exact pixel dimensions, and it costs the same one render as a PNG.
+
+### Why is WebP a paid feature?
+
+WebP is where most teams move once they are serving these images to real traffic, so it is the line between evaluating OG Engine and running it in production. It starts on Starter at €10/mo. PNG and PDF stay free.
 
 </div>
 
