@@ -28,8 +28,11 @@ All plans get: all 5 formats, all 4 built-in templates, all 8 fonts, /validate u
 
 ## Decision 4: /auth/register Key Delivery
 
-**Decision:** Both — return key in HTTP response AND send by email
-**Rationale:** Instant access (key in response) preserves the "2 minutes to first image" promise. Email provides a durable record and backup. The quick-start flow works without checking email. Duplicate registration returns the existing key (per US-1.1).
+**Decision:** For a **new** email, both — return the key in the HTTP response AND send it by email. For an **already-registered** email, return `409 account_exists` with no credential in the body and send no email.
+**Rationale:** Instant access (key in response) preserves the "2 minutes to first image" promise for the activation path. Email provides a durable record and backup. The quick-start flow works without checking email.
+**Amended (2026-10-01):** this decision originally said duplicate registration returns the existing key (per US-1.1), and the endpoint shipped that way. That was wrong. `/auth/register` is unauthenticated, so echoing the stored key back meant anyone who guessed or enumerated an email address received a working API key — unauthenticated credential disclosure, not idempotency. Options and accepted residual risk are recorded in ATY-68; Shape 1 (typed conflict) was chosen.
+**Wire behavior (duplicate email):** `409` with `{ "error": "account_exists", "message": …, "docs": … }`. No `apiKey`, no `plan`, no `limit`. No email is sent — recovery is the caller's own `POST /auth/send-link` request, because auto-sending would let an anonymous caller put mail in a stranger's inbox. `409` rather than `200` so a client can diagnose the failure instead of discovering `apiKey` became `undefined`.
+**Abuse bound:** `/auth/register` and `/auth/send-link` are rate limited at 20 requests/hour/IP (`src/index.ts`). Deliberately loose — signups can share a corporate NAT, and signup volume is a growth metric. `/auth/send-link`'s own limit is per-email (3 per 10 min) and therefore does not bound an attacker walking a list of addresses.
 **Security note:** No email verification required for free tier. Paid upgrades go through Stripe which has its own verification.
 
 ## Decision 5: Quota Reset Mechanism

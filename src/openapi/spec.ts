@@ -206,7 +206,10 @@ export function createOpenApiSpec() {
         post: {
           operationId: 'register',
           summary: 'Register for an API key',
-          description: 'Register with an email address and receive an API key for authenticating requests.',
+          description:
+            'Register with an email address and receive an API key for authenticating requests. ' +
+            'If the email is already registered the request fails with 409 account_exists and no key is returned — ' +
+            'recover the existing key with POST /auth/send-link.',
           tags: ['Auth'],
           security: [],
           requestBody: {
@@ -224,7 +227,7 @@ export function createOpenApiSpec() {
             },
           },
           responses: {
-            '200': {
+            '201': {
               description: 'API key created',
               content: {
                 'application/json': {
@@ -232,15 +235,31 @@ export function createOpenApiSpec() {
                     type: 'object',
                     properties: {
                       apiKey: { type: 'string', description: 'Your API key (shown only once)' },
-                      email: { type: 'string' },
                       plan: { type: 'string', enum: ['free', 'starter', 'pro', 'scale'] },
-                      callsLimit: { type: 'integer' },
+                      limit: { type: 'integer', description: 'Monthly render quota for the plan' },
+                      message: { type: 'string' },
                     },
                   },
                 },
               },
             },
             '400': { $ref: '#/components/responses/ValidationError' },
+            '409': {
+              description:
+                'An account already exists for this email. No API key is returned — the caller recovers it via POST /auth/send-link.',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' },
+                  example: {
+                    error: 'account_exists',
+                    message:
+                      'An account already exists for this email. Log in at https://og-engine.com/auth/login to retrieve your API key.',
+                    docs: 'https://og-engine.com/api-reference/errors#account_exists',
+                  },
+                },
+              },
+            },
+            '429': { $ref: '#/components/responses/RateLimited' },
           },
         },
       },

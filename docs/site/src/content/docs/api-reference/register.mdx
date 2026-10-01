@@ -3,7 +3,7 @@ title: POST /auth/register
 description: Create a free account and receive an API key. No credit card required.
 ---
 
-Register a new free-tier account with just an email address. Returns the API key immediately and sends a copy to the provided email.
+Register a new free-tier account with just an email address. For an email that is not yet registered, this returns the API key immediately and sends a copy to that address. For an email that already has an account, it returns [`409 account_exists`](#duplicate-registration--409-conflict) and no key.
 
 ```
 POST https://og-engine.com/auth/register
@@ -25,7 +25,7 @@ curl -X POST https://og-engine.com/auth/register \
   -d '{"email": "you@example.com"}'
 ```
 
-## Response
+## Response — `201 Created`
 
 ```json
 {
@@ -47,9 +47,27 @@ curl -X POST https://og-engine.com/auth/register \
 
 The API key is returned immediately in the response AND sent to the provided email address. The email includes the key, a curl example, and a link to the documentation.
 
-## Duplicate Registration
+## Duplicate Registration — `409 Conflict`
 
-If the email is already registered, the existing API key is returned (not a new one). This is idempotent — calling register twice with the same email produces the same result.
+If the email is already registered, this endpoint returns `409` and **no API key**:
+
+```json
+{
+  "error": "account_exists",
+  "message": "An account already exists for this email. Log in at https://og-engine.com/auth/login to retrieve your API key.",
+  "docs": "https://og-engine.com/api-reference/errors#account_exists"
+}
+```
+
+`/auth/register` is unauthenticated, so it will never return a key that already exists — otherwise anyone who guessed your email address would receive your credentials. No email is sent on this path either.
+
+**To recover an existing key:** request a login link at [og-engine.com/auth/login](https://og-engine.com/auth/login) (or `POST /auth/send-link` with your email). The link signs you in to the dashboard, where the key is shown.
+
+**Breaking change.** Before 2026-10-01 a duplicate registration returned `200` with the existing `apiKey`. Clients that relied on calling `/auth/register` to fetch an already-issued key must switch to the login flow above.
+
+## Rate Limit
+
+`/auth/register` accepts **20 requests per hour per IP**. Past that it returns `429 rate_limit_exceeded` with a `retryAfterMs` field. This limit is independent of your plan's render quota.
 
 ## Error Responses
 
@@ -57,6 +75,8 @@ If the email is already registered, the existing API key is returned (not a new 
 |---|---|---|
 | 400 | `missing_field` | `email` not provided |
 | 400 | `invalid_request` | `email` is not a valid email address |
+| 409 | `account_exists` | An account already exists for this email — [recover the key by logging in](https://og-engine.com/auth/login) |
+| 429 | `rate_limit_exceeded` | More than 20 registration attempts from this IP in one hour |
 
 ## Next Steps
 
