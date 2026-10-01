@@ -12,6 +12,7 @@ import {
   updateStripeInfo,
 } from '../db';
 import { sendDowngradeEmail, sendUpgradeEmail, sendWelcomeEmail } from '../email/send';
+import { normalizeEmail } from '../utils/email';
 
 export const webhooksRoute = new Hono();
 
@@ -61,7 +62,13 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      const email = session.customer_email ?? session.customer_details?.email ?? null;
+      // Checkout is a Stripe Payment Link, so there is no client_reference_id
+      // binding this purchase to a signed-in account: whatever the customer
+      // typed is the only join key we get. Canonicalise it before it touches
+      // the database, or `Dev@Example.com` provisions a second account and the
+      // developer stays on `free` holding a key that was never upgraded.
+      const rawEmail = session.customer_email ?? session.customer_details?.email ?? null;
+      const email = rawEmail ? normalizeEmail(rawEmail) : null;
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
 

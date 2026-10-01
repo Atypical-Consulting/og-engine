@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { createApiKey, createUser, findApiKeyByEmail, findUserByEmail } from '../db';
 import { sendWelcomeEmail } from '../email/send';
+import { normalizeEmail } from '../utils/email';
 
 export const registerRoute = new Hono();
 
@@ -39,7 +40,9 @@ registerRoute.post('/auth/register', async (c) => {
     );
   }
 
-  const { email } = parsed.data;
+  // Zod's .email() validates but does not canonicalise, so normalise here: the
+  // signup email is the key a later Stripe checkout has to match.
+  const email = normalizeEmail(parsed.data.email);
 
   // Per DECISIONS.md Decision 4: duplicate registration returns existing key
   const existing = findApiKeyByEmail(email);

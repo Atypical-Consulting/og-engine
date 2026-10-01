@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { normalizeEmail } from '../utils/email';
 import { openDatabase, type SqliteDatabase } from './sqlite';
 
 export type Plan = 'free' | 'starter' | 'pro' | 'scale';
@@ -165,6 +166,40 @@ function migrate(d: SqliteDatabase): void {
     CREATE INDEX IF NOT EXISTS idx_magic_links_token_hash ON magic_links(token_hash);
     CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email);
   `);
+
+  enforceEmailCaseInsensitivity(d);
+}
+
+/**
+ * Makes `users.email` case-insensitively unique and indexes the other email
+ * lookups for NOCASE comparison.
+ *
+ * SQLite cannot add `COLLATE NOCASE` to an existing column without rewriting
+ * the whole table, so the guarantee is expressed as an index instead: one
+ * statement to add, one `DROP INDEX` to roll back, and no table rewrite on a
+ * live Fly volume.
+ *
+ * The unique index is deliberately non-fatal. A database that already contains
+ * case-variant duplicate rows would otherwise crash the process on boot, which
+ * turns a billing bug into an outage. Normalisation in the helpers below already
+ * stops new splits; `bun run scripts/merge-duplicate-emails.ts` merges the
+ * historical ones, after which this index is created on the next boot.
+ */
+function enforceEmailCaseInsensitivity(d: SqliteDatabase): void {
+  // api_keys.email is intentionally not unique — one account may hold several keys.
+  d.exec('CREATE INDEX IF NOT EXISTS idx_api_keys_email_nocase ON api_keys(email COLLATE NOCASE);');
+  d.exec('CREATE INDEX IF NOT EXISTS idx_magic_links_email_nocase ON magic_links(email COLLATE NOCASE);');
+
+  try {
+    d.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_nocase ON users(email COLLATE NOCASE);');
+  } catch (err) {
+    console.error(
+      '[db] could not create idx_users_email_nocase — users.email holds case-variant duplicates. ' +
+        'Paying customers may be split across two rows. Run ' +
+        '`bun run scripts/merge-duplicate-emails.ts` to see the count, then `--apply` to merge, then restart. Cause:',
+      err,
+    );
+  }
 }
 
 // ─── User CRUD ───────────────────────────────────────────────
@@ -173,7 +208,7 @@ export function createUser(email: string, plan: Plan = 'free'): UserRecord {
   const d = getDb();
   const record: UserRecord = {
     id: crypto.randomUUID(),
-    email,
+    email: normalizeEmail(email),
     plan,
     stripe_customer_id: null,
     stripe_subscription_id: null,
@@ -192,9 +227,21 @@ export function createUser(email: string, plan: Plan = 'free'): UserRecord {
   return record;
 }
 
+/**
+ * Resolves an account from an email, ignoring case and surrounding whitespace.
+ *
+ * `COLLATE NOCASE` rather than a plain `=` on the normalized value, so a row
+ * written before normalisation shipped is still found. `ORDER BY created_at` is
+ * what makes the result deterministic on a database that still holds a split
+ * pair: the original account the developer logs into wins, not the orphan.
+ */
 export function findUserByEmail(email: string): UserRecord | null {
   const d = getDb();
-  return (d.prepare('SELECT * FROM users WHERE email = ?').get(email) as UserRecord) ?? null;
+  return (
+    (d
+      .prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE ORDER BY created_at ASC LIMIT 1')
+      .get(normalizeEmail(email)) as UserRecord) ?? null
+  );
 }
 
 export function findUserById(id: string): UserRecord | null {
@@ -238,12 +285,18 @@ export function findApiKeyByKey(key: string): ApiKeyRecord | null {
 
 export function findApiKeyByEmail(email: string): ApiKeyRecord | null {
   const d = getDb();
-  return (d.prepare('SELECT * FROM api_keys WHERE email = ? AND active = 1').get(email) as ApiKeyRecord) ?? null;
+  return (
+    (d
+      .prepare('SELECT * FROM api_keys WHERE email = ? COLLATE NOCASE AND active = 1 ORDER BY created_at ASC LIMIT 1')
+      .get(normalizeEmail(email)) as ApiKeyRecord) ?? null
+  );
 }
 
 export function linkApiKeysToUser(email: string, userId: string): number {
   const d = getDb();
-  const result = d.prepare('UPDATE api_keys SET user_id = ? WHERE email = ? AND user_id IS NULL').run(userId, email);
+  const result = d
+    .prepare('UPDATE api_keys SET user_id = ? WHERE email = ? COLLATE NOCASE AND user_id IS NULL')
+    .run(userId, normalizeEmail(email));
   return result.changes;
 }
 
@@ -727,7 +780,9 @@ export function createMagicLink(email: string, token: string, expiresInMinutes =
   const expiresAt = toSqliteDateTime(new Date(Date.now() + expiresInMinutes * 60 * 1000));
   const record: MagicLinkRecord = {
     id: crypto.randomUUID(),
-    email,
+    // The account this link resolves to is looked up by this value, so it has
+    // to be the same canonical form the users row was written with.
+    email: normalizeEmail(email),
     token_hash: hashToken(token),
     expires_at: expiresAt,
     used: 0,
@@ -759,9 +814,10 @@ export function markMagicLinkUsed(token: string): void {
 export function countRecentMagicLinks(email: string, windowMinutes = 10): number {
   const d = getDb();
   const since = toSqliteDateTime(new Date(Date.now() - windowMinutes * 60 * 1000));
+  // NOCASE so the send-link rate limit cannot be bypassed by varying the case.
   const row = d
-    .prepare('SELECT COUNT(*) as count FROM magic_links WHERE email = ? AND created_at >= ?')
-    .get(email, since) as { count: number };
+    .prepare('SELECT COUNT(*) as count FROM magic_links WHERE email = ? COLLATE NOCASE AND created_at >= ?')
+    .get(normalizeEmail(email), since) as { count: number };
   return row.count;
 }
 

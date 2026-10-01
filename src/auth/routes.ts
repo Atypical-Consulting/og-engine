@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { sendMagicLinkEmail } from '../email/send';
+import { normalizeEmail } from '../utils/email';
 import { escapeHtml } from '../utils/html';
 import { createMagicLinkToken } from './magic-link';
 import { clearSessionCookie, getCookie, setSessionCookie } from './middleware';
@@ -10,8 +11,11 @@ const authRoutes = new Hono();
 
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 
+// The transform is on the schema, not on each call site, so both the JSON and
+// the form branch of /auth/send-link get the canonical form. Logging in as
+// `Dev@Example.com` must land on the same account as `dev@example.com`.
 const emailSchema = z.object({
-  email: z.string().email('Please enter a valid email address.'),
+  email: z.string().email('Please enter a valid email address.').transform(normalizeEmail),
 });
 
 // ─── GET /auth/login ────────────────────────────────────────
