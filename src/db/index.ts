@@ -193,11 +193,13 @@ function enforceEmailCaseInsensitivity(d: SqliteDatabase): void {
   try {
     d.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_nocase ON users(email COLLATE NOCASE);');
   } catch (err) {
+    // Message only: this fires on every boot until the merge runs, and a full
+    // stack trace here buries the one actionable line in the log.
     console.error(
-      '[db] could not create idx_users_email_nocase — users.email holds case-variant duplicates. ' +
-        'Paying customers may be split across two rows. Run ' +
-        '`bun run scripts/merge-duplicate-emails.ts` to see the count, then `--apply` to merge, then restart. Cause:',
-      err,
+      '[db] could not create idx_users_email_nocase — users.email holds case-variant duplicates, ' +
+        'so a paying customer may be split across two rows. Run ' +
+        '`bun run scripts/merge-duplicate-emails.ts` for the count, then `--apply` to merge, then restart. ' +
+        `Cause: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 }
@@ -463,7 +465,49 @@ export interface FunnelStats {
   renders_last_30d: number;
   users_with_stripe_customer_id: number;
   median_hours_signup_to_first_render: number | null;
+  split_identity_emails: SplitIdentityEmailCount;
   generated_at: string;
+}
+
+export interface SplitIdentityEmailCount {
+  /** Groups of `users` rows that collapse to one address once case and whitespace are ignored. */
+  groups: number;
+  /** Total `users` rows involved in those groups. */
+  user_rows: number;
+  /** `users` rows whose stored email is not already in canonical form. */
+  non_canonical_rows: number;
+}
+
+/**
+ * How many accounts are split across case variants of the same address.
+ *
+ * `groups > 0` means at least one developer has two rows and a paid plan may be
+ * sitting on the one they do not log into. It is also the precondition the
+ * unique NOCASE index needs: while this is non-zero the index cannot be created,
+ * and `scripts/merge-duplicate-emails.ts` has to run first.
+ *
+ * Counts only — no addresses are returned, so this is safe to expose on the
+ * admin funnel endpoint.
+ */
+export function countSplitIdentityEmails(): SplitIdentityEmailCount {
+  const d = getDb();
+
+  const dupes = d
+    .prepare(
+      `SELECT COUNT(*) AS groups, COALESCE(SUM(n), 0) AS user_rows
+       FROM (SELECT COUNT(*) AS n FROM users GROUP BY lower(trim(email)) HAVING n > 1)`,
+    )
+    .get() as { groups: number; user_rows: number };
+
+  const nonCanonical = d.prepare('SELECT COUNT(*) AS n FROM users WHERE email <> lower(trim(email))').get() as {
+    n: number;
+  };
+
+  return {
+    groups: dupes.groups,
+    user_rows: dupes.user_rows,
+    non_canonical_rows: nonCanonical.n,
+  };
 }
 
 /**
@@ -569,6 +613,7 @@ export function getFunnelStats(): FunnelStats {
     users_with_stripe_customer_id: users.with_stripe,
     median_hours_signup_to_first_render:
       median.median_hours === null ? null : Math.round(median.median_hours * 100) / 100,
+    split_identity_emails: countSplitIdentityEmails(),
     generated_at: new Date().toISOString(),
   };
 }
