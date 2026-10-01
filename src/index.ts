@@ -20,6 +20,7 @@ import { authRoutes } from './auth/routes';
 import { dashboardRoutes } from './dashboard/routes';
 import { registerFonts } from './engine/fonts';
 import { authMiddleware, optionalAuthMiddleware, planGate, usageTracking } from './middleware/auth';
+import { errorHandler } from './middleware/error-handler';
 import { rateLimit } from './middleware/rate-limit';
 import { openapiRoutes } from './openapi/swagger';
 
@@ -179,18 +180,8 @@ app.notFound(async (c) => {
   );
 });
 
-// Global error handler
-app.onError((err, c) => {
-  console.error('Unhandled error:', err);
-  return c.json(
-    {
-      error: 'server_error',
-      message: 'An unexpected error occurred.',
-      docs: 'https://og-engine.com/api-reference/errors#server_error',
-    },
-    500,
-  );
-});
+// Global error handler — persists to error_log and returns a correlation id.
+app.onError(errorHandler);
 
 // Start
 const PORT = Number(process.env.PORT ?? 3000);

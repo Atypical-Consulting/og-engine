@@ -63,6 +63,17 @@ export interface RenderHistoryRecord {
   created_at: string;
 }
 
+export interface ErrorLogRecord {
+  id: string;
+  created_at: string;
+  method: string;
+  path: string;
+  status: number;
+  message: string;
+  stack: string | null;
+  request_id: string | null;
+}
+
 let db: SqliteDatabase | null = null;
 
 export function getDb(): SqliteDatabase {
@@ -158,6 +169,17 @@ function createTables(d: SqliteDatabase): void {
       used INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS error_log (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      method TEXT NOT NULL,
+      path TEXT NOT NULL,
+      status INTEGER NOT NULL,
+      message TEXT NOT NULL,
+      stack TEXT,
+      request_id TEXT
+    );
   `);
 }
 
@@ -176,6 +198,7 @@ function createIndexes(d: SqliteDatabase): void {
     CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_magic_links_token_hash ON magic_links(token_hash);
     CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email);
+    CREATE INDEX IF NOT EXISTS idx_error_log_created_at ON error_log(created_at DESC);
   `);
 }
 
@@ -928,6 +951,85 @@ export function purgeExpiredMagicLinks(): number {
 }
 
 // ─── Cleanup (for tests) ────────────────────────────────────
+
+// ─── Error log ───────────────────────────────────────────────
+//
+// Unhandled exceptions are written here from the global Hono error handler so
+// a failure is readable without production log access (ATY-123). The table is
+// a bounded ring buffer: an error loop must not be able to fill the 512mb
+// /data volume.
+
+/** Most recent rows kept in `error_log`. Older rows are deleted on insert. */
+export const ERROR_LOG_MAX_ROWS = 500;
+
+const API_KEY_PATTERN = /oge_sk_[A-Za-z0-9]+/g;
+const STRIPE_KEY_PATTERN = /\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]+/g;
+const STRIPE_SECRET_PATTERN = /\bwhsec_[A-Za-z0-9]+/g;
+const BEARER_PATTERN = /\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/gi;
+const EMAIL_PATTERN = /\b([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g;
+
+/**
+ * Strip credentials and customer identifiers out of text before it is stored.
+ *
+ * `/admin/errors` is readable by anyone holding ERROR_LOG_TOKEN, so the stack
+ * trace must not become a second copy of the API keys, Stripe identifiers and
+ * customer emails that made production logs untouchable in the first place.
+ */
+export function redactSensitive(text: string): string {
+  return text
+    .replace(BEARER_PATTERN, '$1 [redacted]')
+    .replace(API_KEY_PATTERN, 'oge_sk_[redacted]')
+    .replace(STRIPE_KEY_PATTERN, '[redacted-stripe-key]')
+    .replace(STRIPE_SECRET_PATTERN, 'whsec_[redacted]')
+    .replace(EMAIL_PATTERN, '$1***@$2');
+}
+
+export function logError(entry: {
+  method: string;
+  path: string;
+  status: number;
+  message: string;
+  stack?: string | null;
+  requestId?: string | null;
+}): ErrorLogRecord {
+  const d = getDb();
+  const record: ErrorLogRecord = {
+    id: crypto.randomUUID(),
+    created_at: new Date().toISOString(),
+    method: entry.method,
+    // Deliberately the path only — a query string can carry an api_key.
+    path: redactSensitive(entry.path),
+    status: entry.status,
+    message: redactSensitive(entry.message),
+    stack: entry.stack ? redactSensitive(entry.stack) : null,
+    request_id: entry.requestId ?? null,
+  };
+
+  d.prepare(`
+    INSERT INTO error_log (id, created_at, method, path, status, message, stack, request_id)
+    VALUES ($id, $created_at, $method, $path, $status, $message, $stack, $request_id)
+  `).run(record);
+
+  // Trim on every insert. rowid (not created_at) orders the ring buffer:
+  // two errors inside the same millisecond would otherwise tie.
+  d.prepare(
+    `DELETE FROM error_log
+      WHERE rowid NOT IN (SELECT rowid FROM error_log ORDER BY rowid DESC LIMIT ${ERROR_LOG_MAX_ROWS})`,
+  ).run();
+
+  return record;
+}
+
+export function listErrors(limit = 20): ErrorLogRecord[] {
+  const d = getDb();
+  return d.prepare('SELECT * FROM error_log ORDER BY rowid DESC LIMIT ?').all(limit) as ErrorLogRecord[];
+}
+
+export function countErrors(): number {
+  const d = getDb();
+  const row = d.prepare('SELECT COUNT(*) AS count FROM error_log').get() as { count: number };
+  return row.count;
+}
 
 export function closeDb(): void {
   if (db) {
