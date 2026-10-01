@@ -17,6 +17,7 @@ import { validateRoute } from './api/validate';
 import { webhooksRoute } from './api/webhooks';
 import { csrfMiddleware, sessionMiddleware } from './auth/middleware';
 import { authRoutes } from './auth/routes';
+import { reportStripePriceConfig } from './billing/prices';
 import { dashboardRoutes } from './dashboard/routes';
 import { registerFonts } from './engine/fonts';
 import { authMiddleware, optionalAuthMiddleware, planGate, usageTracking } from './middleware/auth';
@@ -189,6 +190,7 @@ const FONTS_DIR = join(import.meta.dir, '..', 'fonts');
 
 async function start() {
   await registerFonts(FONTS_DIR);
+  reportStripePriceConfig();
   console.log(`OG Engine listening on http://localhost:${PORT}`);
   if (authEnabled) {
     console.log('Auth: enabled (set AUTH_ENABLED=false to disable)');

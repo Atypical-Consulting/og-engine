@@ -1,12 +1,12 @@
-import { Hono } from 'hono';
+import { type Context, Hono } from 'hono';
 import Stripe from 'stripe';
+import { getPlanFromPriceId } from '../billing/prices';
 import {
   createApiKey,
   createUser,
   findApiKeyByEmail,
   findUserByEmail,
   findUserByStripeSubscription,
-  type Plan,
   resetUsage,
   updatePlan,
   updateStripeInfo,
@@ -26,13 +26,23 @@ function defer(promise: Promise<unknown>, context: string): void {
   });
 }
 
-function getPlanFromPriceId(priceId: string): Plan | null {
-  const mapping: Record<string, Plan> = {
-    [process.env.STRIPE_PRICE_STARTER ?? '']: 'starter',
-    [process.env.STRIPE_PRICE_PRO ?? '']: 'pro',
-    [process.env.STRIPE_PRICE_SCALE ?? '']: 'scale',
-  };
-  return mapping[priceId] ?? null;
+/**
+ * Answers a webhook we could not act on with a non-2xx.
+ *
+ * Stripe treats any 2xx as "delivered" and never retries, so the old
+ * `break` + `c.text('ok')` turned a charged card with no account into an event
+ * nobody would ever see again. A 500 instead gets retried with backoff and
+ * shows up as a failed delivery in the Stripe dashboard — an alerting channel
+ * we already pay for.
+ *
+ * This is only safe because every handler below is idempotent: the checkout
+ * path upserts by email (`findUserByEmail` → `updatePlan`/`createUser`,
+ * `updateStripeInfo`, `findApiKeyByEmail` → `createApiKey`) and the
+ * subscription path is a plain `updatePlan` keyed on the subscription id.
+ * Replaying either converges on the same row, so a retry can only help.
+ */
+function unprocessable(c: Context, message: string) {
+  return c.json({ error: 'server_error', message }, 500);
 }
 
 webhooksRoute.post('/webhooks/stripe', async (c) => {
@@ -65,12 +75,31 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
 
-      if (!email || !subscriptionId) break;
+      // A Checkout Session without an email or a subscription is not something
+      // a retry can fix (a one-off payment, say), so this stays a 2xx — but it
+      // must never be silent again: it means a card was charged against a
+      // session shape we do not provision for.
+      if (!email || !subscriptionId) {
+        console.error(
+          `[webhooks] ${event.type} (${event.id}) is missing fields we provision from — ` +
+            `email=${email ? 'present' : 'absent'} subscription=${subscriptionId ? 'present' : 'absent'}. ` +
+            `No account was created.`,
+        );
+        break;
+      }
 
       const sub = await stripe.subscriptions.retrieve(subscriptionId);
       const priceId = sub.items.data[0]?.price?.id;
       const plan = priceId ? getPlanFromPriceId(priceId) : null;
-      if (!plan) break;
+      if (!plan) {
+        console.error(
+          `[webhooks] ${event.type} (${event.id}) carried price id "${priceId ?? '<none>'}", which maps to no plan — ` +
+            `the customer has been charged and cannot be provisioned. ` +
+            `Check STRIPE_PRICE_STARTER / STRIPE_PRICE_PRO / STRIPE_PRICE_SCALE against Stripe ` +
+            `(GET /admin/stripe-price-check).`,
+        );
+        return unprocessable(c, 'Price id is not mapped to a plan.');
+      }
 
       let user = findUserByEmail(email);
       let apiKey = findApiKeyByEmail(email);
@@ -97,14 +126,31 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
 
       if (!subId || !priceId) break;
 
+      // Same mapping, same failure, different blast radius: this guard also
+      // covers upgrades and downgrades, so a drifted price id silently freezes
+      // an existing paying subscriber on their old entitlement.
       const plan = getPlanFromPriceId(priceId);
-      if (!plan) break;
+      if (!plan) {
+        console.error(
+          `[webhooks] ${event.type} (${event.id}) carried price id "${priceId}" for subscription ${subId}, ` +
+            `which maps to no plan — the subscriber's entitlement was NOT changed. ` +
+            `Check STRIPE_PRICE_STARTER / STRIPE_PRICE_PRO / STRIPE_PRICE_SCALE against Stripe ` +
+            `(GET /admin/stripe-price-check).`,
+        );
+        return unprocessable(c, 'Price id is not mapped to a plan.');
+      }
 
       const user = findUserByStripeSubscription(subId);
-      if (user) {
-        updatePlan(user.id, plan);
-        defer(sendUpgradeEmail(user.email, plan), 'sendUpgradeEmail');
+      if (!user) {
+        console.error(
+          `[webhooks] ${event.type} (${event.id}): no user matches subscription ${subId} — ` +
+            `plan change to "${plan}" was dropped.`,
+        );
+        break;
       }
+
+      updatePlan(user.id, plan);
+      defer(sendUpgradeEmail(user.email, plan), 'sendUpgradeEmail');
       break;
     }
 
