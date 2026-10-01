@@ -7,7 +7,16 @@
 #   STRIPE_PRICE_PRO        - Stripe Price ID for Pro plan
 #   STRIPE_PRICE_SCALE      - Stripe Price ID for Scale plan
 #   RESEND_API_KEY           - Resend transactional email API key
+#   EMAIL_FROM               - Verified sender for transactional email
+#                              (unset falls back to Resend's sandbox sender,
+#                               which is not deliverable to real customers)
 #   ADMIN_CRON_SECRET        - Shared secret for GitHub Action cron
+#
+# Every STRIPE_PRICE_* above is load-bearing: an unset one means a paid
+# checkout for that tier cannot be provisioned. The app logs a startup error
+# when one is missing, the webhook now fails the delivery instead of
+# answering 200, and `GET /admin/stripe-price-check` resolves all three
+# against Stripe.
 
 app = "og-engine"
 primary_region = "cdg"
