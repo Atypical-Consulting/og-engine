@@ -1,9 +1,24 @@
 # Stripe Production Integration — Design Spec
 
-> **Status:** Approved
+> **Status:** Approved, with one decision since superseded — see below
 > **Date:** 2026-04-03
 > **Approach:** Payment Links + Webhooks (Approach A)
 > **Scope:** Full production Stripe integration including Customer Portal, Resend emails, and free-tier cron reset
+
+> **Superseded on 2026-09-30 — Scale gets a Payment Link.** This spec says twice
+> (§1 Payment Links, §7) that Scale stays behind `mailto:sales@og-engine.com`.
+> That is no longer the plan: Scale is now a self-serve Payment Link like
+> Starter and Pro, decided on ATY-24. Contact-sales survives only for the
+> >200k-renders volume lane, where the price is genuinely negotiated.
+>
+> The original reasoning was that Scale advertised custom branding, an SLA,
+> dedicated infrastructure and dedicated Slack support — none of which a
+> Payment Link can provision. Commit `8c8ccda` removed all four from the
+> pricing page because none of them existed. What Scale sells today is
+> entirely plan-flag entitlement (`custom_templates: ['scale']` in
+> `src/middleware/auth.ts`, `scale: 200_000` in `src/db/index.ts`), so a
+> webhook that sets `plan = 'scale'` delivers the whole tier with no human
+> in the loop. The premise is gone, so the conclusion goes with it.
 
 ---
 
@@ -21,7 +36,9 @@ Configure in Stripe Dashboard (test mode first, then live).
 
 ### Payment Links
 
-One per paid product (Starter, Pro). Scale uses `mailto:sales@og-engine.com`.
+One per paid product (Starter, Pro). ~~Scale uses `mailto:sales@og-engine.com`.~~
+**Superseded 2026-09-30 (ATY-24): Scale gets its own Payment Link too — one per
+paid product, all three.** See the superseded-decision note at the top.
 
 - Collect email + create Stripe Customer
 - Success URL: `https://og-engine.com/quick-start/?checkout=success`
@@ -161,7 +178,12 @@ Not metered. Protected by `authMiddleware()` same as `/usage`.
 
 - Replace `https://buy.stripe.com/starter` → real Stripe Payment Link for Starter
 - Replace `https://buy.stripe.com/pro` → real Stripe Payment Link for Pro
-- Scale stays as `mailto:sales@og-engine.com` (unchanged)
+- ~~Scale stays as `mailto:sales@og-engine.com` (unchanged)~~ — **superseded
+  2026-09-30 (ATY-24):** replace the Scale `mailto:` with its Payment Link in
+  both `pricing.mdx` and `index.mdx`. The `mailto:` moves to the >200k volume
+  lane only. Links published from an authenticated surface must carry
+  `client_reference_id` / `prefilled_email` (ATY-59) — a bare
+  `buy.stripe.com` href carries no account identity.
 - No structural changes — URL swaps only
 - Marked as `STRIPE_PAYMENT_LINK_STARTER` / `STRIPE_PAYMENT_LINK_PRO` placeholders until links are created in dashboard
 

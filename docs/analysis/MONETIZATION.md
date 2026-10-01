@@ -284,10 +284,20 @@ export default app
 # Environment variables needed:
 STRIPE_SECRET_KEY=sk_live_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
+STRIPE_PRICE_STARTER=price_xxx          # Price id behind the Starter €10 Payment Link
+STRIPE_PRICE_PRO=price_xxx              # Price id behind the Pro €39 Payment Link
+STRIPE_PRICE_SCALE=price_xxx            # Price id for Scale €99 (sales-led, no Payment Link)
 RESEND_API_KEY=re_xxx
+EMAIL_FROM="OG Engine <hello@og-engine.com>"
 DATABASE_URL=file:./data/og-engine.db   # SQLite for MVP
 API_BASE_URL=https://api.og-engine.com
 ```
+
+**The three `STRIPE_PRICE_*` ids are not optional.** They are the only link
+between what Stripe charges and what we provision (`src/billing/prices.ts`).
+If one is unset or stale, the card is charged and the webhook cannot map the
+price to a plan. Omitting them from this list is what produced that failure
+mode in the first place.
 
 ### Fly.io deployment (recommended for MVP):
 
@@ -295,9 +305,26 @@ API_BASE_URL=https://api.og-engine.com
 fly launch --name og-engine
 fly secrets set STRIPE_SECRET_KEY=sk_live_xxx
 fly secrets set STRIPE_WEBHOOK_SECRET=whsec_xxx
+fly secrets set STRIPE_PRICE_STARTER=price_xxx
+fly secrets set STRIPE_PRICE_PRO=price_xxx
+fly secrets set STRIPE_PRICE_SCALE=price_xxx
 fly secrets set RESEND_API_KEY=re_xxx
-fly deploy
+fly secrets set EMAIL_FROM="OG Engine <hello@og-engine.com>"
+fly deploy --build-arg GIT_SHA=$(git rev-parse --short HEAD)
 ```
+
+Then confirm the deploy landed and the price mapping is live:
+
+```bash
+curl -s https://og-engine.com/health | jq .build
+curl -s -H "Authorization: Bearer $ADMIN_CRON_SECRET" \
+  https://og-engine.com/admin/stripe-price-check | jq .
+```
+
+`/admin/stripe-price-check` resolves each configured price id against Stripe
+and reports `ok` / `not_configured` / `not_found` / `mismatch` per tier,
+returning 503 when any tier is broken. It discloses no secret — a Price id is
+public — and it is the only check that covers Scale, which has no Payment Link.
 
 ### Domain setup:
 - `og-engine.com` → landing page (Vercel/Cloudflare Pages)
