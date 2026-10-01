@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 
-type Status = 'idle' | 'loading' | 'success' | 'error';
+type Status = 'idle' | 'loading' | 'success' | 'error' | 'exists';
 
 interface SuccessPayload {
   apiKey: string;
@@ -30,6 +30,14 @@ export default function SignupForm() {
         body: JSON.stringify({ email: email.trim() }),
       });
       const body = await res.json();
+      // 409 account_exists is not a failure — the visitor already has a key and
+      // just needs the login link. /auth/register deliberately never returns an
+      // existing key (see docs/analysis/DECISIONS.md Decision 4).
+      if (res.status === 409 && body?.error === 'account_exists') {
+        setError(body?.message ?? 'An account already exists for this email.');
+        setStatus('exists');
+        return;
+      }
       if (!res.ok) {
         setError(body?.message ?? `Request failed (${res.status}).`);
         setStatus('error');
@@ -84,10 +92,19 @@ export default function SignupForm() {
           <p className="og-signup-hint">
             Free forever · 500 renders/month · No credit card
           </p>
-          {error && (
-            <p className="og-signup-error" role="alert">
-              {error}
+          {status === 'exists' ? (
+            <p className="og-signup-exists" role="status" aria-live="polite">
+              {error}{' '}
+              <a href="/auth/login" className="og-signup-exists-link">
+                Log in to retrieve your key
+              </a>
             </p>
+          ) : (
+            error && (
+              <p className="og-signup-error" role="alert">
+                {error}
+              </p>
+            )
           )}
         </form>
       ) : (
@@ -193,6 +210,20 @@ export default function SignupForm() {
           background: rgba(248,113,113,0.08);
           color: #fca5a5;
           font-size: 0.85rem;
+        }
+        .og-signup-exists {
+          margin: 0.6rem 0 0;
+          padding: 0.6rem 0.8rem;
+          border: 1px solid rgba(56,239,125,0.3);
+          border-radius: 8px;
+          background: rgba(56,239,125,0.06);
+          color: #cbd5e1;
+          font-size: 0.85rem;
+        }
+        .og-signup-exists-link {
+          color: #38ef7d;
+          font-weight: 600;
+          white-space: nowrap;
         }
         .og-signup-success-header {
           display: flex;

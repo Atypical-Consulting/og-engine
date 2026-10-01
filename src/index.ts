@@ -52,6 +52,15 @@ app.use('/render/batch', rateLimit());
 app.use('/render/from-url', rateLimit());
 app.use('/validate', rateLimit());
 
+// Rate limiting on the unauthenticated auth endpoints. Keyed per IP (the
+// middleware reads x-forwarded-for / x-real-ip), deliberately loose at 20/hour:
+// signups can share a corporate NAT, so this bounds abuse without throttling
+// the activation path. /auth/send-link needs it too — its own limit is
+// per-email (3 per 10 min, src/auth/magic-link.ts) and so does not bound an
+// attacker walking a list of addresses.
+app.use('/auth/register', rateLimit({ windowMs: 3_600_000, max: 20 }));
+app.use('/auth/send-link', rateLimit({ windowMs: 3_600_000, max: 20 }));
+
 // Auth middleware — conditionally applied based on AUTH_ENABLED env var
 // This allows running without a database in development
 const authEnabled = process.env.AUTH_ENABLED !== 'false';
