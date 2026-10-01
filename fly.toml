@@ -9,8 +9,11 @@
 #   RESEND_API_KEY           - Resend transactional email API key
 #   ADMIN_CRON_SECRET        - Shared secret for GitHub Action cron
 #
-# Optional (not secrets, but set the same way). Each is the public Stripe
-# Payment Link for that plan; unset means no in-product upgrade link for it.
+# Optional (not secrets, but set the same way). Each overrides the public Stripe
+# Payment Link for that plan. Starter and Pro have committed defaults in
+# src/utils/checkout-link.ts, so leaving them unset still shows an upgrade CTA;
+# set one to rotate a link without deploying code. Scale has no default yet, and
+# unset there means no in-product upgrade link for it.
 # src/utils/checkout-link.ts appends the account identity before use.
 #   STRIPE_PAYMENT_LINK_STARTER - Payment Link for Starter
 #   STRIPE_PAYMENT_LINK_PRO     - Payment Link for Pro

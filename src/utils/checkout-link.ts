@@ -30,6 +30,28 @@ const PAYMENT_LINK_ENV: Record<PurchasablePlan, string> = {
 };
 
 /**
+ * The live Payment Links as already published on the public pricing page
+ * (`docs/site/src/content/docs/pricing.mdx:96,116`). These are not secrets —
+ * they are committed and served to anonymous visitors.
+ *
+ * They are the fallback rather than the only source so an authenticated upgrade
+ * surface works without a hand-set env var: none of these are assigned on the
+ * Fly app, so an env-only lookup would render no CTA at all in production. The
+ * env var above still wins, which keeps a link rotatable (or a surface
+ * switchable off) with `fly secrets set` and no deploy of code.
+ *
+ * Scale is deliberately absent until the link exists — ATY-24, one line here.
+ *
+ * `tests/utils/checkout-link.test.ts` asserts every value below still appears on
+ * the pricing page, so rotating one surface and forgetting the other fails CI
+ * instead of silently serving a dead link to our highest-intent traffic.
+ */
+export const PAYMENT_LINK_DEFAULT: Partial<Record<PurchasablePlan, string>> = {
+  starter: 'https://buy.stripe.com/8x2cN56iE9EU9bQ0F5fAc00',
+  pro: 'https://buy.stripe.com/7sY5kDcH26sI73IafFfAc01',
+};
+
+/**
  * Stripe rejects a `client_reference_id` that is not alphanumeric plus `-`/`_`,
  * or that is longer than 200 characters. Our ids are `crypto.randomUUID()` and
  * always fit; the guard stops a hand-written or migrated id from producing a
@@ -65,7 +87,7 @@ export function withAccountIdentity(paymentLink: string, user: CheckoutIdentity)
  */
 export function checkoutLinkForPlan(plan: PurchasablePlan, user: CheckoutIdentity): string | null {
   const envVar = PAYMENT_LINK_ENV[plan];
-  const configured = process.env[envVar];
+  const configured = process.env[envVar] ?? PAYMENT_LINK_DEFAULT[plan];
   if (!configured) return null;
 
   let link: string;
