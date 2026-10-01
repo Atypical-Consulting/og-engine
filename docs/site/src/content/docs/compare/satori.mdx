@@ -1,0 +1,234 @@
+---
+title: A Satori Alternative That Skips the SVG Step and the Font Plumbing
+description: "Satori's layout engine is fast — 1.54ms measured. The cost is everything around it: rasterising the SVG, loading every font as a Buffer, and silent tofu for CJK. Measured side by side on the same machine."
+---
+
+If you are running [Satori](https://github.com/vercel/satori) directly — not through `@vercel/og`, but calling `satori()` yourself and rasterising the result — you already decided you do not want a headless browser. This page does not re-argue that. It is about the two costs that come after that decision: you own the SVG-to-PNG step, and you own every font file.
+
+Measured on the same machine, same 1200×630 output: Satori's own layout takes **1.54ms**, rasterising its SVG with `@resvg/resvg-js` takes **132.37ms**, and OG Engine's whole HTTP render takes **33.40ms**. Satori's layout engine is not the bottleneck. The pipeline around it is.
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer $OG_ENGINE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"format":"og","title":"No SVG step. No font Buffers.","style":{"font":"Outfit"}}' \
+  --output og.png
+```
+
+## Where Satori genuinely wins
+
+Four real advantages, and the first two are decisive for a lot of projects:
+
+- **It is free and open source, MPL-2.0, and runs in-process.** No API key, no network call, no per-render cost, no vendor. OG Engine is free to 500 renders a month and then it is a paid product (or a Docker image you host yourself).
+- **Its layout engine is genuinely fast.** 1.54ms P50 to lay out and emit SVG, measured below. That is roughly 20× faster than OG Engine's entire HTTP render for the layout step alone.
+- **Arbitrary layouts.** You hand it a JSX or object tree with flexbox and it renders whatever you composed. OG Engine gives you 13 fixed templates and a style object. If your design does not fit one of them, Satori is strictly more expressive and there is no workaround on the OG Engine side.
+- **It has an emoji escape hatch.** Satori's `graphemeImages` option maps graphemes to image sources. OG Engine has nothing equivalent — see below.
+
+If you need a layout OG Engine does not have, or you cannot add a network dependency, stop here. Satori is the right tool and this page will not change that.
+
+## Cost 1: Satori does not give you an image
+
+From the README: Satori returns "the SVG string." To get a PNG you add a rasteriser — in practice `@resvg/resvg-js`, which is what `@vercel/og` uses too.
+
+This is the full working pipeline. It was executed on Node 24.19.0 with `satori@0.33.5` and `@resvg/resvg-js@2.6.2`:
+
+```js
+import { readFile, writeFile } from 'node:fs/promises'
+import satori from 'satori'
+import { Resvg } from '@resvg/resvg-js'
+
+// 1. Load every font weight you intend to use, as a Buffer.
+const [regular, bold] = await Promise.all([
+  readFile('./fonts/outfit-regular.ttf'),
+  readFile('./fonts/outfit-bold.ttf'),
+])
+
+// 2. Build the element tree and lay it out to SVG.
+const svg = await satori(
+  {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        padding: '60px',
+        background: '#0a0a0a',
+        fontFamily: 'Outfit',
+      },
+      children: [
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: 48, fontWeight: 700, color: '#ffffff' },
+            children: 'Generate OG images without a browser',
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: 22, color: '#888888', marginTop: 16 },
+            children: 'One POST, one PNG, no Chrome in your deploy.',
+          },
+        },
+      ],
+    },
+  },
+  {
+    width: 1200,
+    height: 630,
+    fonts: [
+      { name: 'Outfit', data: regular, weight: 400, style: 'normal' },
+      { name: 'Outfit', data: bold, weight: 700, style: 'normal' },
+    ],
+  },
+)
+
+// 3. Satori returns an SVG string. Rasterise it separately.
+const png = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } }).render().asPng()
+await writeFile('satori-og.png', png)
+```
+
+It works, and the output is good. But note what you are now responsible for: two npm dependencies with native bindings, two font files in your repo, a layout tree in code, and a rasterisation step whose cost dwarfs everything else.
+
+The equivalent with OG Engine, executed against v0.2.0:
+
+```js
+import { writeFile } from 'node:fs/promises'
+
+const res = await fetch('https://og-engine.com/render', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${process.env.OG_ENGINE_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    format: 'og',
+    title: 'Generate OG images without a browser',
+    description: 'One POST, one PNG, no Chrome in your deploy.',
+    style: { accent: '#38ef7d', font: 'Outfit', layout: 'left' },
+  }),
+})
+
+await writeFile('og.png', Buffer.from(await res.arrayBuffer()))
+```
+
+Zero dependencies, zero font files.
+
+## Cost 2: fonts are your problem, and failure is silent
+
+Satori's README is explicit: "You must specify the font if any text is rendered with Satori, and pass the font data as ArrayBuffer (web) or Buffer (Node.js)." TTF, OTF and WOFF only — **WOFF2 is not supported**, which rules out the format most font CDNs serve by default.
+
+Omit fonts entirely and you at least get a clear error. This was executed:
+
+```
+No fonts are loaded. At least one font is required to calculate the layout.
+```
+
+The dangerous case is loading *a* font that does not cover your script. Rendering Japanese text with only a Latin font loaded does not throw. It returns a valid SVG and a valid PNG — of ten tofu boxes:
+
+```js
+// Latin font only, Japanese content — no error, no warning
+const svg = await satori(box('ヘッドレスなしで生成'), {
+  width: 1200, height: 630,
+  fonts: [{ name: 'Outfit', data: outfitBold, weight: 700, style: 'normal' }],
+})
+// -> renders ▯▯▯▯▯▯▯▯▯▯
+```
+
+Verified by rendering it and looking at the file. Load Noto Sans JP instead and it renders correctly — but you have to know that, source the file, ship it, and wire it to the right content. Every language you add is another font file and another branch in your font-selection logic.
+
+OG Engine registers 53 font families server-side, including Noto Sans JP, Noto Sans KR, Noto Sans SC and Noto Sans Arabic. You select one by name:
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer $OG_ENGINE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"format":"og","title":"ヘッドレスブラウザなしでOG画像を生成","description":"日本語のテキストもそのまま描画されます。","style":{"font":"Noto Sans JP"}}' \
+  --output cjk.png
+```
+
+Executed; the Japanese renders correctly. Arabic does too, right-to-left with correct glyph joining, via `"font": "Noto Sans Arabic"`. Both were confirmed by inspecting the rendered PNGs, not by trusting the 200. And an unknown font name fails loudly rather than silently:
+
+```json
+{"error":"invalid_request","message":"Font must be one of: Inter, Roboto, Open Sans, Lato, Montserrat, Poppins, Outfit, Sora, Space Grotesk, DM Sans, ..."}
+```
+
+The full list is on the [available fonts page](https://og-engine.com/fonts/available-fonts/).
+
+## The CSS subset is real, and it fails loudly
+
+Satori implements "a subset of the spec that covers most common CSS features." The README lists what is out: three-dimensional transforms, `z-index`, `calc()`, WOFF2, input elements, `dangerouslySetInnerHTML`, style tags and external resources, and mixed LTR/RTL text ("bidirectional layout incomplete").
+
+`display: grid` throws, which is much better than failing quietly. Executed:
+
+```
+Invalid value for CSS property "display". Allowed values: "flex" | "block" | "contents" | "none" | "-webkit-box". Received: "grid".
+```
+
+And the headline caveat, quoted from the README: Satori "does not guarantee that the SVG will 100% match the browser-rendered HTML output since Satori implements its own layout engine." If you are porting a design from a live page, expect to re-tune it.
+
+OG Engine sidesteps this by not accepting CSS at all. You send structured fields — `title`, `description`, `author`, `tag`, plus a style object — and pick a template. That is a smaller surface, and whether it is better depends entirely on whether a template fits your design.
+
+## Side by side
+
+| | Satori (+ resvg) | OG Engine |
+|---|---|---|
+| **Shape** | Two libraries in your process | HTTP API |
+| **Output** | SVG string; PNG needs a rasteriser | PNG, WebP or PDF bytes |
+| **Dependencies** | `satori` + `@resvg/resvg-js` (native bindings) | None — `fetch` |
+| **Layout** | Arbitrary flex trees | 13 templates + style object |
+| **Fonts** | You load each one as a Buffer; TTF/OTF/WOFF, no WOFF2 | 53 families server-side, by name |
+| **Missing-glyph behaviour** | Silent tofu | Unknown font name → `400` with the valid list |
+| **CJK / Arabic** | Works once you ship the right font | Works by naming the font |
+| **Emoji** | `graphemeImages` escape hatch | **Not supported** — renders as `▯` |
+| **Licence / cost** | MPL-2.0, free, no vendor | 500/month free, then €10 / €39 / €99; or self-host |
+| **Network call** | None | One, unless you self-host |
+| **Layout time (P50)** | **1.54ms** | — |
+| **Full pipeline (P50)** | **133.77ms** | **33.40ms** |
+
+## Emoji: neither of these is good, and Satori is less bad
+
+OG Engine renders emoji as `▯`. Verified on v0.2.0 — `"Ship it 🚀 without a browser"` draws the rocket as an empty box, because none of the 53 bundled families carries emoji glyphs, and there is no option to supply one.
+
+Satori with only a Latin font loaded does exactly the same thing. The difference is that Satori has a documented way out: `graphemeImages` maps graphemes to image sources, which is how `@vercel/og` renders emoji. OG Engine has no equivalent. **If emoji appear in your titles, Satori is the better tool today and this page cannot honestly argue otherwise.**
+
+## How these numbers were produced
+
+Both pipelines were measured on the same machine, back to back, before publication.
+
+- **Machine:** Apple M1 Max, 64 GB RAM, macOS 27.0.1
+- **Satori:** `satori@0.33.5` + `@resvg/resvg-js@2.6.2` on Node 24.19.0, in-process, 100 iterations after 10 discarded warmup iterations, 1200×630, two Outfit weights loaded from disk once outside the loop
+- **OG Engine:** v0.2.0 on Bun 1.4.2, local instance over HTTP, 100 iterations after 10 discarded warmup iterations, 1200×630, unique title per iteration so the response cache never served a hit; figure is the server-side `X-Render-Time-Ms` header
+
+| Stage | P50 | P95 |
+|---|---|---|
+| Satori layout → SVG | 1.54ms | 2.20ms |
+| resvg SVG → PNG | 132.37ms | 159.43ms |
+| **Satori pipeline total** | **133.77ms** | **161.46ms** |
+| **OG Engine server render** | **33.40ms** | **36.35ms** |
+| OG Engine client wall, localhost HTTP | 35.63ms | 38.63ms |
+
+Two caveats that matter. First, the first `resvg` call in a fresh process took 1,224ms before stabilising — if you render one image per cold serverless invocation, your real number is far worse than the warm P50 above. Second, these are different kinds of measurement: Satori's is in-process, OG Engine's is a server-side render time that excludes network transit. A hosted OG Engine call adds a round trip the Satori pipeline does not have. The separate figures published on the [benchmarks page](https://og-engine.com/benchmarks/) were measured on different hardware against the render function directly, which is why they are lower than the HTTP-route numbers here.
+
+All Satori behavioural claims on this page — the SVG return type, the font requirement, the `display: grid` rejection, the silent tofu, the CSS exclusions — were reproduced locally rather than taken from documentation alone. The quoted sentences come from [Satori's README](https://github.com/vercel/satori).
+
+## Your next step
+
+Render the same card both ways and compare the files. Get a free key:
+
+```bash
+curl -X POST https://og-engine.com/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+```
+
+500 renders a month, no card, no trial clock. Then run the curl at the top of this page against a title in your actual content — ideally one with CJK or an awkward length — and see whether a template fits.
+
+If it does, you delete two dependencies and your font files. If it does not, keep Satori; you are using it for the right reason. And if you want the API without the vendor, the [Docker image](https://og-engine.com/self-hosting/docker/) is open source with no per-render cost.
+
+---
+
+**Related:** [Generating images guide](https://og-engine.com/guides/generating-images/) · [Available fonts](https://og-engine.com/fonts/available-fonts/) · [Pricing](https://og-engine.com/pricing/) · [vercel/og alternative](https://og-engine.com/compare/vercel-og/) · [OG Engine vs Puppeteer](https://og-engine.com/compare/puppeteer/)

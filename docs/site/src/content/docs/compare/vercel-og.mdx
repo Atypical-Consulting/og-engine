@@ -1,0 +1,264 @@
+---
+title: A vercel/og Alternative That Runs Outside Next.js and Has No Bundle Limit
+description: vercel/og is free and zero-config inside Next.js on Vercel. If you need OG images from Astro, Hugo, Rails or a cron job — or you hit the 500KB bundle limit — here is the alternative, with runnable code.
+---
+
+If `@vercel/og` is working for you, keep it. It is free, it is already installed in every Next.js App Router project, and on Vercel it caches your images on the CDN without you configuring anything. There is no version of this page where that stops being true.
+
+You are probably here because one of four things happened: you are generating images from something that is not Next.js, you deployed somewhere that is not Vercel, you hit the **500KB bundle limit** once you added a second font, or you tried `display: grid` and got a blank image. OG Engine is an HTTP API that replaces the library entirely — one POST, a PNG in the response body, no bundle, no fonts in your repo, no JSX.
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer $OG_ENGINE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"format":"og","title":"Ship OG images without a bundle budget"}' \
+  --output og.png
+```
+
+That is the whole integration. It works from Next.js, Astro, SvelteKit, Hugo, Rails, a GitHub Action, or a shell script, because it is just an HTTP request.
+
+## Where vercel/og genuinely wins
+
+Stated plainly, because it decides the answer for a lot of readers:
+
+- **It is free.** No per-render cost, ever. OG Engine's free tier is 500 renders/month; after that it is a paid product.
+- **Zero install in the App Router.** Vercel's docs are explicit: "This isn't required for Next.js App Router projects, as the package is already included." You `import { ImageResponse } from 'next/og'` and you are done.
+- **Automatic CDN caching on Vercel.** Per Vercel's docs, `@vercel/og` "automatically adds the correct headers to cache computed images on the CDN."
+- **Arbitrary layouts.** You write JSX with flexbox. Any design you can express, you can render. OG Engine gives you 13 fixed templates and a style object — far less freedom.
+- **It runs in your function.** No third-party network call in your request path, no external dependency, no API key to rotate.
+
+If you are on Next.js, deployed on Vercel, under the bundle limit, and happy with flexbox — this page has nothing to sell you. Close the tab.
+
+## Where it starts to hurt
+
+These are the documented limits, quoted from [Vercel's OG Image Generation docs](https://vercel.com/docs/og-image-generation):
+
+> - Only `ttf`, `otf`, and `woff` font formats are supported.
+> - Only flexbox (`display: flex`) and a subset of CSS properties are supported. Advanced layouts (`display: grid`) will not work.
+> - Maximum bundle size of 500KB. The bundle size includes your JSX, CSS, fonts, images, and any other assets.
+
+The 500KB ceiling is the one that actually bites. It is not 500KB of code — it is 500KB of *everything*, and a single weight of a decent typeface is 100–300KB. Two weights plus a logo and you are rewriting your OG route to fetch assets at runtime, which is exactly the complexity you adopted a zero-config library to avoid.
+
+The underlying engine is [Satori](https://github.com/vercel/satori), whose README is equally direct about the layout engine: it "does not guarantee that the SVG will 100% match the browser-rendered HTML output since Satori implements its own layout engine." Your OG image is not a screenshot of a web page. It is a re-implementation that mostly agrees with one.
+
+And the whole thing is coupled to a deployment target. The CDN caching, the OG preview tab, the function platform — those are Vercel features. Move to Cloudflare, Netlify, Fly.io or your own box and you keep the library but lose the parts that made it zero-config.
+
+## The comparison
+
+| | `@vercel/og` | OG Engine |
+|---|---|---|
+| **Shape** | Library inside your function | HTTP API |
+| **Where it runs** | Vercel Functions (Node.js runtime; Edge also supported) | Anything that can make an HTTP request |
+| **Framework** | Best in Next.js; usable in other apps deployed on Vercel | Framework-agnostic |
+| **Layout** | Arbitrary JSX, flexbox subset, no `display: grid` | 13 templates + style object |
+| **Fonts** | You ship them; `ttf`/`otf`/`woff` only; count against the bundle | 53 families server-side, selected by name |
+| **Bundle budget** | 500KB including fonts and images | None — nothing ships |
+| **Cost** | Free | 500 renders/month free, then €10 / €39 / €99 per month |
+| **Caching** | Automatic on Vercel's CDN | `Cache-Control` you set, plus an in-process response cache |
+| **CJK / Arabic** | Works if you load and ship the right font | Works by naming the font |
+| **Emoji** | Supported via `graphemeImages` / Vercel's emoji examples | **Not supported** — renders as `▯` |
+
+That last row is not a typo, and it is covered properly below.
+
+## The code, in three shapes
+
+Everything in this section was executed. See [How these numbers were produced](#how-these-numbers-were-produced).
+
+### curl
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer $OG_ENGINE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "format": "og",
+    "title": "Generate OG images without a browser",
+    "description": "One POST, one PNG, no Chrome in your deploy.",
+    "style": { "accent": "#38ef7d", "font": "Outfit", "layout": "left" }
+  }' \
+  --output og.png
+```
+
+Returns a 1200×630 PNG in the response body. The response also carries render diagnostics:
+
+```
+Content-Type: image/png
+X-Render-Time-Ms: 33.40
+X-Title-Lines: 1
+X-Desc-Lines: 1
+X-Layout-Overflow: false
+X-Cache: miss
+```
+
+### Node, zero dependencies
+
+No SDK, no install — `fetch` is global in Node 18 and later. This ran on Node 24.19.0:
+
+```js
+import { writeFile } from 'node:fs/promises'
+
+async function renderOg({ title, description }) {
+  const res = await fetch('https://og-engine.com/render', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OG_ENGINE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      format: 'og',
+      title,
+      description,
+      style: { accent: '#38ef7d', font: 'Outfit', layout: 'left' },
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(`${res.status} ${err.error}: ${err.message}`)
+  }
+
+  return {
+    png: Buffer.from(await res.arrayBuffer()),
+    renderTimeMs: Number(res.headers.get('X-Render-Time-Ms')),
+    titleLines: Number(res.headers.get('X-Title-Lines')),
+  }
+}
+
+const { png, renderTimeMs, titleLines } = await renderOg({
+  title: 'Generate OG images without a browser',
+  description: 'One POST, one PNG, no Chrome in your deploy.',
+})
+
+await writeFile('og.png', png)
+console.log(`wrote og.png — ${png.length} bytes, ${renderTimeMs}ms, ${titleLines} title line(s)`)
+```
+
+Output:
+
+```
+wrote og.png — 87350 bytes, 32.98ms, 1 title line(s)
+```
+
+### Next.js App Router — the direct swap
+
+This is the same route shape you already have, with the `ImageResponse` body replaced by a fetch. Note there is no JSX, so it can be a `.ts` file rather than `.tsx`:
+
+```ts
+// app/api/og/route.ts
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const title = searchParams.get('title')
+
+  if (!title) {
+    return new Response(JSON.stringify({ error: 'title is required' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const upstream = await fetch('https://og-engine.com/render', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OG_ENGINE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      format: 'og',
+      title,
+      description: searchParams.get('description') ?? '',
+      style: { accent: '#38ef7d', font: 'Outfit', layout: 'left' },
+    }),
+  })
+
+  if (!upstream.ok) {
+    const { error, message } = await upstream.json()
+    return new Response(JSON.stringify({ error, message }), {
+      status: upstream.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  return new Response(upstream.body, {
+    headers: {
+      'Content-Type': 'image/png',
+      // the image is deterministic for a given title, so cache it hard
+      'Cache-Control': 'public, immutable, no-transform, max-age=31536000',
+    },
+  })
+}
+```
+
+Executed standalone against real `Request`/`Response` objects on Node 24.19.0:
+
+```
+happy path    -> 200 image/png 74908 bytes
+cache-control -> public, immutable, no-transform, max-age=31536000
+missing title -> 400 {"error":"title is required"}
+```
+
+Your `generateMetadata` does not change at all — it still points at `/api/og`. There is a fuller walkthrough in the [Next.js integration guide](https://og-engine.com/guides/nextjs/).
+
+## Two things to know before you switch
+
+**This is not a speed argument.** `@vercel/og` does not launch a browser either, so the 6–30× figures on the [benchmarks page](https://og-engine.com/benchmarks/) are about Puppeteer, not about Satori-based renderers. If raw latency is your only concern, switching from `@vercel/og` is not the lever. The lever is portability, the bundle limit, and not shipping fonts.
+
+**You are adding a network call.** `@vercel/og` renders inside your function; OG Engine is a hop away. For OG images this is almost always fine — they are fetched by crawlers, not by users, and the response is cacheable forever because it is deterministic for a given payload. But it is a real difference and you should set `Cache-Control` as shown above. If you cannot accept the dependency, [self-hosting the Docker image](https://og-engine.com/self-hosting/docker/) puts it back inside your own network.
+
+## Where OG Engine is worse
+
+- **Emoji do not render.** An emoji in your title comes out as `▯`. Verified on v0.2.0: `"Ship it 🚀 without a browser"` renders the rocket as an empty box, because none of the 53 bundled font families carries emoji glyphs. `@vercel/og` and Satori both have a documented escape hatch for this (`graphemeImages`); OG Engine has none. If your titles contain emoji, this is disqualifying today.
+- **You cannot draw arbitrary layouts.** 13 templates and a style object. If your design does not fit one, `@vercel/og`'s JSX is strictly more expressive.
+- **It costs money past 500 renders/month.** See [pricing](https://og-engine.com/pricing/).
+
+CJK and Arabic do work, and work without you sourcing a font — `"style": {"font": "Noto Sans JP"}` renders Japanese correctly, and Noto Sans Arabic renders right-to-left with correct glyph joining. Both verified by rendering and inspecting the output.
+
+## Check your text fits before you render
+
+The failure mode that survives every migration is a title that overflows the card. `/validate` answers that without spending a render — it needs no API key and consumes no render quota on any plan, including Free. It is rate-limited like the render endpoints: 100 requests per minute per IP by default.
+
+```bash
+curl -X POST https://og-engine.com/validate \
+  -H "Content-Type: application/json" \
+  -d '{"format":"og","title":"An extremely long and deliberately unwieldy headline that keeps going well past any reasonable length for a social card and simply will not fit inside three lines at forty-eight pixels","description":"Short."}'
+```
+
+```json
+{"fits":false,"title":{"lines":4,"maxLines":3,"overflow":true},"description":{"lines":1,"maxLines":4,"overflow":false},"computeTimeMs":0.56}
+```
+
+Add `"autoFit": true` and it tells you the type sizes that would fit instead:
+
+```json
+{"fits":true,"autoFit":{"titleSize":38,"descSize":22},"title":{"lines":3,"maxLines":3,"overflow":false},"description":{"lines":1,"maxLines":4,"overflow":false},"computeTimeMs":2.76}
+```
+
+More patterns in the [text validation guide](https://og-engine.com/guides/text-validation/).
+
+## How these numbers were produced
+
+Every command and script on this page was executed against OG Engine v0.2.0 before publication. Measurements were taken on an Apple M1 Max, 64 GB RAM, macOS 27.0.1, against a local instance (Bun 1.4.2), 100 iterations after 10 discarded warmup iterations, with a unique title per iteration so the response cache never served a hit.
+
+| Measurement | P50 | P95 |
+|---|---|---|
+| Server render time (`X-Render-Time-Ms`), 1200×630 PNG | 33.40ms | 36.35ms |
+| Client wall time including localhost HTTP | 35.63ms | 38.63ms |
+
+Your hardware will differ, and a hosted call adds network time. The published figures on the [benchmarks page](https://og-engine.com/benchmarks/) were measured separately on different hardware against the render function directly, which is why they are lower than the full HTTP-route numbers above. The `@vercel/og` and Satori snippets quoted on this page are from Vercel's and Satori's own documentation; the Satori pipeline itself is measured first-hand in [OG Engine vs Satori](https://og-engine.com/compare/satori/).
+
+## Your next step
+
+Get a free key and render one image — it takes about a minute and costs nothing:
+
+```bash
+curl -X POST https://og-engine.com/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+```
+
+The response contains your API key. Put it in `OG_ENGINE_KEY`, run the curl at the top of this page, and look at the PNG. If it is not better than what you have, you have lost a minute.
+
+Then read the [quick start](https://og-engine.com/quick-start/) or go straight to the [Next.js guide](https://og-engine.com/guides/nextjs/).
+
+---
+
+**Related:** [OG Engine vs Puppeteer](https://og-engine.com/compare/puppeteer/) · [OG Engine vs Satori](https://og-engine.com/compare/satori/) · [Pricing](https://og-engine.com/pricing/)

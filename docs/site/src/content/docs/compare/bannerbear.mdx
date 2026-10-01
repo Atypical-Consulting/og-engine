@@ -1,0 +1,204 @@
+---
+title: A Bannerbear Alternative for Developers Who Just Want the Image Back
+description: Bannerbear gives non-developers a visual template editor and 50+ integrations. If you only need images from code, OG Engine returns the PNG in the same HTTP response — no queue, no polling, no webhook.
+---
+
+The short answer: if a marketer or designer owns your templates, stay on Bannerbear — its visual editor and integration catalogue are the product, and OG Engine has no equivalent. If the only consumer of your image API is your own code, OG Engine does the same job in one synchronous HTTP call with no template to create first, starting free and costing €39/month at 50,000 images.
+
+```bash
+curl -X POST https://og-engine.com/render \
+  -H "Authorization: Bearer $OG_ENGINE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"format":"og","title":"One call. The image is the response body."}' \
+  --output og.png
+```
+
+No template UID. No `202 Accepted`. No polling loop. The PNG bytes are in that response.
+
+## Where Bannerbear genuinely wins
+
+This is most of the decision, so it goes first.
+
+- **A visual template editor.** You drag text and image layers onto a canvas and the API exposes them as named modifications. A designer can change the card without touching code or shipping a deploy. OG Engine has 13 fixed templates and a style object — there is nothing to drag.
+- **Integrations, not just an API.** Bannerbear's plans list 50+ app integrations, Zapier-style workflows, forms, and MCP access. If the brief is "when a row lands in Airtable, make an image," Bannerbear is a better-shaped tool than any render API.
+- **Media OG Engine cannot produce.** Animated GIFs and video are first-class on Bannerbear (priced at two credits per second of animation). OG Engine renders still images only — PNG, WebP, and PDF.
+- **AI layers and screenshots.** Bannerbear bundles AI credits and a screenshot product. OG Engine has neither.
+- **Arbitrary layered designs.** Anything you can compose in their editor, you can render. OG Engine constrains you to its templates.
+
+If any of those paragraphs described your actual requirement, the rest of this page is not for you.
+
+## The architectural difference: one call vs. a queue
+
+This is the thing developers notice first, and it is a design choice rather than a flaw.
+
+Per [Bannerbear's API documentation](https://developers.bannerbear.com/), creating an image is a `POST /v5/images` with a `template` UID and a `modifications` array. The API responds **202 Accepted** — the docs say "your image will be queued to generate. Images are usually rendered within a few seconds." You then either poll `GET /v5/images/:uid` until `status` moves from `pending` to `completed`, or you "use a webhook to get the final image posted to you." A synchronous base URL (`https://sync.api.bannerbear.com`) exists and "will wait until the media file has finished generating before responding," with a 10-second timeout that returns 408.
+
+That is a sensible architecture for heavy, layered, AI-assisted composites. It is a lot of machinery if what you want is a 1200×630 card with a headline on it.
+
+OG Engine has one shape:
+
+```
+POST /render  ->  200 OK, Content-Type: image/png, <bytes>
+```
+
+Measured locally at a P50 of 33.40ms server-side (methodology below). There is no job, no status field, and no second request.
+
+### What the integration code actually looks like
+
+Bannerbear, transcribed from their documentation — **this snippet was not executed**, because running it requires a paid Bannerbear account and a template created in their editor:
+
+```js
+// 1. create the job
+const create = await fetch('https://api.bannerbear.com/v5/images', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${process.env.BANNERBEAR_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    template: 'abc123def456ghij',          // created in the editor first
+    modifications: [
+      { name: 'title', text: 'Hello world' },
+      { name: 'subtitle', text: 'From the API' },
+    ],
+  }),
+})
+const job = await create.json()            // 202 Accepted, status: "pending"
+
+// 2. poll until it is done
+let image = job
+while (image.status === 'pending') {
+  await new Promise((r) => setTimeout(r, 1000))
+  const poll = await fetch(`https://api.bannerbear.com/v5/images/${job.uid}`, {
+    headers: { Authorization: `Bearer ${process.env.BANNERBEAR_KEY}` },
+  })
+  image = await poll.json()
+}
+
+// 3. now fetch the file from the URL it gives you
+const png = Buffer.from(await (await fetch(image.image_url)).arrayBuffer())
+```
+
+Three round trips plus a polling loop, or a webhook endpoint you have to host and secure. OG Engine, **executed on Node 24.19.0**:
+
+```js
+import { writeFile } from 'node:fs/promises'
+
+const res = await fetch('https://og-engine.com/render', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${process.env.OG_ENGINE_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    format: 'og',
+    title: 'Hello world',
+    description: 'From the API',
+    style: { accent: '#38ef7d', font: 'Outfit', layout: 'left' },
+  }),
+})
+
+if (!res.ok) {
+  const err = await res.json()
+  throw new Error(`${res.status} ${err.error}: ${err.message}`)
+}
+
+await writeFile('og.png', Buffer.from(await res.arrayBuffer()))
+```
+
+Output when run:
+
+```
+wrote og.png — 87350 bytes, 32.98ms, 1 title line(s)
+```
+
+## Price, with the arithmetic shown
+
+List prices as published, in their own currencies — Bannerbear prices in USD, OG Engine in EUR, and this page does not convert between them.
+
+| | Bannerbear | OG Engine |
+|---|---|---|
+| **Free tier** | Trial only: 30 API credits, no permanent free tier | 500 renders/month, no expiry |
+| **Entry paid** | Automate — $49/mo, 1,000 API credits | Starter — €10/mo, 10,000 renders |
+| **Mid** | Scale — $149/mo, from 10,000 API credits | Pro — €39/mo, 50,000 renders |
+| **Top published** | Enterprise — $299/mo, from 50,000 API credits | Scale — €99/mo, 200,000 renders |
+| **Unit cost at entry tier** | $49 ÷ 1,000 = **$0.049 per image** | €10 ÷ 10,000 = **€0.001 per image** |
+| **Unit cost at the 50k tier** | $299 ÷ 50,000 = **$0.00598 per image** | €39 ÷ 50,000 = **€0.00078 per image** |
+
+Bannerbear's own credit rule, quoted: "One image render is one credit; heavier work costs more." AI layers add a credit per layer and animation costs two credits per second, so a workload using those features consumes credits faster than the per-image division above suggests. OG Engine counts a render as one render regardless of output format — PNG, WebP and PDF all cost the same one render, and failed 4xx requests cost nothing.
+
+The honest reading of this table: Bannerbear is not overpriced, it is priced as a workflow product with a visual editor, integrations, AI and video behind it. If you use those, you are buying them. If you are only ever going to call `POST` from a Node server, you are paying for a product surface you will never open.
+
+## Feature comparison
+
+| | Bannerbear | OG Engine |
+|---|---|---|
+| **Response model** | 202 + poll or webhook; sync endpoint with 10s timeout | Synchronous — image bytes in the response |
+| **Template setup required** | Yes, a template UID must exist first | No — `title` is the only required field |
+| **Visual editor** | Yes | No |
+| **Integrations / no-code** | 50+ apps, workflows, forms | None — HTTP only |
+| **Still images** | Yes | Yes — PNG, WebP, PDF |
+| **Animated GIF / video** | Yes | **No** |
+| **AI layers, screenshots** | Yes | **No** |
+| **Batch** | Per-credit | Up to 50 items per call, ZIP response (Pro and above) |
+| **Self-hosting** | No | Yes — open-source Docker image, no per-render cost |
+| **Permanent free tier** | No | Yes — 500/month |
+
+## Batch, if you are generating many at once
+
+Up to 50 renders in one request, returned as a ZIP. This ran against v0.2.0:
+
+```bash
+curl -X POST https://og-engine.com/render/batch \
+  -H "Authorization: Bearer $OG_ENGINE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"items":[
+        {"format":"og","title":"One"},
+        {"format":"og","title":"Two"},
+        {"format":"readme","title":"Three"}
+      ]}' \
+  --output batch.zip
+```
+
+```
+Archive:  batch.zip
+    62146  image-001.png
+    61140  image-002.png
+    64648  image-003.png
+```
+
+Each item counts as one render against your quota, so a 50-item batch consumes 50. Batch requires Pro or above; full details in the [batch rendering guide](https://og-engine.com/guides/batch-rendering/).
+
+## What you lose by moving
+
+Be clear-eyed about this before you migrate:
+
+- **No visual editor.** Every design change is a code change. For some teams that is a feature; for others it is the reason they bought Bannerbear.
+- **No video, GIF, AI layers, or screenshots.**
+- **No integration catalogue.** If Zapier or Airtable is currently doing the triggering, you will be writing that glue yourself.
+- **Emoji do not render.** Verified on v0.2.0: an emoji in the title comes out as `▯`, because none of the 53 bundled font families carries emoji glyphs. CJK and Arabic render correctly, including right-to-left glyph joining — emoji specifically do not.
+- **Fixed templates.** 13 of them, plus a style object controlling accent colour, font, layout, type sizes, gradient and overlay opacity. Custom JSON templates exist on the Scale plan.
+
+## How these numbers were produced
+
+Every OG Engine command and script on this page was executed against v0.2.0 before publication. Timings were taken on an Apple M1 Max, 64 GB RAM, macOS 27.0.1, against a local instance (Bun 1.4.2), 100 iterations after 10 discarded warmup iterations, with a unique title per iteration so the response cache never served a hit: **P50 33.40ms, P95 36.35ms** server-side render time.
+
+The Bannerbear snippet and all Bannerbear pricing, credit and API-behaviour claims on this page are quoted from [bannerbear.com/pricing](https://www.bannerbear.com/pricing/) and [developers.bannerbear.com](https://developers.bannerbear.com/) as published, and were **not executed** — doing so requires a paid account and a template built in their editor. Prices change; check theirs before deciding.
+
+## Your next step
+
+Render one image against the free tier and compare it to what your current template produces:
+
+```bash
+curl -X POST https://og-engine.com/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+```
+
+The response contains your API key — 500 renders a month, no card, no trial clock. Then run the curl at the top of this page.
+
+If the output is close enough to your Bannerbear template and nobody outside engineering needs to edit it, the migration is a one-function change. If a non-developer edits those templates weekly, it is not, and you should stay where you are.
+
+---
+
+**Related:** [Pricing](https://og-engine.com/pricing/) · [Batch rendering guide](https://og-engine.com/guides/batch-rendering/) · [Render API reference](https://og-engine.com/api-reference/render/) · [Quick start](https://og-engine.com/quick-start/)
