@@ -176,6 +176,9 @@ export default defineConfig({
           items: [
             { label: 'Available Fonts', link: '/fonts/available-fonts/' },
             { label: 'OG Engine vs Puppeteer', link: '/compare/puppeteer/' },
+            { label: 'vercel/og Alternative', link: '/compare/vercel-og/' },
+            { label: 'Bannerbear Alternative', link: '/compare/bannerbear/' },
+            { label: 'Satori Alternative', link: '/compare/satori/' },
             { label: 'Self-Hosting (Docker)', link: '/self-hosting/docker/' },
           ],
         },
