@@ -60,8 +60,14 @@ function seedUser(email: string, plan: Plan, signupHoursAgo: number, stripeCusto
 }
 
 /** Render written the way production writes it: SQLite `YYYY-MM-DD HH:MM:SS`. */
-function seedRender(userId: string, apiKeyId: string, renderHoursAgo: number) {
-  logRender({ userId, apiKeyId, endpoint: '/render', requestPayload: {}, format: 'og' });
+function seedRender(
+  userId: string,
+  apiKeyId: string,
+  renderHoursAgo: number,
+  requestPayload: object = {},
+  endpoint = '/render',
+) {
+  logRender({ userId, apiKeyId, endpoint, requestPayload, format: 'og' });
   const db = getDb();
   db.prepare(
     'UPDATE render_history SET created_at = ? WHERE id = (SELECT id FROM render_history ORDER BY rowid DESC LIMIT 1)',
@@ -178,6 +184,70 @@ describe('GET /admin/stats', () => {
 
     expect(snapshot()).toEqual(before);
     expect(db.prepare('SELECT COUNT(*) as count FROM render_history').get()).toEqual(rendersBefore);
+  });
+
+  it('breaks renders down by plan x output format and reports what it could not attribute', async () => {
+    // Explicit WebP from a free user — the render the paywall decision hinges on.
+    const a = seedUser('webp@example.com', 'free', 240);
+    seedRender(a.user.id, a.apiKey.id, 24, { output: { format: 'webp' } });
+    // A real body with no `output` block: the schema defaults it to png, so this
+    // is honestly attributed, not unattributed.
+    const b = seedUser('plain@example.com', 'free', 240);
+    seedRender(b.user.id, b.apiKey.id, 48, { title: 'Hello' });
+    // No body captured at all — genuinely unattributable, lands in the png bucket.
+    const c = seedUser('nobody@example.com', 'free', 240);
+    seedRender(c.user.id, c.apiKey.id, 72, {});
+    // Batch: the format lives per item, so the top-level lookup misses it.
+    const dUser = seedUser('batch@example.com', 'free', 240);
+    seedRender(
+      dUser.user.id,
+      dUser.apiKey.id,
+      96,
+      { items: [{ title: 'One', output: { format: 'webp' } }] },
+      '/render/batch',
+    );
+    // PDF stays free on every plan; it should still show up in the breakdown.
+    const e = seedUser('pdf@example.com', 'starter', 240);
+    seedRender(e.user.id, e.apiKey.id, 24, { output: { format: 'pdf' } });
+    // Outside the 30-day window — must not appear anywhere.
+    const old = seedUser('stale@example.com', 'free', 2400);
+    seedRender(old.user.id, old.apiKey.id, 45 * 24, { output: { format: 'webp' } });
+
+    const app = await createApp();
+    const res = await getStats(app, 'test_admin_secret');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect(body.renders_by_output_format).toEqual([
+      { plan: 'free', output_format: 'png', renders: 3, users: 3 },
+      { plan: 'free', output_format: 'webp', renders: 1, users: 1 },
+      { plan: 'starter', output_format: 'pdf', renders: 1, users: 1 },
+    ]);
+
+    expect(body.output_format_attribution).toEqual({
+      renders_last_30d: 5,
+      renders_with_explicit_output_format: 2,
+      renders_without_explicit_output_format: 3,
+      empty_payload_renders: 1,
+      batch_payload_renders: 1,
+      unattributed_renders: 2,
+      unattributed_share_pct: 40,
+    });
+
+    // N per plan: the explicit WebP user *and* the batch WebP user, which the
+    // top-level breakdown above counts as png.
+    expect(body.webp_users_by_plan).toEqual([{ plan: 'free', users: 2, renders: 2 }]);
+  });
+
+  it('reports no output-format rows and a null unattributed share on an empty database', async () => {
+    const app = await createApp();
+    const res = await getStats(app, 'test_admin_secret');
+    const body = await res.json();
+
+    expect(body.renders_by_output_format).toEqual([]);
+    expect(body.webp_users_by_plan).toEqual([]);
+    expect(body.output_format_attribution.renders_last_30d).toBe(0);
+    expect(body.output_format_attribution.unattributed_share_pct).toBeNull();
   });
 
   it('returns 401 without admin secret', async () => {

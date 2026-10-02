@@ -26,7 +26,8 @@ adminRoute.post('/admin/reset-free-quotas', async (c) => {
   });
 });
 
-// Read-only funnel counters: signups, activation, plan mix, time to first value.
+// Read-only funnel counters: signups, activation, plan mix, time to first value,
+// plus the plan x output-format breakdown and its attribution cross-check.
 adminRoute.get('/admin/stats', async (c) => {
   const cronSecret = process.env.ADMIN_CRON_SECRET;
   if (!cronSecret) {

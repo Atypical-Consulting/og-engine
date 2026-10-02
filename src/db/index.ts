@@ -551,6 +551,45 @@ export function getDailyUsage(userId: string, days = 30): { date: string; count:
 
 // ─── Funnel Stats (admin) ────────────────────────────────────
 
+export interface OutputFormatRow {
+  plan: Plan;
+  output_format: string;
+  renders: number;
+  users: number;
+}
+
+/**
+ * How much of the 30-day window can actually tell us its output format.
+ *
+ * `renders_without_explicit_output_format` is the literal count of rows where
+ * `$.output.format` is absent. Most of those are honestly PNG: a body like
+ * `{"title":"x"}` omits `output` and the schema defaults it to `png`.
+ *
+ * `unattributed_renders` is the narrower, bias-carrying bucket — rows that
+ * genuinely cannot tell us anything:
+ *   - `empty_payload_renders`: no request body was captured (`{}`), e.g. the
+ *     clone/parse in `usageTracking` failed, or the request had no JSON body.
+ *   - `batch_payload_renders`: `/render/batch` rows, where the format lives
+ *     per item under `$.items[*].output.format`, not at the top level.
+ * Both currently land in the `png` COALESCE bucket of `renders_by_output_format`,
+ * so the WebP counts there are a lower bound.
+ */
+export interface OutputFormatAttribution {
+  renders_last_30d: number;
+  renders_with_explicit_output_format: number;
+  renders_without_explicit_output_format: number;
+  empty_payload_renders: number;
+  batch_payload_renders: number;
+  unattributed_renders: number;
+  unattributed_share_pct: number | null;
+}
+
+export interface WebpUsageRow {
+  plan: Plan;
+  users: number;
+  renders: number;
+}
+
 export interface FunnelStats {
   users_total: number;
   users_by_plan: Record<Plan, number>;
@@ -566,6 +605,9 @@ export interface FunnelStats {
   renders_last_30d: number;
   users_with_stripe_customer_id: number;
   median_hours_signup_to_first_render: number | null;
+  renders_by_output_format: OutputFormatRow[];
+  output_format_attribution: OutputFormatAttribution;
+  webp_users_by_plan: WebpUsageRow[];
   generated_at: string;
 }
 
@@ -577,6 +619,11 @@ export interface FunnelStats {
  *
  * `activated_*` counts users whose *first* render landed in the window (the
  * activation event); `active_users_*` counts users with any render in it.
+ *
+ * `renders_by_output_format` recovers the output format (png/webp/pdf) from
+ * `request_payload`, which is the only place it survives. Read it together with
+ * `output_format_attribution` — see {@link OutputFormatAttribution} for why the
+ * WebP counts there are a lower bound.
  */
 export function getFunnelStats(): FunnelStats {
   const d = getDb();
@@ -651,6 +698,83 @@ export function getFunnelStats(): FunnelStats {
     )
     .get() as { median_hours: number | null };
 
+  // `render_history.format` is the *card* format (og/twitter/…) written by
+  // usageTracking from the top-level `format` key — not the output format. The
+  // output format only survives inside request_payload, so read it from there.
+  // json_extract() raises on malformed JSON, hence the json_valid() guard.
+  const byOutputFormat = d
+    .prepare(
+      `SELECT u.plan AS plan,
+              COALESCE(
+                CASE WHEN json_valid(rh.request_payload)
+                     THEN json_extract(rh.request_payload, '$.output.format') END,
+                'png'
+              ) AS output_format,
+              COUNT(*) AS renders,
+              COUNT(DISTINCT rh.user_id) AS users
+         FROM render_history rh
+         JOIN users u ON u.id = rh.user_id
+        WHERE datetime(rh.created_at) >= datetime('now', '-30 days')
+        GROUP BY 1, 2
+        ORDER BY 1, 3 DESC`,
+    )
+    .all() as OutputFormatRow[];
+
+  const attribution = d
+    .prepare(
+      `SELECT
+         COUNT(*) AS renders_30d,
+         COALESCE(SUM(CASE WHEN json_valid(request_payload)
+                            AND json_extract(request_payload, '$.output.format') IS NOT NULL
+                           THEN 1 ELSE 0 END), 0) AS explicit_renders,
+         COALESCE(SUM(CASE WHEN NOT json_valid(request_payload)
+                             OR json_type(request_payload) <> 'object'
+                             OR request_payload = '{}'
+                           THEN 1 ELSE 0 END), 0) AS empty_renders,
+         COALESCE(SUM(CASE WHEN json_valid(request_payload)
+                            AND json_type(request_payload, '$.items') = 'array'
+                            AND json_extract(request_payload, '$.output.format') IS NULL
+                           THEN 1 ELSE 0 END), 0) AS batch_renders
+       FROM render_history
+      WHERE datetime(created_at) >= datetime('now', '-30 days')`,
+    )
+    .get() as {
+    renders_30d: number;
+    explicit_renders: number;
+    empty_renders: number;
+    batch_renders: number;
+  };
+
+  // N for the paywall decision: distinct users with at least one WebP render in
+  // the window. Batch rows carry their format per item, so check those too —
+  // otherwise a free user who only ever asked for WebP via /render/batch would
+  // be invisible here and the flag would land on them unannounced.
+  const webpUsers = d
+    .prepare(
+      `SELECT u.plan AS plan,
+              COUNT(DISTINCT rh.user_id) AS users,
+              COUNT(*) AS renders
+         FROM render_history rh
+         JOIN users u ON u.id = rh.user_id
+        WHERE datetime(rh.created_at) >= datetime('now', '-30 days')
+          AND json_valid(rh.request_payload)
+          AND (
+            json_extract(rh.request_payload, '$.output.format') = 'webp'
+            OR (
+              json_type(rh.request_payload, '$.items') = 'array'
+              AND EXISTS (
+                SELECT 1 FROM json_each(rh.request_payload, '$.items') item
+                 WHERE json_extract(item.value, '$.output.format') = 'webp'
+              )
+            )
+          )
+        GROUP BY 1
+        ORDER BY 2 DESC`,
+    )
+    .all() as WebpUsageRow[];
+
+  const unattributed = attribution.empty_renders + attribution.batch_renders;
+
   return {
     users_total: users.users_total,
     users_by_plan: {
@@ -672,6 +796,18 @@ export function getFunnelStats(): FunnelStats {
     users_with_stripe_customer_id: users.with_stripe,
     median_hours_signup_to_first_render:
       median.median_hours === null ? null : Math.round(median.median_hours * 100) / 100,
+    renders_by_output_format: byOutputFormat,
+    output_format_attribution: {
+      renders_last_30d: attribution.renders_30d,
+      renders_with_explicit_output_format: attribution.explicit_renders,
+      renders_without_explicit_output_format: attribution.renders_30d - attribution.explicit_renders,
+      empty_payload_renders: attribution.empty_renders,
+      batch_payload_renders: attribution.batch_renders,
+      unattributed_renders: unattributed,
+      unattributed_share_pct:
+        attribution.renders_30d === 0 ? null : Math.round((unattributed / attribution.renders_30d) * 10_000) / 100,
+    },
+    webp_users_by_plan: webpUsers,
     generated_at: new Date().toISOString(),
   };
 }
