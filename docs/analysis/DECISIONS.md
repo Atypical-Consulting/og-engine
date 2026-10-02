@@ -20,6 +20,22 @@
 
 All plans get: all 5 formats, all 4 built-in templates, all 8 fonts, /validate unlimited.
 
+**PDF output:** free on all plans. This list enumerates every gate, and PDF is not on it. PDF is
+therefore ungated in code and has no entry in `FEATURE_GATES`. The pricing page does not mention PDF
+at all — that is a copy gap to close, not a gate to add.
+
+**Wire behavior (WebP):** `output.format` arrives in the request body, so the gate cannot be
+path-level `planGate` middleware. `outputFormatGate()` in `src/middleware/auth.ts` runs inside the
+`/render`, `/render/from-url`, `/render/batch` and `/triggers` handlers after Zod parsing and
+returns `402 plan_required`. `/triggers` is checked twice — once when the render config is saved,
+and again on `/triggers/:id/fire`, because a saved trigger outlives the plan that created it and a
+mid-period downgrade must stop paid renders.
+
+**Rollout flag:** enforcement is off unless `WEBP_PAYWALL_ENABLED=true`. With the flag unset, free
+keys keep receiving WebP exactly as before. Turning the paywall on is a customer-visible pricing
+change for existing free users, so the flag flip needs the Growth Lead's go-ahead per deploy, and a
+rollback is a one-line env change.
+
 ## Decision 3: /validate Authentication
 
 **Decision:** Authenticated but free (accepts API key, does NOT count against quota)

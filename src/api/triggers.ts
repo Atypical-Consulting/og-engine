@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { type ApiKeyRecord, createWebhook, deleteWebhook, findWebhookById, listWebhooks } from '../db';
 import { renderCard } from '../engine/renderer';
+import { outputFormatGate } from '../middleware/auth';
 import { renderSchema } from '../schemas/request';
 
 export const triggersRoute = new Hono();
@@ -52,6 +53,12 @@ triggersRoute.post('/triggers', async (c) => {
   }
 
   const { url, renderConfig } = parsed.data;
+
+  // Plan gate the saved output format, so a free key cannot park a paid format
+  // in a trigger config and collect it later.
+  const formatGate = outputFormatGate(c, renderConfig.output.format);
+  if (formatGate) return formatGate;
+
   const webhook = createWebhook(record.id, url, renderConfig);
 
   return c.json(
@@ -135,6 +142,11 @@ triggersRoute.post('/triggers/:id/fire', async (c) => {
     ...(overrides.author ? { author: overrides.author } : {}),
     ...(overrides.tag ? { tag: overrides.tag } : {}),
   };
+
+  // Re-check the gate at fire time, not just at registration: the trigger config
+  // outlives the plan that created it, so a downgrade must stop paid renders.
+  const formatGate = outputFormatGate(c, config.output?.format ?? 'png');
+  if (formatGate) return formatGate;
 
   // Render
   const result = await renderCard({

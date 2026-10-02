@@ -4,6 +4,7 @@ import type { CustomTemplateDefinition } from '../engine/custom-template';
 import { getCachedImage, hashRequest, setCachedImage } from '../engine/image-cache';
 import { loadRemoteImages } from '../engine/image-loader';
 import { renderCard } from '../engine/renderer';
+import { outputFormatGate } from '../middleware/auth';
 import { renderSchema } from '../schemas/request';
 
 export const renderRoute = new Hono();
@@ -90,6 +91,10 @@ renderRoute.post('/render', async (c) => {
   }
 
   const data = parsed.data;
+
+  // Plan gate on the requested output format — body-level, so planGate can't cover it
+  const formatGate = outputFormatGate(c, data.output.format);
+  if (formatGate) return formatGate;
 
   // Merge legacy content fields into variables
   const variables: Record<string, string> = {

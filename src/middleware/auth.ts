@@ -24,6 +24,61 @@ export function canAccessFeature(plan: Plan, feature: string): boolean {
 }
 
 /**
+ * Output formats that map to a plan feature, and the env flag that enforces them.
+ *
+ * Per DECISIONS.md Decision 2 the only gated output format is WebP (Starter+).
+ * `pdf` is deliberately absent: Decision 2 enumerates every gate and does not
+ * list PDF, so PDF output is free on all plans.
+ *
+ * Each entry is flag-guarded so the paywall can be turned on or rolled back with
+ * one env change — enforcing it is a customer-visible pricing change and needs
+ * the Growth Lead's go-ahead per deploy.
+ */
+const GATED_OUTPUT_FORMATS: Record<string, { feature: string; flag: string }> = {
+  webp: { feature: 'webp', flag: 'WEBP_PAYWALL_ENABLED' },
+};
+
+export function isOutputFormatGateEnabled(outputFormat: string): boolean {
+  const gate = GATED_OUTPUT_FORMATS[outputFormat];
+  return !!gate && process.env[gate.flag] === 'true';
+}
+
+/**
+ * Body-level plan gate for `output.format`.
+ *
+ * `planGate` cannot cover this: it is path-level middleware, while the output
+ * format only exists after the request body is parsed. Call this inside the
+ * render handlers right after Zod parsing and return the response if non-null.
+ *
+ * Returns `null` (allow) when the flag is off, the format is ungated, the plan
+ * includes the feature, or there is no authenticated user (auth disabled, or an
+ * unauthenticated route) — matching planGate's no-user-means-no-gate behavior.
+ */
+export function outputFormatGate(c: Context, outputFormat: string): Response | null {
+  const gate = GATED_OUTPUT_FORMATS[outputFormat];
+  if (!gate || !isOutputFormatGateEnabled(outputFormat)) return null;
+
+  const user = c.get('user' as never) as UserRecord | undefined;
+  if (!user || canAccessFeature(user.plan as Plan, gate.feature)) return null;
+
+  return c.json(
+    {
+      error: 'plan_required',
+      message: `${outputFormat.toUpperCase()} output requires a higher plan. Your plan: ${user.plan}.`,
+      details: {
+        feature: gate.feature,
+        outputFormat,
+        currentPlan: user.plan,
+        requiredPlans: FEATURE_GATES[gate.feature],
+        upgradeUrl: 'https://og-engine.com/pricing',
+      },
+      docs: 'https://og-engine.com/api-reference/errors#plan_required',
+    },
+    402,
+  );
+}
+
+/**
  * Required auth middleware — rejects unauthenticated requests.
  * Checks user-level quota and increments usage.
  */

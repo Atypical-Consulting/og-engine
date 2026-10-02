@@ -7,6 +7,7 @@ import { loadRemoteImages } from '../engine/image-loader';
 import { extractMeta } from '../engine/meta-extract';
 import { renderCard } from '../engine/renderer';
 import { TEMPLATE_NAMES } from '../engine/templates';
+import { outputFormatGate } from '../middleware/auth';
 
 const fontNames = FONTS.map((f) => f.name);
 const gradientSlugs = GRADIENTS.map((g) => g.slug);
@@ -97,6 +98,10 @@ renderFromUrlRoute.post('/render/from-url', async (c) => {
   }
 
   const data = parsed.data;
+
+  // Plan gate on the requested output format — before we spend a remote fetch on it
+  const formatGate = outputFormatGate(c, data.output.format);
+  if (formatGate) return formatGate;
 
   // Fetch the URL
   let html: string;
