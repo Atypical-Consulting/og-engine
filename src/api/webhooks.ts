@@ -1,14 +1,16 @@
 import { Hono } from 'hono';
 import Stripe from 'stripe';
 import {
+  applySubscriptionTransition,
+  claimStripeEvent,
   createApiKey,
   createUser,
   findApiKeyByEmail,
   findUserByEmail,
   findUserByStripeSubscription,
   type Plan,
+  releaseStripeEvent,
   resetUsage,
-  updatePlan,
   updateStripeInfo,
 } from '../db';
 import { sendDowngradeEmail, sendUpgradeEmail, sendWelcomeEmail } from '../email/send';
@@ -24,6 +26,12 @@ function defer(promise: Promise<unknown>, context: string): void {
   promise.catch((err) => {
     console.error(`[webhooks] deferred side-effect failed (${context}):`, err);
   });
+}
+
+// A transition we refused to apply because a newer event already landed. Like a
+// silent 200, this is invisible to Stripe, so name the event that was ignored.
+function stale(event: Stripe.Event, detail: Record<string, unknown>): void {
+  console.warn(`[webhooks] ignored stale ${event.type} (${event.id}): a newer event was already applied`, detail);
 }
 
 function getPlanFromPriceId(priceId: string): Plan | null {
@@ -58,6 +66,35 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
     return c.json({ error: 'invalid_request', message: 'Invalid webhook signature.' }, 400);
   }
 
+  // Idempotency at the boundary. Stripe retries deliveries, so the same event id
+  // can arrive more than once; provisioning must be safe to run twice. Claim the
+  // id first — a second delivery is a no-op that still answers 200, because a
+  // non-2xx would only make Stripe retry the duplicate again.
+  const eventCreated = typeof event.created === 'number' ? event.created : 0;
+  if (event.id) {
+    if (!claimStripeEvent(event.id, event.type, eventCreated)) {
+      console.warn(`[webhooks] duplicate delivery ignored: ${event.type} (${event.id})`);
+      return c.text('ok');
+    }
+  } else {
+    // Every real Stripe event carries an id; without one we cannot deduplicate.
+    console.error(`[webhooks] event has no id — processed without replay protection (${event.type})`);
+  }
+
+  try {
+    await handleEvent(stripe, event, eventCreated);
+  } catch (err) {
+    // Processing failed, so this event was not applied. Release the claim or the
+    // Stripe retry would be swallowed as a duplicate and the customer would
+    // never be provisioned.
+    if (event.id) releaseStripeEvent(event.id);
+    throw err;
+  }
+
+  return c.text('ok');
+});
+
+async function handleEvent(stripe: Stripe, event: Stripe.Event, eventCreated: number): Promise<void> {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -74,12 +111,12 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
 
       let user = findUserByEmail(email);
       let apiKey = findApiKeyByEmail(email);
-      if (user) {
-        updatePlan(user.id, plan);
-        updateStripeInfo(user.id, customerId, subscriptionId);
-      } else {
+      if (!user) {
         user = createUser(email, plan);
-        updateStripeInfo(user.id, customerId, subscriptionId);
+      }
+      updateStripeInfo(user.id, customerId, subscriptionId);
+      if (!applySubscriptionTransition(user.id, { plan, status: sub.status ?? 'active', eventCreated })) {
+        stale(event, { email, plan, subscriptionId });
       }
 
       if (!apiKey) {
@@ -102,8 +139,11 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
 
       const user = findUserByStripeSubscription(subId);
       if (user) {
-        updatePlan(user.id, plan);
-        defer(sendUpgradeEmail(user.email, plan), 'sendUpgradeEmail');
+        if (applySubscriptionTransition(user.id, { plan, status: sub.status ?? 'active', eventCreated })) {
+          defer(sendUpgradeEmail(user.email, plan), 'sendUpgradeEmail');
+        } else {
+          stale(event, { subId, plan });
+        }
       }
       break;
     }
@@ -115,8 +155,11 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
 
       const user = findUserByStripeSubscription(subId);
       if (user) {
-        updatePlan(user.id, 'free');
-        defer(sendDowngradeEmail(user.email), 'sendDowngradeEmail');
+        if (applySubscriptionTransition(user.id, { plan: 'free', status: 'canceled', eventCreated })) {
+          defer(sendDowngradeEmail(user.email), 'sendDowngradeEmail');
+        } else {
+          stale(event, { subId });
+        }
       }
       break;
     }
@@ -128,11 +171,12 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
 
       const user = findUserByStripeSubscription(subId);
       if (user) {
+        // One reset per invoice, enforced by the event ledger above: replaying
+        // the same invoice.paid would otherwise hand out a second quota period
+        // after the customer had already spent the first one.
         resetUsage(user.id);
       }
       break;
     }
   }
-
-  return c.text('ok');
-});
+}

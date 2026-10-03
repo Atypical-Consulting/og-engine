@@ -31,6 +31,10 @@ export interface UserRecord {
   period_start: string;
   created_at: string;
   active: number;
+  /** Lifecycle status of the last subscription event applied to this user. */
+  stripe_subscription_status: string | null;
+  /** `event.created` (unix seconds) of that event; the ordering watermark. */
+  stripe_event_created: number | null;
 }
 
 export interface SessionRecord {
@@ -176,7 +180,38 @@ function createIndexes(d: SqliteDatabase): void {
     CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_magic_links_token_hash ON magic_links(token_hash);
     CREATE INDEX IF NOT EXISTS idx_magic_links_email ON magic_links(email);
+
+    -- Processed-event ledger for Stripe webhooks. Stripe retries deliveries, so
+    -- every delivery is claimed by its event id before anything is provisioned
+    -- and a second delivery of the same id is a no-op. See claimStripeEvent.
+    CREATE TABLE IF NOT EXISTS stripe_events (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      created INTEGER NOT NULL DEFAULT 0,
+      processed_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_stripe_events_processed_at ON stripe_events(processed_at);
   `);
+
+  // Ordering watermark for subscription-lifecycle events. Stripe does not
+  // guarantee ordering, so a retried `updated` must not undo a `deleted`.
+  //
+  // Rollback path: both columns are nullable and additive, and no code outside
+  // applySubscriptionTransition() reads them, so reverting the commit is a
+  // complete rollback — an older binary ignores the columns and the extra
+  // table. To also drop the schema (SQLite >= 3.35, shipped in Bun and
+  // better-sqlite3):
+  //   DROP TABLE IF EXISTS stripe_events;
+  //   ALTER TABLE users DROP COLUMN stripe_subscription_status;
+  //   ALTER TABLE users DROP COLUMN stripe_event_created;
+  addColumnIfMissing(d, 'users', 'stripe_subscription_status', 'TEXT');
+  addColumnIfMissing(d, 'users', 'stripe_event_created', 'INTEGER');
+}
+
+function addColumnIfMissing(d: SqliteDatabase, table: string, column: string, definition: string): void {
+  const columns = d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (columns.some((col) => col.name === column)) return;
+  d.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
 // ─── Schema convergence ──────────────────────────────────────
@@ -338,11 +373,13 @@ export function createUser(email: string, plan: Plan = 'free'): UserRecord {
     period_start: new Date().toISOString(),
     created_at: new Date().toISOString(),
     active: 1,
+    stripe_subscription_status: null,
+    stripe_event_created: null,
   };
 
   d.prepare(`
-    INSERT INTO users (id, email, plan, stripe_customer_id, stripe_subscription_id, calls_limit, calls_used, period_start, created_at, active)
-    VALUES ($id, $email, $plan, $stripe_customer_id, $stripe_subscription_id, $calls_limit, $calls_used, $period_start, $created_at, $active)
+    INSERT INTO users (id, email, plan, stripe_customer_id, stripe_subscription_id, calls_limit, calls_used, period_start, created_at, active, stripe_subscription_status, stripe_event_created)
+    VALUES ($id, $email, $plan, $stripe_customer_id, $stripe_subscription_id, $calls_limit, $calls_used, $period_start, $created_at, $active, $stripe_subscription_status, $stripe_event_created)
   `).run(record);
 
   return record;
@@ -468,6 +505,96 @@ export function updateStripeInfo(userId: string, customerId: string, subscriptio
     subscriptionId,
     userId,
   );
+}
+
+// ─── Stripe Webhook Idempotency ──────────────────────────────
+
+export interface StripeEventRecord {
+  id: string;
+  type: string;
+  created: number;
+  processed_at: string;
+}
+
+/**
+ * Terminal statuses. Once a subscription reaches one, a non-terminal event that
+ * is not strictly newer must not resurrect the paid plan.
+ */
+const TERMINAL_SUBSCRIPTION_STATUSES = new Set(['canceled']);
+
+/**
+ * Claim a Stripe event id before provisioning anything.
+ *
+ * Returns `true` when this delivery is the first for that id and the caller
+ * should process it, `false` when the id is already in the ledger — i.e. a
+ * Stripe retry, which must be a no-op. The `INSERT OR IGNORE` is the atomic
+ * gate: SQLite serialises writers, so two concurrent deliveries of the same
+ * event cannot both win.
+ *
+ * The claim is written *before* the state change rather than inside a
+ * transaction with it, because provisioning awaits the Stripe API and holding a
+ * SQLite write transaction across an await would block every other writer.
+ * A caller whose processing fails must call `releaseStripeEvent` so Stripe's
+ * retry can try again.
+ */
+export function claimStripeEvent(id: string, type: string, created: number): boolean {
+  const d = getDb();
+  const result = d
+    .prepare('INSERT OR IGNORE INTO stripe_events (id, type, created, processed_at) VALUES (?, ?, ?, ?)')
+    .run(id, type, created, new Date().toISOString());
+  return result.changes === 1;
+}
+
+/** Release a claim so a Stripe retry of the same event id is processed again. */
+export function releaseStripeEvent(id: string): void {
+  const d = getDb();
+  d.prepare('DELETE FROM stripe_events WHERE id = ?').run(id);
+}
+
+export function findStripeEvent(id: string): StripeEventRecord | null {
+  const d = getDb();
+  return (d.prepare('SELECT * FROM stripe_events WHERE id = ?').get(id) as StripeEventRecord) ?? null;
+}
+
+/**
+ * Apply a subscription-lifecycle transition, ignoring events that are older
+ * than the last one already applied to this user.
+ *
+ * Stripe does not guarantee delivery order, so a retried `customer.subscription.updated`
+ * can land after `customer.subscription.deleted` and would otherwise put a
+ * cancelled customer back on a paid plan. Entitlement has to converge on the
+ * newest event, not the last one to arrive.
+ *
+ * Returns `false` when the event was stale and nothing was written.
+ */
+export function applySubscriptionTransition(
+  userId: string,
+  opts: { plan: Plan; status: string; eventCreated: number },
+): boolean {
+  const d = getDb();
+  const row = d
+    .prepare('SELECT stripe_subscription_status AS status, stripe_event_created AS created FROM users WHERE id = ?')
+    .get(userId) as { status: string | null; created: number | null } | undefined;
+  if (!row) return false;
+
+  const lastApplied = row.created ?? 0;
+  if (opts.eventCreated < lastApplied) return false;
+  // Same timestamp (or both missing, as in a replayed test fixture): a terminal
+  // status wins over a non-terminal one. Losing a paid plan we should have kept
+  // is recoverable; handing out a paid plan for free is not.
+  if (
+    opts.eventCreated === lastApplied &&
+    row.status !== null &&
+    TERMINAL_SUBSCRIPTION_STATUSES.has(row.status) &&
+    !TERMINAL_SUBSCRIPTION_STATUSES.has(opts.status)
+  ) {
+    return false;
+  }
+
+  d.prepare(
+    'UPDATE users SET plan = ?, calls_limit = ?, stripe_subscription_status = ?, stripe_event_created = ? WHERE id = ?',
+  ).run(opts.plan, PLAN_LIMITS[opts.plan], opts.status, opts.eventCreated, userId);
+  return true;
 }
 
 // ─── Render History ──────────────────────────────────────────
