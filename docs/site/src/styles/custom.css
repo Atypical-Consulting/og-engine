@@ -532,6 +532,18 @@ a.sl-link-button.minimal:hover {
   51%, 100% { opacity: 0; }
 }
 
+/* ─── Hero Signup (SignupForm island, directly under the splash CTAs) ─── */
+/* Container-only adaptation: the island ships its own styles, we just place it. */
+.hero-signup {
+  max-width: 34rem;
+  margin: 0 auto 2rem;
+  scroll-margin-top: 6rem;
+}
+
+.hero-signup .og-signup {
+  margin: 0;
+}
+
 /* ─── Hero Showcase (Terminal Demo) ─── */
 .hero-showcase {
   max-width: 56rem;
@@ -843,6 +855,57 @@ a.sl-link-button.minimal:hover {
   background: var(--og-glow);
   border-radius: 2px;
   opacity: 0.6;
+}
+
+/* ─── In-card Signup (Free plan CTA slot) ─── */
+/* The island keeps its own markup and logic; the card only reflows it to fit a
+   narrow grid column. Same specificity trick as .hero-signup — container only. */
+.pricing-signup {
+  margin-top: auto;
+}
+
+.pricing-signup .og-signup {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.pricing-signup .og-signup-label {
+  font-size: 0.65rem;
+}
+
+.pricing-signup .og-signup-row {
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pricing-signup .og-signup-input,
+.pricing-signup .og-signup-submit {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.82rem;
+}
+
+.pricing-signup .og-signup-submit {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.pricing-signup .og-signup-hint {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.pricing-signup .og-signup-key-row {
+  flex-direction: column;
+}
+
+.pricing-signup .og-signup-key {
+  font-size: 0.7rem;
 }
 
 /* ─── FAQ Styling for Pricing ─── */
