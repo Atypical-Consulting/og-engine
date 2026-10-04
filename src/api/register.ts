@@ -2,11 +2,14 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { createApiKey, createUser, findApiKeyByEmail } from '../db';
 import { sendWelcomeEmail } from '../email/send';
+import { normalizeEmail } from '../utils/email';
 
 export const registerRoute = new Hono();
 
+// `.trim()` runs before `.email()`, so a pasted address with stray whitespace
+// signs up instead of 400-ing. Case is canonicalised separately below.
 const registerSchema = z.object({
-  email: z.string().email('A valid email address is required.'),
+  email: z.string().trim().email('A valid email address is required.'),
 });
 
 /** Step of the signup path a 500 died on. Reported so the failure is diagnosable from a curl. */
@@ -42,7 +45,9 @@ registerRoute.post('/auth/register', async (c) => {
     );
   }
 
-  const { email } = parsed.data;
+  // Zod's .email() validates but does not canonicalise, so normalise here: the
+  // signup email is the key a later Stripe checkout has to match.
+  const email = normalizeEmail(parsed.data.email);
 
   // Signup is the top of the only funnel there is, so every failure below has to
   // name the step it died on. A bare 500 here (ATY-78) was undiagnosable from
