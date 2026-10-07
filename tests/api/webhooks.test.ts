@@ -220,3 +220,160 @@ describe('POST /webhooks/stripe', () => {
     expect(res.status).toBe(500);
   });
 });
+
+// Checkout is started by static Stripe Payment Links, so the only identity that
+// crosses back into `checkout.session.completed` is what we put on the URL. The
+// expensive failure is silent: a paying customer is provisioned a *second*
+// account because they paid with a different email, and nothing in the system
+// reports an error. These lock the resolution order that prevents it.
+describe('POST /webhooks/stripe — checkout identity (client_reference_id)', () => {
+  // `returns 500 when Stripe is not configured` above calls vi.resetModules(),
+  // which detaches this file's static `src/db` import from the one the route
+  // resolves — two different in-memory databases. Reset deliberately instead and
+  // read the db through the same fresh module graph the route gets.
+  let db: typeof import('../../src/db');
+
+  beforeEach(async () => {
+    vi.resetModules();
+    db = await import('../../src/db');
+  });
+
+  function countUsers(): number {
+    return (db.getDb().prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }).n;
+  }
+
+  it('upgrades the referenced account in place when the Stripe email differs', async () => {
+    const user = db.createUser('dev@acme.com', 'free');
+    const originalKey = db.createApiKey(user.id);
+
+    const app = await importWebhooksRoute();
+    const res = await postWebhook(app, {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          // The company card is on the billing address, which never signed up.
+          customer_email: 'billing@acme.com',
+          client_reference_id: user.id,
+          customer: 'cus_acme',
+          subscription: 'sub_acme',
+        },
+      },
+    });
+
+    expect(res.status).toBe(200);
+
+    // The account the developer actually uses is the one that got upgraded.
+    const upgraded = db.findUserById(user.id);
+    expect(upgraded!.plan).toBe('pro');
+    expect(upgraded!.email).toBe('dev@acme.com');
+    expect(upgraded!.stripe_customer_id).toBe('cus_acme');
+    expect(upgraded!.stripe_subscription_id).toBe('sub_acme');
+
+    // No shadow account, and no second key for the payer's address.
+    expect(countUsers()).toBe(1);
+    expect(db.findUserByEmail('billing@acme.com')).toBeNull();
+    const keys = db.listApiKeysByUserId(user.id);
+    expect(keys).toHaveLength(1);
+    expect(keys[0]!.key).toBe(originalKey.key);
+
+    // The key is emailed to the account, never to the billing address.
+    const { sendWelcomeEmail } = await import('../../src/email/send');
+    expect(sendWelcomeEmail).toHaveBeenCalledWith('dev@acme.com', originalKey.key, 'pro');
+  });
+
+  it('converges when Stripe re-delivers the same event', async () => {
+    const user = db.createUser('retry@acme.com', 'free');
+    const originalKey = db.createApiKey(user.id);
+
+    const app = await importWebhooksRoute();
+    const event = {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          customer_email: 'billing@acme.com',
+          client_reference_id: user.id,
+          customer: 'cus_retry',
+          subscription: 'sub_retry',
+        },
+      },
+    };
+
+    expect((await postWebhook(app, event)).status).toBe(200);
+    expect((await postWebhook(app, event)).status).toBe(200);
+
+    expect(countUsers()).toBe(1);
+    const keys = db.listApiKeysByUserId(user.id);
+    expect(keys).toHaveLength(1);
+    expect(keys[0]!.key).toBe(originalKey.key);
+    expect(db.findUserById(user.id)!.plan).toBe('pro');
+  });
+
+  it('still resolves by email when no client_reference_id is present', async () => {
+    // The anonymous purchase from the public pricing page. Must keep working.
+    const user = db.createUser('anon@example.com', 'free');
+    db.createApiKey(user.id);
+
+    const app = await importWebhooksRoute();
+    const res = await postWebhook(app, {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          customer_email: 'anon@example.com',
+          customer: 'cus_anon',
+          subscription: 'sub_anon',
+        },
+      },
+    });
+
+    expect(res.status).toBe(200);
+    expect(countUsers()).toBe(1);
+    const updated = db.findUserByEmail('anon@example.com');
+    expect(updated!.id).toBe(user.id);
+    expect(updated!.plan).toBe('pro');
+    expect(updated!.stripe_customer_id).toBe('cus_anon');
+    expect(db.listApiKeysByUserId(user.id)).toHaveLength(1);
+  });
+
+  it('falls back to the email join when the client_reference_id is unknown', async () => {
+    // A stale upgrade link, or a deleted account. We must not drop the sale.
+    const app = await importWebhooksRoute();
+    const res = await postWebhook(app, {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          customer_email: 'stale@example.com',
+          client_reference_id: 'b9f0a3d4-0000-4000-8000-000000000000',
+          customer: 'cus_stale',
+          subscription: 'sub_stale',
+        },
+      },
+    });
+
+    expect(res.status).toBe(200);
+    const created = db.findUserByEmail('stale@example.com');
+    expect(created).not.toBeNull();
+    expect(created!.plan).toBe('pro');
+    expect(db.findApiKeyByEmail('stale@example.com')).not.toBeNull();
+  });
+
+  it('provisions by client_reference_id even when Stripe reports no email', async () => {
+    const user = db.createUser('noemail@acme.com', 'free');
+    db.createApiKey(user.id);
+
+    const app = await importWebhooksRoute();
+    const res = await postWebhook(app, {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          client_reference_id: user.id,
+          customer: 'cus_noemail',
+          subscription: 'sub_noemail',
+        },
+      },
+    });
+
+    expect(res.status).toBe(200);
+    expect(db.findUserById(user.id)!.plan).toBe('pro');
+    expect(countUsers()).toBe(1);
+  });
+});

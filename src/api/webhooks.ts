@@ -5,7 +5,9 @@ import {
   createUser,
   findApiKeyByEmail,
   findUserByEmail,
+  findUserById,
   findUserByStripeSubscription,
+  listApiKeysByUserId,
   type Plan,
   resetUsage,
   updatePlan,
@@ -61,32 +63,52 @@ webhooksRoute.post('/webhooks/stripe', async (c) => {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      const email = session.customer_email ?? session.customer_details?.email ?? null;
+      const stripeEmail = session.customer_email ?? session.customer_details?.email ?? null;
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
 
-      if (!email || !subscriptionId) break;
+      // The identity we carried into checkout ourselves beats the email the
+      // buyer typed into Stripe's form. Someone who signed up as dev@acme.com
+      // and pays with the company card on billing@acme.com must be upgraded in
+      // place: joining on email alone provisions them a second account on the
+      // paid plan and leaves the key in their production rate-limited on free,
+      // with every signal we observe still reporting success. An unknown id
+      // (stale link, deleted account) falls through to the email join, which is
+      // also the path an anonymous purchase from the pricing page takes.
+      // See src/utils/checkout-link.ts for the outbound half.
+      const referencedUser = session.client_reference_id ? findUserById(session.client_reference_id) : null;
+
+      if (!subscriptionId) break;
+      if (!referencedUser && !stripeEmail) break;
 
       const sub = await stripe.subscriptions.retrieve(subscriptionId);
       const priceId = sub.items.data[0]?.price?.id;
       const plan = priceId ? getPlanFromPriceId(priceId) : null;
       if (!plan) break;
 
-      let user = findUserByEmail(email);
-      let apiKey = findApiKeyByEmail(email);
-      if (user) {
-        updatePlan(user.id, plan);
-        updateStripeInfo(user.id, customerId, subscriptionId);
-      } else {
-        user = createUser(email, plan);
-        updateStripeInfo(user.id, customerId, subscriptionId);
+      let user = referencedUser;
+      if (!user && stripeEmail) {
+        user = findUserByEmail(stripeEmail) ?? createUser(stripeEmail, plan);
       }
+      if (!user) break;
 
+      // Both of these are sets, so a re-delivered event converges instead of
+      // doubling anything up.
+      updatePlan(user.id, plan);
+      updateStripeInfo(user.id, customerId, subscriptionId);
+
+      // Look the key up against the resolved account, not against the email
+      // Stripe reports — that email may belong to the payer rather than the
+      // account. The email fallback catches a legacy key minted before keys
+      // carried a user_id.
+      let apiKey = listApiKeysByUserId(user.id)[0] ?? findApiKeyByEmail(user.email);
       if (!apiKey) {
         apiKey = createApiKey(user.id);
       }
 
-      defer(sendWelcomeEmail(email, apiKey.key, plan), 'sendWelcomeEmail');
+      // Always the account address: this email carries a live API key, so it
+      // must not go to a billing address that never signed up.
+      defer(sendWelcomeEmail(user.email, apiKey.key, plan), 'sendWelcomeEmail');
       break;
     }
 
