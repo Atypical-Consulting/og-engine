@@ -29,12 +29,12 @@ export interface ScenarioResult {
   };
 }
 
-function runScenario(scenario: Scenario): ScenarioResult {
+async function runScenario(scenario: Scenario): Promise<ScenarioResult> {
   const opts = { ...scenario.options, timing: true };
 
   // Warmup
   for (let i = 0; i < WARMUP; i++) {
-    renderCard(opts);
+    await renderCard(opts);
   }
 
   const raw: PhaseResults = {
@@ -45,8 +45,9 @@ function runScenario(scenario: Scenario): ScenarioResult {
   };
 
   for (let i = 0; i < ITERATIONS; i++) {
-    const result = renderCard(opts);
-    const p = result.phases!;
+    const result = await renderCard(opts);
+    const p = result.phases;
+    if (!p) throw new Error('renderCard returned no phases — benchmark needs timing: true');
     raw.textMeasure.push(p.textMeasureMs);
     raw.canvasDraw.push(p.canvasDrawMs);
     raw.pngEncode.push(p.pngEncodeMs);
@@ -72,7 +73,7 @@ export async function runOgBenchmarks(): Promise<ScenarioResult[]> {
 
   for (const scenario of SCENARIOS) {
     process.stdout.write(`  ${scenario.name}...`);
-    const result = runScenario(scenario);
+    const result = await runScenario(scenario);
     const p50 = result.stats.fullPipeline.p50;
     console.log(` ${formatMs(p50)} (P50)`);
     results.push(result);
